@@ -1,0 +1,1 @@
+\eta = S_effective * (trace_0 / trace_t)

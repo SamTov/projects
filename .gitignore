@@ -1,3 +1,22 @@
+# Data files
+*.hdf5
+*.hf
+*.h5
+*.npy
+*.npz
+*.pkl
+*.out
+
+# Image files
+*.pdf
+*.png
+*.svg
+*.jpg
+*.jpeg
+
+# Presentations
+*.pptx
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

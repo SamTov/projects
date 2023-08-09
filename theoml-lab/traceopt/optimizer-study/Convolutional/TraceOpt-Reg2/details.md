@@ -1,0 +1,1 @@
+eta = (1 -+ delta S) * (tr_0 / tr_t)
