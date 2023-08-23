@@ -18,10 +18,10 @@ save_path = "/data/stovey/dynamics"
 particle_numbers = [1, 10, 100]
 
 for n_particles in particle_numbers:
-    name = f"{n_particles}-particle"
+    name = f"{n_particles}-particle-large"
     batch_size = 2 * n_particles
-    epochs = 10000
-    #main(ds_size=n_particles, batch_size=batch_size, epochs=epochs, name=name)
+    epochs = 100000
+    main(ds_size=n_particles, batch_size=batch_size, epochs=epochs, name=name)
 
 
 # In[6]:
@@ -48,7 +48,7 @@ results = []
 for particle_number in particle_numbers:
     
     n_particles = particle_number
-    name = f"{n_particles}-particle"
+    name = f"{n_particles}-particle-large"
     
     experiment = np.load(f"{save_path}/{name}.npy", allow_pickle=True)[0]
     generator = Generator(n_samples=n_particles)
@@ -115,7 +115,7 @@ for particle_number in particle_numbers:
         )
     )
     
-np.save("experiment-analysis.npy", results)
+np.save("large-experiment-analysis.npy", results)
 
 print("DONE")
 # In[5]:
