@@ -21,7 +21,7 @@ for n_particles in particle_numbers:
     name = f"{n_particles}-particle-large"
     batch_size = 2 * n_particles
     epochs = 100000
-    main(ds_size=n_particles, batch_size=batch_size, epochs=epochs, name=name)
+    #main(ds_size=n_particles, batch_size=batch_size, epochs=epochs, name=name)
 
 
 # In[6]:
