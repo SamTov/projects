@@ -55,6 +55,29 @@ def linear_boundary(
     
     return differences
 
+def circle(
+    data: np.ndarray, radius: float = 0.25
+):
+    """
+    Create a circular classification problem.
+    
+    For simplicity, assume the points inside the circle are
+    class 0 and outside are class 1.
+    
+    Parameters
+    ----------
+    data : np.ndarray
+        Data to be converted into classes.
+    radius : float
+        Radius of the circle.
+    """
+    radii = np.linalg.norm(data - 0.5, axis=1)
+    
+    radii[radii < radius] = 0.
+    radii[radii > radius] = 1.
+    
+    return radii
+
 class Generator(nl.data.DataGenerator):
     def __init__(self, n_samples: int, discriminator: callable = linear_boundary):
         """
@@ -89,34 +112,8 @@ class Generator(nl.data.DataGenerator):
             "inputs": np.take(train_data, indices, axis=0),
             "targets": np.take(np.array(jax.nn.one_hot(train_targets, num_classes=2)), indices, axis=0)
         }
-
-
-# In[19]:
-
-
-generator = Generator(5)
-
-
-# In[20]:
-
-
-points = generator.train_ds["inputs"]
-colours = generator.train_ds["targets"]
-
-x = np.linspace(0, 1)
-y = -1 * x + 1.0
-
-plt.scatter(
-    points[:, 0], points[:, 1], c=colours[:, 0]
-)
-plt.plot(x, y, "--")
-
-plt.xlim(0.0, 1.0)
-plt.ylim(0.0, 1.0)
-plt.xlabel("x")
-plt.ylabel("y")
-plt.show()
-
+        print(self.train_ds)
+        
 
 # ## Model Building Functions
 
@@ -323,18 +320,18 @@ def compute_class_entropy(dataset: dict, ntk: np.ndarray):
     Compute the entropy of the classes only matrix.
     """
     # Collect class data-sets
-    class_one_indices = np.where(dataset["targets"] == 0)[0]
-    class_two_indices = np.where(dataset["targets"] == 1)[0]
+    class_one_indices = np.where(dataset["targets"][:, 0] == 1)[0]
+    class_two_indices = np.where(dataset["targets"][:, 1] == 1)[0]
     
     class_one_ntk = np.take(
         np.take(
-            ntk, class_one_indices, axis=0
+            np.array(ntk), class_one_indices, axis=0
         ),
         class_one_indices, axis=1
     )
     class_two_ntk = np.take(
         np.take(
-            ntk, class_two_indices, axis=0
+            np.array(ntk), class_two_indices, axis=0
         ),
         class_two_indices, axis=1
     )
@@ -463,7 +460,7 @@ def main(
     for depth in depths:
         for width in widths:
             # Create data-set
-            generator = Generator(n_samples=ds_size)
+            generator = Generator(n_samples=ds_size, discriminator=circle)
             
             # Create the model
             model = build_network(width=width, depth=depth)()
