@@ -16,7 +16,7 @@ name = f"circle-architecture-study-full-batch"
 batch_size = 100
 epochs = 2000
 
-main(ds_size=n_particles, batch_size=batch_size, epochs=epochs, name=name)
+#main(ds_size=n_particles, batch_size=batch_size, epochs=epochs, name=name)
 
 
 # In[3]:
@@ -68,6 +68,37 @@ for experiment in experiments:
         loss_derivatives.append(
             compute_loss_derivative(
                 predictions, generator.train_ds["targets"]
+            # Compute the NTK
+            ntk_matrix = ntk_fn(
+                        generator.train_ds["inputs"],
+                        generator.train_ds["inputs"],
+                        {"params": experiment.parameters[i]}
+                    )
+
+            # Trace computation
+            trace.append(
+                compute_trace(ntk_matrix)
+            )
+
+            # Entropy computation
+            entropy.append(
+                compute_entropy(ntk_matrix)
+            )
+
+            # Class entropy computation
+            class_entropy.append(
+                compute_class_entropy(generator.train_ds, ntk_matrix)
+            )
+        results.append(
+            Measurement(
+                width=experiment.width,
+                depth=experiment.depth,
+                loss=np.array(loss),
+                trace=np.array(trace),
+                entropy=np.array(entropy),
+                loss_derivatives=np.array(loss_derivatives),
+                representations=np.array(representations),
+                class_entropy=class_entropy
             )
         )
 
