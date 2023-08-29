@@ -1,0 +1,90 @@
+# -------------------------------- #
+# Set global simulation parameters #
+# -------------------------------- #
+
+units  lj
+atom_style atomic
+
+# ------------------ #
+# Set run parameters #
+# ------------------ #
+
+variable temperature equal 1.0  # Set by run script
+variable pressure equal PRESS  # Set by run script
+variable npt_runtime equal 50000  # Increase for production
+variable nvt_runtime equal 5000  # Increase for production
+
+# -------------------- #
+# Build simulation box #
+# -------------------- #
+
+lattice  fcc 0.8442
+region  box block 0 10.0 0 10.0 0 10.0
+create_box 1 box
+
+# ---------------- #
+# Initialize atoms #
+# ---------------- #
+
+create_atoms 1 box
+mass  1 1.0
+velocity all create 4 87287 loop geom
+
+# ------------------------ #
+# Define pair interactions #
+# ------------------------ #
+
+pair_style lj/cut 2.5
+pair_coeff 1 1 1.0 1.0 2.5
+
+# --------------------------------- #
+# Update neighbour cutoff (Remove?) #
+# --------------------------------- #
+
+neighbor 0.3 bin
+neigh_modify delay 0 every 40 check no
+
+# --------------------- #
+# Geometry minimization #
+# --------------------- #
+
+# Perform minimization
+minimize 1.0e-4 1.0e-6 100 1000
+
+# Reset the timestep
+reset_timestep 0
+
+# ------------------ #
+# Run NPT simulation #
+# ------------------ #
+
+# Define the barostat
+fix 1 all npt temp ${temperature} ${temperature} $(100.0*dt) iso ${pressure} ${pressure} $(300.0*dt)
+
+# Define the output
+thermo 100
+thermo_style custom elapsed pe ke etotal press temp density
+
+# Run the simulation
+run ${npt_runtime}
+
+# Reset timestep for NVT stage
+reset_timestep 0
+unfix 1
+
+# ------------------ #
+# Run NVT simulation #
+# ------------------ #
+
+# Define thermostat
+fix 2 all nvt temp ${temperature} ${temperature} $(100.0*dt)
+
+# Define the output
+thermo 100
+thermo_style custom elapsed pe ke etotal press temp
+
+dump trajectory all custom 1 dumpy.lammpstraj id type x y z vx vy vz  # Dump all necessary information
+dump_modify trajectory sort id  # Sort the output of the simulation
+
+# Run the simulation
+run ${nvt_runtime}

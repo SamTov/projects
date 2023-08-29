@@ -1,30 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[4]:
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+# In[2]:
 
-#import execfile
-#exec("particle-insertion-modules.py")
+
 #get_ipython().run_line_magic('run', 'particle-insertion-modules.ipynb')
-
 from experiment_modules import *
 
-# In[5]:
-
-save_path = "/data/stovey/dynamics"
-
-particle_numbers = [1, 10, 100]
-
-for n_particles in particle_numbers:
-    name = f"{n_particles}-particle-large"
-    batch_size = 2 * n_particles
-    epochs = 100000
-    #main(ds_size=n_particles, batch_size=batch_size, epochs=epochs, name=name)
+# In[ ]:
 
 
-# In[6]:
+n_particles = 50
+
+name = f"circle-architecture-study-full-batch"
+batch_size = 100
+epochs = 2000
+
+#main(ds_size=n_particles, batch_size=batch_size, epochs=epochs, name=name)
+
+
+# In[3]:
 
 
 @dataclass
@@ -37,20 +32,16 @@ class Measurement:
     representations: np.ndarray
     loss_derivatives: np.ndarray
     class_entropy: dict
-    n_particles: int
 
 
-# In[ ]:
+# In[4]:
 
 
 results = []
+    
+experiments = np.load(f"{name}.npy", allow_pickle=True)
 
-for particle_number in particle_numbers:
-    
-    n_particles = particle_number
-    name = f"{n_particles}-particle-large"
-    
-    experiment = np.load(f"{save_path}/{name}.npy", allow_pickle=True)[0]
+for experiment in experiments:
     generator = Generator(n_samples=n_particles)
 
     trace = []
@@ -77,6 +68,37 @@ for particle_number in particle_numbers:
         loss_derivatives.append(
             compute_loss_derivative(
                 predictions, generator.train_ds["targets"]
+            # Compute the NTK
+            ntk_matrix = ntk_fn(
+                        generator.train_ds["inputs"],
+                        generator.train_ds["inputs"],
+                        {"params": experiment.parameters[i]}
+                    )
+
+            # Trace computation
+            trace.append(
+                compute_trace(ntk_matrix)
+            )
+
+            # Entropy computation
+            entropy.append(
+                compute_entropy(ntk_matrix)
+            )
+
+            # Class entropy computation
+            class_entropy.append(
+                compute_class_entropy(generator.train_ds, ntk_matrix)
+            )
+        results.append(
+            Measurement(
+                width=experiment.width,
+                depth=experiment.depth,
+                loss=np.array(loss),
+                trace=np.array(trace),
+                entropy=np.array(entropy),
+                loss_derivatives=np.array(loss_derivatives),
+                representations=np.array(representations),
+                class_entropy=class_entropy
             )
         )
 
@@ -98,9 +120,9 @@ for particle_number in particle_numbers:
         )
 
         # Class entropy computation
-#         class_entropy.append(
-#             compute_class_entropy(generator.train_ds, ntk_matrix)
-#         )
+        class_entropy.append(
+            compute_class_entropy(generator.train_ds, ntk_matrix)
+        )
     results.append(
         Measurement(
             width=experiment.width,
@@ -110,14 +132,13 @@ for particle_number in particle_numbers:
             entropy=np.array(entropy),
             loss_derivatives=np.array(loss_derivatives),
             representations=np.array(representations),
-            class_entropy=class_entropy,
-            n_particles=particle_number
+            class_entropy=class_entropy
         )
     )
     
-np.save("large-experiment-analysis.npy", results)
+np.save("experiment-analysis.npy", results)
 
-print("DONE")
+
 # In[5]:
 
 
