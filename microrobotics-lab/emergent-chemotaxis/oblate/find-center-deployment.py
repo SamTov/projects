@@ -69,7 +69,7 @@ gamma_rot = swarmrl.utils.convert_array_of_pint_to_pint_of_array(
 
 system_runner.add_colloids(
     n_colloids,
-    ureg.Quantity(equatorial_semiaxis, "micrometer"),
+    equatorial_semiaxis,
     ureg.Quantity(np.array([500, 500, 0]), "micrometer"),
     ureg.Quantity(100, "micrometer"),
     type_colloid=0,
@@ -86,12 +86,13 @@ angular_velocity = ureg.Quantity(600 * np.pi / 180, "1/second")
 
 gamma, gamma_rotation = gamma_trans_ax, gamma_rot_eq
 
-act_force = swim_speed.m_as("sim_velocity") * gamma
-act_torque = angular_velocity.m_as("1 / sim_time") * gamma_rotation
+act_force = swim_speed * gamma
+act_torque = angular_velocity* gamma_rotation
 
-translate = Action(force=act_force)
-rotate_clockwise = Action(torque=np.array([0.0, 0.0, act_torque]))
-rotate_counter_clockwise = Action(torque=np.array([0.0, 0.0, -1 * act_torque]))
+
+translate = Action(force=act_force.m_as("sim_force"))
+rotate_clockwise = Action(torque=np.array([0.0, 0.0, act_torque.m_as("sim_torque")]))
+rotate_counter_clockwise = Action(torque=np.array([0.0, 0.0, -1 * act_torque.m_as("sim_torque")]))
 do_nothing = Action()
 
 actions = {
