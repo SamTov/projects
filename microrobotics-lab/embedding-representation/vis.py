@@ -5,7 +5,7 @@ import znvis as vis
 import h5py as hf
 prefix="/data/stovey/embedding_representation_data/rod_rotation/CW"
 
-with hf.File(f"{prefix}/3_dimensions/20/training/trajectory.hdf5") as db:
+with hf.File(f"{prefix}/1_dimensions/2/training/trajectory.hdf5") as db:
     agents = db["colloids"]["Unwrapped_Positions"][:, :40, :][::20]
     rod = db["colloids"]["Unwrapped_Positions"][:, 40:, :][::20]
 
