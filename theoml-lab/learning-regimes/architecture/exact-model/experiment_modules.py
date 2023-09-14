@@ -137,8 +137,6 @@ def build_network():
             """
             # x = nn.Dense(50, use_bias=False)(x)
             # x = nn.sigmoid(x) 
-            x = nn.Dense(50, use_bias=False)(x)
-            x = nn.relu(x)
             x = nn.Dense(1, use_bias=False)(x)
             x = nn.sigmoid(x)
             
