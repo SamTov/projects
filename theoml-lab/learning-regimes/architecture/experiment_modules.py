@@ -460,7 +460,7 @@ def main(
     for depth in depths:
         for width in widths:
             # Create data-set
-            generator = Generator(n_samples=ds_size, discriminator=circle)
+            generator = Generator(n_samples=ds_size)
             
             # Create the model
             model = build_network(width=width, depth=depth)()

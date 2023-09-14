@@ -2,6 +2,8 @@
 # coding: utf-8
 
 # In[2]:
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 #get_ipython().run_line_magic('run', 'particle-insertion-modules.ipynb')
@@ -12,7 +14,7 @@ from experiment_modules import *
 
 n_particles = 50
 
-name = f"circle-architecture-study-full-batch"
+name = f"linear-boundary/linear-boundary-architecture-study-full-batch"
 batch_size = 100
 epochs = 2000
 
@@ -23,7 +25,7 @@ epochs = 2000
 
 
 @dataclass
-class Measurement:
+class Measurement: 
     width: int
     depth: int
     loss: np.ndarray
@@ -67,40 +69,7 @@ for experiment in experiments:
         )
         loss_derivatives.append(
             compute_loss_derivative(
-                predictions, generator.train_ds["targets"]
-            # Compute the NTK
-            ntk_matrix = ntk_fn(
-                        generator.train_ds["inputs"],
-                        generator.train_ds["inputs"],
-                        {"params": experiment.parameters[i]}
-                    )
-
-            # Trace computation
-            trace.append(
-                compute_trace(ntk_matrix)
-            )
-
-            # Entropy computation
-            entropy.append(
-                compute_entropy(ntk_matrix)
-            )
-
-            # Class entropy computation
-            class_entropy.append(
-                compute_class_entropy(generator.train_ds, ntk_matrix)
-            )
-        results.append(
-            Measurement(
-                width=experiment.width,
-                depth=experiment.depth,
-                loss=np.array(loss),
-                trace=np.array(trace),
-                entropy=np.array(entropy),
-                loss_derivatives=np.array(loss_derivatives),
-                representations=np.array(representations),
-                class_entropy=class_entropy
-            )
-        )
+                predictions, generator.train_ds["targets"]))
 
         # Compute the NTK
         ntk_matrix = ntk_fn(
