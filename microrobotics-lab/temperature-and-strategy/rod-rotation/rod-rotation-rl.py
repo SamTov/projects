@@ -19,7 +19,7 @@ import swarmrl.engine.espresso as espresso
 from swarmrl.utils import utils
 
 import pint
-
+print(jax.default_backend())
 
 # ### Get System Runner and Helper Functions
 # 
@@ -32,13 +32,17 @@ simulation_name = "rod-rotation"
 seed = np.random.randint(0, 3453276453)
 
 temperature = TEMP
-n_colloids = 20
+n_colloids = 30
+
+offset = 0.
+if temperature == 0.:
+    offset = 5.
 
 ureg = pint.UnitRegistry()
 md_params = espresso.MDParams(
     ureg=ureg,
     fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
-    WCA_epsilon=ureg.Quantity(273.15, "kelvin") * ureg.boltzmann_constant,
+    WCA_epsilon=ureg.Quantity(temperature + offset, "kelvin") * ureg.boltzmann_constant,
     temperature=ureg.Quantity(temperature, "kelvin"),
     box_length=ureg.Quantity(1000, "micrometer"),
     time_slice=ureg.Quantity(1.0, "second"),  # model timestep
@@ -56,13 +60,13 @@ system_runner = srl.espresso.EspressoMD(
 
 system_runner.add_colloids(
     n_colloids,
-    ureg.Quantity(2.14, "micrometer"),
+    ureg.Quantity(3.08, "micrometer"),
     ureg.Quantity(np.array([500, 500, 0]), "micrometer"),
     ureg.Quantity(100, "micrometer"),
     type_colloid=0,
 )
 system_runner.add_rod(
-    rod_center=ureg.Quantity([500, 500, 0], "micrometer"),
+    rod_center=ureg.Quantity([500, 500, 0.0], "micrometer"),
     rod_length=ureg.Quantity(100, "micrometer"),
     rod_thickness=ureg.Quantity(100 / 59, "micrometer"),
     rod_start_angle=90.0,
@@ -72,6 +76,7 @@ system_runner.add_rod(
     rod_particle_type=1,
 )
 
+system_runner.add_confining_walls(wall_type=2)
 
 # ## Set up the RL Parameters
 
@@ -79,8 +84,8 @@ system_runner.add_rod(
 
 
 n_slices = int(ureg.Quantity(3, "minute") / md_params.time_slice)
-n_episodes = 5000
-episode_length = 20 #    int(np.ceil(n_slices / 10))
+n_episodes = 10000
+episode_length = 30
 
 
 # In[6]:
@@ -104,6 +109,7 @@ observable = srl.observables.SubdividedVisionCones(
     vision_range=1000000.0,
     vision_half_angle=1.4,
     n_cones=5,
+    detected_types = [0, 1],
     radii=jnp.array([3.08 for _ in range(n_colloids)] + [0.84745763 for _ in range(59)])
 )
 
@@ -112,9 +118,10 @@ loss = srl.losses.PolicyGradientLoss(value_function=value_function)
 
 rotation_task = srl.tasks.object_movement.RotateRod(
     particle_type=0,
-    angular_velocity_scale=1000,
+    angular_velocity_scale=10000,
     rod_type=1,
     direction="CCW",
+    velocity_history=20,
     partition=False
 )
 
@@ -122,11 +129,14 @@ rod_finding_task = srl.tasks.searching.SpeciesSearch(
     particle_type=0,
     decay_fn=decay_fn,
     box_length=np.array([1000.0, 1000.0, 1000.0]),
-    scale_factor=100,
+    scale_factor=10,
     sensing_type=1
 )
 
-total_task = srl.tasks.MultiTasking(particle_type=0, tasks=[rotation_task, rod_finding_task])
+multitask = srl.tasks.MultiTasking(
+    particle_type=0, tasks=[rotation_task, rod_finding_task]
+    )
+
 
 class ColloidEmbedding(nn.Module):
     @nn.compact
@@ -182,7 +192,7 @@ class CriticNet(nn.Module):
     
 actor = srl.networks.FlaxModel(
     flax_model=ActorNet(),
-    optimizer=optax.adam(learning_rate=0.001),
+    optimizer=optax.adam(learning_rate=0.002),
     input_shape=(1, 5, 2),
     sampling_strategy=sampling_strategy,
     exploration_policy=exploration_policy,
@@ -190,7 +200,7 @@ actor = srl.networks.FlaxModel(
 
 critic = srl.networks.FlaxModel(
     flax_model=CriticNet(),
-    optimizer=optax.adam(learning_rate=0.001),
+    optimizer=optax.adam(learning_rate=0.002),
     input_shape=(1, 5, 2),
 )
 
@@ -218,12 +228,16 @@ rl_trainer = srl.gyms.Gym(
     [protocol],
     loss,
 )
-rl_trainer.perform_rl_training(
+# rl_trainer.restore_models()
+
+rewards = rl_trainer.perform_rl_training(
     system_runner=system_runner,
     n_episodes=n_episodes,
     episode_length=episode_length,
 )
 rl_trainer.export_models()
+
+np.save("first_rewards.npy", rewards)
 
 # Exploration policy
 exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
@@ -239,6 +253,7 @@ value_function = srl.value_functions.ExpectedReturns(
 observable = srl.observables.SubdividedVisionCones(
     vision_range=1000000.0,
     vision_half_angle=1.4,
+    detected_types = [0, 1],
     n_cones=5,
     radii=jnp.array([3.08 for _ in range(n_colloids)] + [0.84745763 for _ in range(59)])
 )
@@ -248,7 +263,7 @@ loss = srl.losses.PolicyGradientLoss(value_function=value_function)
     
 actor = srl.networks.FlaxModel(
     flax_model=ActorNet(),
-    optimizer=optax.adam(learning_rate=0.001),
+    optimizer=optax.adam(learning_rate=0.002),
     input_shape=(1, 5, 2),
     sampling_strategy=sampling_strategy,
     exploration_policy=exploration_policy,
@@ -256,7 +271,7 @@ actor = srl.networks.FlaxModel(
 
 critic = srl.networks.FlaxModel(
     flax_model=CriticNet(),
-    optimizer=optax.adam(learning_rate=0.001),
+    optimizer=optax.adam(learning_rate=0.002),
     input_shape=(1, 5, 2),
 )
 
@@ -264,7 +279,7 @@ protocol = srl.rl_protocols.ActorCritic(
     particle_type=0, 
     actor=actor, 
     critic=critic, 
-    task=rotation_task, 
+    task=multitask, 
     observable=observable, 
     actions=actions
 )
@@ -272,11 +287,14 @@ rl_trainer = srl.gyms.Gym(
     [protocol],
     loss,
 )
+n_episodes = 20000
+
 rl_trainer.restore_models()
-rl_trainer.perform_rl_training(
+rewards = rl_trainer.perform_rl_training(
     system_runner=system_runner,
     n_episodes=n_episodes,
     episode_length=episode_length,
 )
 rl_trainer.export_models()
 
+np.save("second_rewards.npy", rewards)

@@ -9,31 +9,26 @@
 #SBATCH -J temperature-study
 
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=120
-#SBATCH --partition cpu
-
-
-### ----------------------------------------- ###
-### Input parameters for logging and run time ###
-### ----------------------------------------- ###
-
-#SBATCH --time=24:00:00
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=stovey@icp.uni-stuttgart.de
+#SBATCH --ntasks-per-node=12
+#SBATCH --partition single
+#SBATCH --time=48:00:00
+#SBATCH --mem=32gb
+#SBATCH --gres=gpu:1
 
 ### -------------------- ###
 ### Modules to be loaded ###
 ### -------------------- ###
 
-module load gcc/11.3.0
-module load openmpi/4.1.4_gcc-11.3_cuda-11.7
-module load cmake/3.26.3
-module load boost/1.82.0_gcc-11.7_ompi-4.1.4
+
+module load compiler/gnu/12.1   
+module load mpi/openmpi/4.1
+module load devel/cuda/12.1 
+module load devel/cmake/3.24.1
+
 
 source ~/.bashrc
 
-pypresso=/data/work/ac134186/repositories/SwarmRL/espresso/build/pypresso
+pypresso=/home/st/st_st/st_ac134186/software/SwarmRL/espresso/build/pypresso
 script=rod-rotation-rl.py
 
 ### ------------------------------------- ###
@@ -41,11 +36,6 @@ script=rod-rotation-rl.py
 ### ------------------------------------- ###
 
 cd $SLURM_SUBMIT_DIR  # change into working directory
+export OMP_NUM_THREADS=${SLURM_NTASKS}
 
-for i in 1 2 3 4 5 6 7 8 9 10
-do
-	cd ${i}
-	OMP_NUM_THREADS=12 ${pypresso} ${script} >> output.out &
-	cd ../
-done
-wait
+${pypresso} ${script} >> output.out

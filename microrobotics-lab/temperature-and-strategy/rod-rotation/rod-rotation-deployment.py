@@ -32,11 +32,15 @@ seed = np.random.randint(0, 3453276453)
 temperature = TEMP
 n_colloids = 30
 
+offset = 0.
+if temperature == 0.:
+    offset = 5.
+
 ureg = pint.UnitRegistry()
 md_params = espresso.MDParams(
     ureg=ureg,
     fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
-    WCA_epsilon=ureg.Quantity(273.15, "kelvin") * ureg.boltzmann_constant,
+    WCA_epsilon=ureg.Quantity(temperature + offset, "kelvin") * ureg.boltzmann_constant,
     temperature=ureg.Quantity(temperature, "kelvin"),
     box_length=ureg.Quantity(1000, "micrometer"),
     time_slice=ureg.Quantity(1.0, "second"),  # model timestep
@@ -48,7 +52,7 @@ system_runner = srl.espresso.EspressoMD(
     md_params=md_params,
     n_dims=2,
     seed=seed,
-    out_folder='./deployment',
+    out_folder='./deployment_large',
     write_chunk_size=100,
 )
 
