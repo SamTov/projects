@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[15]:
-
-
 # Large scale packages
 import znnl as nl
 
@@ -27,11 +24,9 @@ from rich.progress import track
 
 # ## Data generation functions
 
-# In[18]:
-
 
 def linear_boundary(
-    data: np.ndarray, gradient: float = 1.0, intercept: float = 0.0
+    data: np.ndarray, gradient: float = -1.0, intercept: float = 1.0
 ):
     """
     Create a linear boundary between classes.
@@ -110,13 +105,15 @@ class Generator(nl.data.DataGenerator):
 
         self.train_ds = {
             "inputs": np.take(train_data, indices, axis=0),
-            "targets": np.take(np.array(train_targets), indices, axis=0)
+            "targets": np.take(np.array(jax.nn.one_hot(train_targets, num_classes=2)), indices, axis=0)
         }
         
 
 # ## Model Building Functions
 
-def build_network():
+
+
+def build_network(width: int, depth: int):
     """
     Construct a flax model with seperate layers.
     
@@ -127,18 +124,34 @@ def build_network():
     depth : int
             How many hidden layers.
     """
+    # Template of a layer.
+    class HiddenLayer(nn.Module):
+        @nn.compact
+        def __call__(self, x):
+            """
+            Call method for hidden layer.
+            """
+            x = nn.Dense(width)(x)
+            x = nn.relu(x)
+            
+            return x
         
     class Model(nn.Module):
+        def setup(self):
+            self.hidden_layers = [
+                HiddenLayer() for _ in range(depth)
+            ]
             
         @nn.compact
         def __call__(self, x):
             """
             Call method for entire model.
             """
-            # x = nn.Dense(50, use_bias=False)(x)
-            # x = nn.sigmoid(x) 
-            x = nn.Dense(1, use_bias=False)(x)
-            x = nn.sigmoid(x)
+            for item in self.hidden_layers:
+                x = item(x)
+                
+            # Output layer
+            x = nn.Dense(2)(x)
             
             return x
         
@@ -160,22 +173,17 @@ def create_train_state(module, rng, learning_rate):
     )
 
 
-# In[23]:
-
 
 @jax.jit
 def train_step(state, batch):
     """Train for a single step."""
 
     def loss_fn(params):
-        logits = state.apply_fn({'params': params}, batch['inputs'])
+        logits = jax.nn.softmax(
+            state.apply_fn({'params': params}, batch['inputs'])
+        )
 
-        # loss = optax.squared_error(
-        #     np.squeeze(logits), batch["targets"]
-        # ).mean()
-        loss = optax.sigmoid_binary_cross_entropy(
-            logits, batch["targets"].reshape(-1, 1)
-        ).mean()
+        loss = ((logits - batch["targets"]) ** 2).sum(axis=-1).mean()
 
         return loss
 
@@ -183,6 +191,7 @@ def train_step(state, batch):
     loss, grads = grad_fn(state.params)
     state = state.apply_gradients(grads=grads)
     return state, loss
+
 
 
 def get_ntk_function(apply_fn, batch_size: int):
@@ -194,8 +203,6 @@ def get_ntk_function(apply_fn, batch_size: int):
     
     return jax.jit(empirical_ntk)
 
-
-# In[25]:
 
 
 def train_model(
@@ -244,8 +251,6 @@ def train_model(
 
 # ## Analysis Functions
 
-# In[26]:
-
 
 def compute_entropy(matrix: np.ndarray):
     """
@@ -258,8 +263,6 @@ def compute_entropy(matrix: np.ndarray):
     return (-1 * values * np.log(values)).sum()
 
 
-# In[27]:
-
 
 def compute_trace(matrix: np.ndarray):
     """
@@ -268,38 +271,13 @@ def compute_trace(matrix: np.ndarray):
     return np.trace(matrix)
 
 
-# In[28]:
-
-
-def compute_self_msd(trajectory: np.ndarray):
-    """
-    Compute the msd of a trajectory.
-    """
-    square_difference = (trajectory - trajectory[0]) ** 2
-    
-    return np.mean(square_difference, axis=0)
-
-
-# In[29]:
-
-
-def compute_cross_msd(trajectory: np.ndarray):
-    """
-    Compute the cross msd.
-    """
-    raise NotImplementedError("Not implemented yet")
-
-
-# In[30]:
-
-
 def compute_class_entropy(dataset: dict, ntk: np.ndarray):
     """
     Compute the entropy of the classes only matrix.
     """
     # Collect class data-sets
-    class_one_indices = np.where(dataset["targets"] == 0)[0]
-    class_two_indices = np.where(dataset["targets"] == 1)[0]
+    class_one_indices = np.where(dataset["targets"][:, 0] == 1)[0]
+    class_two_indices = np.where(dataset["targets"][:, 1] == 1)[0]
     
     class_one_ntk = np.take(
         np.take(
@@ -333,8 +311,6 @@ def compute_class_entropy(dataset: dict, ntk: np.ndarray):
     }
 
 
-# In[31]:
-
 
 def compute_fisher_matrix(
     params: dict, apply_fn: callable, dataset: dict
@@ -364,8 +340,6 @@ def compute_fisher_matrix(
     return fisher_matrix / grads.shape[0]  # take the mean
 
 
-# In[32]:
-
 
 def compute_radius_of_gyration(trajectory: np.ndarray):
     """
@@ -373,8 +347,6 @@ def compute_radius_of_gyration(trajectory: np.ndarray):
     """
     raise NotImplementedError("Not implemented yet")
 
-
-# In[33]:
 
 
 def compute_loss_derivative(predictions: np.ndarray, targets: np.ndarray):
@@ -385,20 +357,12 @@ def compute_loss_derivative(predictions: np.ndarray, targets: np.ndarray):
     ----------
     """
     def loss_computation(prediction, target):
-        #return ((prediction - target) ** 2).mean()
-        return optax.sigmoid_binary_cross_entropy(
-            prediction, target.reshape(-1, 1)
-        ).mean()
+        return ((prediction - target) ** 2).mean()
     
     grad_fn = jax.grad(loss_computation)
     
     return grad_fn(predictions, targets)
     
-
-
-# ## Experiment Helpers
-
-# In[34]:
 
 
 @dataclass
@@ -418,16 +382,13 @@ class Experiment:
     train_loss: np.ndarray
 
 
-# # Experiment 1: Linear Boundary
-
-# In[36]:
-
-
 def main(
     ds_size: int = 500, 
-    learning_rate: float = 1.,
+    learning_rate: float = 1e-3,
     batch_size: int = 128,
     epochs: int = 5000,
+    width: int = 100,
+    depth: int = 1,
     name: str = "study"
 ):
     """
@@ -440,7 +401,7 @@ def main(
     generator = Generator(n_samples=ds_size)
     
     # Create the model
-    model = build_network()()
+    model = build_network(width=width, depth=depth)()
     
     # Run the training
     param_list, train_loss = train_model(
@@ -454,8 +415,8 @@ def main(
     experiment_results.append(
         Experiment(
             loss_fn="mse_order_2", 
-            width=1, 
-            depth=1, 
+            width=width, 
+            depth=depth, 
             learning_rate=learning_rate, 
             optimizer="ADAM",
             epochs=epochs,
