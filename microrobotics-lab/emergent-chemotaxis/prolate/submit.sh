@@ -32,8 +32,8 @@ module load boost/1.82.0_gcc-11.7_ompi-4.1.4
 
 source ~/.bashrc
 
-pypresso=/data/work/ac134186/repositories/espresso/build/pypresso
-script=find-center-deployment.py
+pypresso=/data/work/ac134186/repositories/SwarmRL/espresso/build/pypresso
+script=find-center-rl.py
 
 ### ------------------------------------- ###
 ### Change into working directory and run ###

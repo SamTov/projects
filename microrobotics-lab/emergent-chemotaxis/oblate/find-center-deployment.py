@@ -49,20 +49,20 @@ equatorial_semiaxis = ureg.Quantity(radius, "micrometer") / np.cbrt(aspect_ratio
 axial_semiaxis = equatorial_semiaxis * aspect_ratio
 
 gamma_trans_ax, gamma_trans_eq = (
-    swarmrl.utils.calc_ellipsoid_friction_factors_translation(
-        axial_semiaxis, equatorial_semiaxis, params.fluid_dyn_viscosity
+    srl.utils.calc_ellipsoid_friction_factors_translation(
+        axial_semiaxis, equatorial_semiaxis, md_params.fluid_dyn_viscosity
     )
 )
 gamma_rot_ax, gamma_rot_eq = (
-    swarmrl.utils.calc_ellipsoid_friction_factors_rotation(
-        axial_semiaxis, equatorial_semiaxis, params.fluid_dyn_viscosity
+    srl.utils.calc_ellipsoid_friction_factors_rotation(
+        axial_semiaxis, equatorial_semiaxis, md_params.fluid_dyn_viscosity
     )
 )
 
-gamma_trans = swarmrl.utils.convert_array_of_pint_to_pint_of_array(
+gamma_trans = srl.utils.convert_array_of_pint_to_pint_of_array(
     [gamma_trans_eq, gamma_trans_eq, gamma_trans_ax], ureg
 )
-gamma_rot = swarmrl.utils.convert_array_of_pint_to_pint_of_array(
+gamma_rot = srl.utils.convert_array_of_pint_to_pint_of_array(
     [gamma_rot_eq, gamma_rot_eq, gamma_rot_ax], ureg
 )
 

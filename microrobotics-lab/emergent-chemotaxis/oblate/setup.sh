@@ -3,7 +3,7 @@
 
 export LC_NUMERIC="en_US.UTF-8"
 
-script=find-center-rl.py
+script=find-center-deployment.py
 
 sizes=($(seq 0.025 0.075 2.5))
 speeds=($(seq 1 0.5 5))
@@ -18,7 +18,7 @@ do
 		for r in ${sizes[@]}
 		do
 			directory=${t}/${s}/${r}mum
-			mkdir -p ${directory}
+			# mkdir -p ${directory}
 			cp ${script} ${directory}
 			cp submit.sh ${directory}
 			sed -i "s/TEMPERATURE/${t}/g" ${directory}/${script}
@@ -27,7 +27,7 @@ do
 
 			for i in ${ensembles[@]}
 			do
-				mkdir ${directory}/${i}
+				# mkdir ${directory}/${i}
 				cp ${directory}/${script} ${directory}/${i}
 			done
 		done

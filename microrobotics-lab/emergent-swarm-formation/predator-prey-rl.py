@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 
 
 prey_knowledge = 2
-predator_knowledge = 3
+predator_knowledge = KNOWLEDGE
 
 
 # # Simulation Definition
@@ -88,7 +88,7 @@ system_runner.add_colloids(
 # In[4]:
 
 
-n_episodes = 500
+n_episodes = 10000
 episode_length = 30
 
 loss = srl.losses.PolicyGradientLoss(
@@ -364,7 +364,6 @@ rl_trainer = srl.gyms.Gym(
     [prey_protocol, predator_protocol],
     loss,
 )
-rl_trainer.restore_models()
 
 
 # In[ ]:

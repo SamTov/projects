@@ -30,7 +30,7 @@ md_params = espresso.MDParams(
     temperature=ureg.Quantity(temperature, "kelvin"),
     box_length=ureg.Quantity(1000, "micrometer"),
     time_slice=ureg.Quantity(0.1, "second"),  # model timestep
-    time_step=ureg.Quantity(0.0005, "second"),  # integrator timestep
+    time_step=ureg.Quantity(0.00005, "second"),  # integrator timestep
     write_interval=ureg.Quantity(1, "second"),
 )
 

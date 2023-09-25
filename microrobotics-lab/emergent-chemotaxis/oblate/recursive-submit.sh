@@ -1,7 +1,5 @@
 export LC_NUMERIC="en_US.UTF-8"
 
-script=find-center-deployment.py
-
 sizes=($(seq 0.025 0.075 2.5))
 speeds=($(seq 1 0.5 5))
 temperatures=( 300 ) # ($(seq 150 50 400))

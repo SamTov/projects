@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 
 
 prey_knowledge = 2
-predator_knowledge = 3
+predator_knowledge = KNOWLEDGE
 
 
 # # Simulation Definition

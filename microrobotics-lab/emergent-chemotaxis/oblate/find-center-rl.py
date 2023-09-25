@@ -112,7 +112,7 @@ episode_length = 20
 # #################### #
 
 # Exploration policy
-exploration_policy = srl.exploration_policies.RandomExploration(probability=0.2)
+exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
 
 # Sampling strategy
 sampling_strategy = srl.sampling_strategies.GumbelDistribution()
