@@ -9,28 +9,31 @@
 #  - The definition of the model used
 #  - The Training of the model using Pytorch-Lightning
 
-# In[ ]:
 
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = "1"
-
-
+# System imports and GPU settings
 import pathlib
 import pickle
 
+# Torch imports
 import torch
+from torch.utils.data import DataLoader, Dataset
+import torch.nn.functional as F
+import torchmetrics
+from torch.optim import Adam
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
+# Model imports
+from torchvision.models import resnext101_64x4d, ResNeXt101_64X4D_Weights
+
+# Lightning imports
 import lightning as L
 import lightning.pytorch as pl
-from torch.utils.data import DataLoader, Dataset
 from lightning.pytorch.tuner import Tuner
 from lightning.pytorch.callbacks import StochasticWeightAveraging
 
-
 torch.set_float32_matmul_precision('medium')
 
-# In[ ]:
-
-
+# Build datasets and dataloaders
 class TrainingDataset(Dataset):
     def __init__(self, dataset_dir, transform=None, target_transform=None):
         self.transform = transform
@@ -39,6 +42,7 @@ class TrainingDataset(Dataset):
 
         with open(self.ds_dir / "metadata.pk", "rb") as f:
             self.metadata = pickle.load(f)
+
 
     def __len__(self):
         return self.metadata["train_ds_size"]
@@ -53,9 +57,6 @@ class TrainingDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         return image, label
-
-
-# In[ ]:
 
 
 class ValidationDataset(Dataset):
@@ -80,9 +81,6 @@ class ValidationDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         return image, label
-
-
-# In[ ]:
 
 
 class DataModule(L.LightningDataModule):
@@ -119,18 +117,7 @@ class DataModule(L.LightningDataModule):
         )
 
 
-# ## Torch model, Lightning model definition
-
-# In[ ]:
-
-import lightning.pytorch as pl
-import torch.nn.functional as F
-import torchmetrics
-from torchvision.models import resnext101_64x4d, ResNeXt101_64X4D_Weights
-
-
-# In[ ]:
-
+## Torch model, Lightning model definition
 
 class LitResModel(pl.LightningModule):
     def __init__(self, hyperparameters, model, optimizer, scheduler):
@@ -209,38 +196,19 @@ class LitResModel(pl.LightningModule):
         #return [self.opt], [{"scheduler": self.scheduler, "interval": "epoch"}]
 
 
-# ## Parameter definition, Initialization
-
-# In[ ]:
-
-
-from pytorch_lightning.accelerators import find_usable_cuda_devices
-from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR
-
-
-# In[ ]:
-
+## Parameter definition, Initialization
 
 # Hyperparameters (to be tuned)
 hyperparameters = {
-    "batch_size": 50,
+    "batch_size": 10,
     "lr": 1e-3,
     # "momentum": 0.9,
     "seed": 38,
-    "num_target_classes": 5,
-    "max_epochs": 50,
+    "num_target_classes": 42,
+    "max_epochs": 100,
     "T_max": 1000,
 }
 
-
-# In[ ]:
-
-
-# Define pre-trained model
-#model = resnet101(weights="IMAGENET1K_V2")
-#model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
-#model = resnext50_32x4d(weights=ResNeXt50_32X4D_Weights)
 model = resnext101_64x4d(weights=ResNeXt101_64X4D_Weights.DEFAULT)
 # Change the first layer
 layer = model.conv1
@@ -252,55 +220,47 @@ new_layer = torch.nn.Conv2d(in_channels=2,
                   bias=layer.bias)
 
 model.conv1 = new_layer
-# In[ ]:
-
-model.fc = torch.nn.Linear(model.fc.in_features, 5)
+model.fc = torch.nn.Linear(model.fc.in_features, 42)
 
 # Define logger (insert favorite logger)
 logger = pl.loggers.MLFlowLogger(
-    experiment_name="dataset_L1AS5_L2AS5_L3AS5_L5AS5_L6AS5",
+    experiment_name="ResNext101_64x4d-pretrained", 
+    save_dir="/data/stovey/ResNext-Models/pretrained/mlflow/"
 )
 
-
-# In[ ]:
-
+checkpoint_callback = pl.callbacks.ModelCheckpoint(
+    monitor="ptl/validation_accuracy",
+    dirpath="/data/stovey/ResNext-Models/pretrained/ckpts/",
+    filename="ResNext101_64x4d-pretrained-{epoch:02d}-{ptl/validation_loss:.2f}",
+    save_top_k=2,
+    mode="max",
+)
 
 # Lightning trainer definition
 trainer = pl.Trainer(
     accelerator="gpu",
     logger=logger,
-    accumulate_grad_batches=5,
-    callbacks=[StochasticWeightAveraging(swa_lrs=1e-2)],
-    #auto_scale_batch_size='binsearch',
-    devices="1", #find_usable_cuda_devices(1),
+    accumulate_grad_batches=100,
+    callbacks=[StochasticWeightAveraging(swa_lrs=1e-2), checkpoint_callback],
+    devices="auto",
     strategy="ddp",
     max_epochs=hyperparameters["max_epochs"],
     log_every_n_steps=1,
+    default_root_dir="/data/stovey/ResNext-Models/pretrained/ckpts/",
     enable_progress_bar=True,
     sync_batchnorm=True,
 )
 
-#tuner = Tuner(trainer)
-#tuner.scale_batch_size(model, mode="binsearch")
-
-# In[ ]:
 
 # Use the custom datamodule
 datamodule = DataModule(
-    data_dir="/data/jhossbach/Image_Dataset/dataset_L1AS5_L2AS5_L3AS5_L5AS5_L6AS5",
+    data_dir="/data/jhossbach/Image_Dataset/dataset_all",
     batch_size=hyperparameters["batch_size"],
 )
-
-
-# In[ ]:
-
 
 # Optimizer and scheduler
 optimizer = Adam(model.parameters(), lr=hyperparameters["lr"])
 scheduler = CosineAnnealingLR(optimizer, T_max=hyperparameters["T_max"])
-
-
-# In[ ]:
 
 
 # Lightning model definition
@@ -310,9 +270,6 @@ lit_model = LitResModel(
     optimizer=optimizer,
     scheduler=scheduler,
 )
-
-
-# In[ ]:
 
 # Optimizer learning rate before training the model.
 # Create a Tuner
@@ -324,10 +281,3 @@ tuner.lr_find(lit_model, datamodule)
 
 # Start training
 trainer.fit(lit_model, datamodule=datamodule)
-
-
-# In[ ]:
-
-
-
-
