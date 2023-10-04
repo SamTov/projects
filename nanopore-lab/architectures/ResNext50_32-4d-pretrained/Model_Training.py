@@ -224,13 +224,13 @@ model.fc = torch.nn.Linear(model.fc.in_features, 42)
 
 # Define logger (insert favorite logger)
 logger = pl.loggers.MLFlowLogger(
-    experiment_name="ResNext101_64x4d-pretrained", 
-    save_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/mlruns/"
+    experiment_name="ResNext50_32x4d-pretrained", 
+    save_dir="/data/stovey/ResNext-Models/ResNext50_32x4d-pretrained/mlruns/"
 )
 
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
     monitor="ptl/validation_accuracy",
-    dirpath="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/ckpts/",
+    dirpath="/data/stovey/ResNext-Models/ResNext50_32x4d-pretrained/ckpts/",
     filename="ResNext101_64x4d-pretrained-{epoch:02d}-{ptl/validation_loss:.2f}",
     save_top_k=2,
     mode="max",
@@ -246,7 +246,7 @@ trainer = pl.Trainer(
     strategy="ddp",
     max_epochs=hyperparameters["max_epochs"],
     log_every_n_steps=1,
-    default_root_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/ckpts/",
+    default_root_dir="/data/stovey/ResNext-Models/ResNext50_32x4d-pretrained/ckpts/",
     enable_progress_bar=True,
     sync_batchnorm=True,
 )
