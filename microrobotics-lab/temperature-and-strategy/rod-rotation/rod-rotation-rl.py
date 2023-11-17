@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
-
-
 import flax.linen as nn
 import numpy as np
 import optax
@@ -31,7 +28,7 @@ print(jax.default_backend())
 simulation_name = "rod-rotation"
 seed = np.random.randint(0, 3453276453)
 
-temperature = TEMP
+temperature = 273.0
 n_colloids = 30
 
 offset = 0.
@@ -80,15 +77,9 @@ system_runner.add_confining_walls(wall_type=2)
 
 # ## Set up the RL Parameters
 
-# In[5]:
-
-
 n_slices = int(ureg.Quantity(3, "minute") / md_params.time_slice)
 n_episodes = 10000
-episode_length = 30
-
-
-# In[6]:
+episode_length = 50
 
 
 # Exploration policy
@@ -97,10 +88,6 @@ exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
 # Sampling strategy
 sampling_strategy = srl.sampling_strategies.GumbelDistribution()
 
-# Value function
-value_function = srl.value_functions.ExpectedReturns(
-    gamma=0.99, standardize=True
-)
 
 def decay_fn(r: float):
     return 1 / r
@@ -114,7 +101,7 @@ observable = srl.observables.SubdividedVisionCones(
 )
 
 # Define the loss model
-loss = srl.losses.PolicyGradientLoss(value_function=value_function)
+loss = srl.losses.ProximalPolicyLoss()
 
 rotation_task = srl.tasks.object_movement.RotateRod(
     particle_type=0,
@@ -137,72 +124,47 @@ multitask = srl.tasks.MultiTasking(
     particle_type=0, tasks=[rotation_task, rod_finding_task]
     )
 
-
 class ColloidEmbedding(nn.Module):
     @nn.compact
     def __call__(self, x):
-        return nn.Dense(features=2)(x)
+        return nn.Dense(features=5)(x)
     
 class RodEmbedding(nn.Module):
     @nn.compact
     def __call__(self, x):
-        return nn.Dense(features=2)(x)
-    
-class ActorNet(nn.Module):
-    """A simple dense model."""
-    
-    def setup(self):
-        self.colloid_embedding = ColloidEmbedding()
-        self.rod_embeding = RodEmbedding()
-    
-    @nn.compact
-    def __call__(self, x):
-        colloid_embedding = self.colloid_embedding(x[:, 0])
-        rod_embedding = self.rod_embeding(x[:, 1])
-        
-        x = colloid_embedding + rod_embedding
-        x = nn.relu(x)
-        x = nn.Dense(features=128)(x)
-        x = nn.relu(x)
-        x = nn.Dense(features=128)(x)
-        x = nn.relu(x)
-        x = nn.Dense(features=4)(x)
-        return x
-    
-class CriticNet(nn.Module):
-    """A simple dense model."""
-    
-    def setup(self):
-        self.colloid_embedding = ColloidEmbedding()
-        self.rod_embeding = RodEmbedding()
-    
-    @nn.compact
-    def __call__(self, x):
-        colloid_embedding = self.colloid_embedding(x[:, 0])
-        rod_embedding = self.rod_embeding(x[:, 1])
-        
-        x = colloid_embedding + rod_embedding
-        x = nn.relu(x)
-        x = nn.Dense(features=128)(x)
-        x = nn.relu(x)
-        x = nn.Dense(features=128)(x)
-        x = nn.relu(x)
-        x = nn.Dense(features=1)(x)
-        return x
-    
-actor = srl.networks.FlaxModel(
-    flax_model=ActorNet(),
-    optimizer=optax.adam(learning_rate=0.002),
-    input_shape=(1, 5, 2),
-    sampling_strategy=sampling_strategy,
-    exploration_policy=exploration_policy,
-)
+        return nn.Dense(features=5)(x)
 
-critic = srl.networks.FlaxModel(
-    flax_model=CriticNet(),
-    optimizer=optax.adam(learning_rate=0.002),
-    input_shape=(1, 5, 2),
-)
+class ActoCriticNet(nn.Module):
+    """A simple dense model."""
+    def setup(self):
+        self.colloid_embedding = ColloidEmbedding()
+        self.rod_embeding = RodEmbedding()
+
+    @nn.compact
+    def __call__(self, x):
+        colloid_embedding = self.colloid_embedding(x[:, :, 0])
+        rod_embedding = self.rod_embeding(x[:, :, 1])
+        x = colloid_embedding + rod_embedding
+
+        x = nn.Dense(features=128)(x)
+        x = nn.relu(x)
+        x = nn.Dense(features=128)(x)
+        x = nn.relu(x)
+
+        a_out = nn.Dense(features=4)(x)
+        c_out = nn.Dense(features=1)(x)
+
+        return a_out, c_out
+    
+    
+network = srl.networks.FlaxModel(
+            flax_model=ActoCriticNet(),
+            optimizer=optax.adam(learning_rate=0.001),
+            input_shape=(1, 5, 2),
+            sampling_strategy=sampling_strategy,
+            exploration_policy=exploration_policy,
+        )
+
 
 translate = Action(force=10.0)
 rotate_clockwise = Action(torque=np.array([0.0, 0.0, 10.0]))
@@ -217,13 +179,13 @@ actions = {
 }
 
 protocol = srl.rl_protocols.ActorCritic(
-    particle_type=0, 
-    actor=actor, 
-    critic=critic, 
-    task=rod_finding_task, 
-    observable=observable, 
-    actions=actions
-)
+            particle_type=0,
+            network=network,
+            task=rotation_task,
+            observable=observable,
+            actions=actions,
+        )
+
 rl_trainer = srl.gyms.Gym(
     [protocol],
     loss,
@@ -238,63 +200,3 @@ rewards = rl_trainer.perform_rl_training(
 rl_trainer.export_models()
 
 np.save("first_rewards.npy", rewards)
-
-# Exploration policy
-exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
-
-# Sampling strategy
-sampling_strategy = srl.sampling_strategies.GumbelDistribution()
-
-# Value function
-value_function = srl.value_functions.ExpectedReturns(
-    gamma=0.99, standardize=True
-)
-
-observable = srl.observables.SubdividedVisionCones(
-    vision_range=1000000.0,
-    vision_half_angle=1.4,
-    detected_types = [0, 1],
-    n_cones=5,
-    radii=jnp.array([3.08 for _ in range(n_colloids)] + [0.84745763 for _ in range(59)])
-)
-
-# Define the loss model
-loss = srl.losses.PolicyGradientLoss(value_function=value_function)    
-    
-actor = srl.networks.FlaxModel(
-    flax_model=ActorNet(),
-    optimizer=optax.adam(learning_rate=0.002),
-    input_shape=(1, 5, 2),
-    sampling_strategy=sampling_strategy,
-    exploration_policy=exploration_policy,
-)
-
-critic = srl.networks.FlaxModel(
-    flax_model=CriticNet(),
-    optimizer=optax.adam(learning_rate=0.002),
-    input_shape=(1, 5, 2),
-)
-
-protocol = srl.rl_protocols.ActorCritic(
-    particle_type=0, 
-    actor=actor, 
-    critic=critic, 
-    task=multitask, 
-    observable=observable, 
-    actions=actions
-)
-rl_trainer = srl.gyms.Gym(
-    [protocol],
-    loss,
-)
-n_episodes = 20000
-
-rl_trainer.restore_models()
-rewards = rl_trainer.perform_rl_training(
-    system_runner=system_runner,
-    n_episodes=n_episodes,
-    episode_length=episode_length,
-)
-rl_trainer.export_models()
-
-np.save("second_rewards.npy", rewards)

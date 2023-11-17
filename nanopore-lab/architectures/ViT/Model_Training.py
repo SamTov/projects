@@ -22,8 +22,22 @@ import torchmetrics
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
+
+from torchvision.transforms import (CenterCrop, 
+                                    Compose, 
+                                    Normalize, 
+                                    RandomHorizontalFlip,
+                                    RandomResizedCrop, 
+                                    Resize, 
+                                    ToTensor)
+
 # Model imports
-from torchvision.models import resnext101_64x4d, ResNeXt101_64X4D_Weights
+from transformers import (
+    ViTForImageClassification, 
+    AdamW, 
+    ViTImageProcessor, 
+    ViTConfig
+)
 
 # Lightning imports
 import lightning as L
@@ -32,6 +46,7 @@ from lightning.pytorch.tuner import Tuner
 from lightning.pytorch.callbacks import StochasticWeightAveraging
 
 torch.set_float32_matmul_precision('medium')
+
 
 # Build datasets and dataloaders
 class TrainingDataset(Dataset):
@@ -52,6 +67,7 @@ class TrainingDataset(Dataset):
             label, image = pickle.load(f)
 
         if self.transform:
+            image = image.reshape((224, 224, 2))
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
@@ -76,6 +92,7 @@ class ValidationDataset(Dataset):
             # print(label)
 
         if self.transform:
+            image = image.reshape((224, 224, 2))
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
@@ -84,19 +101,19 @@ class ValidationDataset(Dataset):
 
 class DataModule(L.LightningDataModule):
     def __init__(
-        self, batch_size: int, data_dir, transform=None, target_transform=None
+        self, batch_size: int, data_dir, train_transform=None, val_transform=None, target_transform=None
     ):
         super().__init__()
         self.batch_size = batch_size
 
         self.train_ds = TrainingDataset(
             dataset_dir=data_dir,
-            transform=transform,
+            transform=train_transform,
             target_transform=target_transform,
         )
         self.val_ds = ValidationDataset(
             dataset_dir=data_dir,
-            transform=transform,
+            transform=val_transform,
             target_transform=target_transform,
         )
 
@@ -114,23 +131,27 @@ class DataModule(L.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=4,
         )
+    
 
 ## Torch model, Lightning model definition
 
-class LitResModel(pl.LightningModule):
-    def __init__(self, hyperparameters, model, optimizer, scheduler):
+class LitVitModel(pl.LightningModule):
+
+    def __init__(self, hyperparameters):
         super().__init__()
+
+        config = ViTConfig(num_channels=2, num_labels=42)
+        # Define the model
+        # self.vit = ViTForImageClassification.from_pretrained(
+        #     'google/vit-base-patch16-224-in21k',
+        #     config=config,
+        #     num_labels=42,
+        #     )
+        self.vit = ViTForImageClassification(config=config)
 
         self.lr = hyperparameters["lr"]
         self.mom = hyperparameters.get("momentum", None)
         pl.seed_everything(hyperparameters["seed"])
-
-        self.opt = optimizer
-        self.scheduler = scheduler
-
-        # self.automatic_optimization = False
-
-        self.model = model
 
         # Accuracy measures
         self.train_acc = torchmetrics.Accuracy(
@@ -141,7 +162,8 @@ class LitResModel(pl.LightningModule):
         )
 
     def forward(self, x):
-        return self.model(x)
+        out = self.vit(x)
+        return out.logits
 
     def training_step(self, batch, batch_idx):
         inputs, labels = batch
@@ -156,11 +178,8 @@ class LitResModel(pl.LightningModule):
             acc,
             sync_dist=True,
         )
-        return loss
 
-    def on_train_epoch_end(self, *args):
-        for indx, lr in enumerate(self.scheduler.get_last_lr()):
-            self.log(f"ptl/learning_rate_{indx}", lr)
+        return loss
 
     def validation_step(self, batch, batch_idx):
         inputs, labels = batch
@@ -184,43 +203,56 @@ class LitResModel(pl.LightningModule):
         return preds
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.lr)
-
-## Parameter definition, Initialization
+        return AdamW(self.parameters(), lr=5e-5)
 
 # Hyperparameters (to be tuned)
 hyperparameters = {
-    "batch_size": 5ex0,
+    "batch_size": 10,
     "lr": 1e-3,
     # "momentum": 0.9,
     "seed": 38,
     "num_target_classes": 42,
-    "max_epochs": 500,
+    "max_epochs": 100,
     "T_max": 1000,
 }
 
-model = resnext101_64x4d(weights=ResNeXt101_64X4D_Weights.DEFAULT)
-# Change the first layer
-layer = model.conv1
-new_layer = torch.nn.Conv2d(in_channels=2,
-                  out_channels=layer.out_channels,
-                  kernel_size=layer.kernel_size,
-                  stride=layer.stride,
-                  padding=layer.padding,
-                  bias=layer.bias)
+# Data transformations
+processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
+image_mean = processor.image_mean[:2]
+image_std = processor.image_std[:2]
+size = processor.size["height"]
 
-model.conv1 = new_layer
-model.fc = torch.nn.Linear(model.fc.in_features, 42)
+
+normalize = Normalize(mean=image_mean, std=image_std)
+
+_train_transforms = Compose(
+        [
+            ToTensor(),
+            RandomResizedCrop(size),
+            RandomHorizontalFlip(),
+            normalize,
+        ]
+    )
+
+_val_transforms = Compose(
+        [
+            ToTensor(),
+            Resize(size),
+            CenterCrop(size),
+            normalize,
+        ]
+    )
+
 
 # Define logger (insert favorite logger)
 logger = pl.loggers.MLFlowLogger(
-    experiment_name="ResNext101_64x4d-pretrained", 
-    save_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/mlruns/"
+    experiment_name="ResNext101_64x4d-scratch",
+    save_dir="/data/stovey/ViT/mlruns/"
 )
 
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
     monitor="ptl/validation_accuracy",
-    dirpath="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/ckpts/",
+    dirpath="/data/stovey/ViT/ckpts/",
     filename="ResNext101_64x4d-pretrained-{epoch:02d}-{ptl/validation_loss:.2f}",
     save_top_k=2,
     mode="max",
@@ -230,13 +262,13 @@ checkpoint_callback = pl.callbacks.ModelCheckpoint(
 trainer = pl.Trainer(
     accelerator="gpu",
     logger=logger,
-    accumulate_grad_batches=20,
+    accumulate_grad_batches=100,
     callbacks=[StochasticWeightAveraging(swa_lrs=1e-2), checkpoint_callback],
     devices="auto",
     strategy="ddp",
     max_epochs=hyperparameters["max_epochs"],
     log_every_n_steps=1,
-    default_root_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/ckpts/",
+    default_root_dir="/data/stovey/ViT/ckpts/",
     enable_progress_bar=True,
     sync_batchnorm=True,
 )
@@ -245,22 +277,21 @@ trainer = pl.Trainer(
 datamodule = DataModule(
     data_dir="/data/jhossbach/Image_Dataset/dataset_all",
     batch_size=hyperparameters["batch_size"],
+    train_transform=_train_transforms,
+    val_transform=_val_transforms
 )
 
-# Optimizer and scheduler
-optimizer = Adam(model.parameters(), lr=hyperparameters["lr"], weight_decay=1e-5)
-scheduler = CosineAnnealingLR(optimizer, T_max=hyperparameters["T_max"])
-
 # Lightning model definition
-lit_model = LitResModel(
+lit_model = LitVitModel(
     hyperparameters=hyperparameters,
-    model=model,
-    optimizer=optimizer,
-    scheduler=scheduler,
 )
 
 # Optimizer learning rate before training the model.
+# Create a Tuner
 tuner = Tuner(trainer)
+
+# # finds learning rate automatically
+# # sets hparams.lr or hparams.learning_rate to that learning rate
 tuner.lr_find(lit_model, datamodule)
 
 # Start training
