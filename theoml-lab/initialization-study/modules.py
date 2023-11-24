@@ -70,12 +70,6 @@ class DenseNet(nn.Module):
         )(x)
         x = nn.relu(x)
         x = nn.Dense(
-            features=128, 
-            kernel_init=self.kernel_init, 
-            bias_init=self.bias_init
-        )(x)
-        x = nn.relu(x)
-        x = nn.Dense(
             features=10,
             kernel_init=self.kernel_init, 
             bias_init=self.bias_init
@@ -120,7 +114,7 @@ def main(
     """
     Run the experiment.
     """
-    prefix="/data/stovey/initialization"
+    prefix="./" # "/data/stovey/initialization"
     
     experiment_results = []
     
@@ -130,6 +124,7 @@ def main(
     model = nl.models.FlaxModel(
             flax_module=network,
             optimizer=optax.adam(learning_rate=learning_rate),
+            batch_size=100,
             input_shape=(1, 28, 28, 1),
     )
     
