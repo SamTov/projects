@@ -29,7 +29,7 @@ coordinates.shape
 # In[ ]:
 
 
-generator = nl.data.MNISTGenerator(100)
+generator = nl.data.MNISTGenerator(500)
 for coordinate in coordinates:
     main(
         w_std=coordinate[0],
