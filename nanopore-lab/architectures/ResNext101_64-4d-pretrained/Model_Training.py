@@ -190,7 +190,7 @@ class LitResModel(pl.LightningModule):
 
 # Hyperparameters (to be tuned)
 hyperparameters = {
-    "batch_size": 5ex0,
+    "batch_size": 50,
     "lr": 1e-3,
     # "momentum": 0.9,
     "seed": 38,

@@ -203,16 +203,16 @@ class LitVitModel(pl.LightningModule):
         return preds
 
     def configure_optimizers(self):
-        return AdamW(self.parameters(), lr=5e-5)
+        return AdamW(self.parameters(), lr=5e-5, weight_decay=1e-5)
 
 # Hyperparameters (to be tuned)
 hyperparameters = {
-    "batch_size": 10,
+    "batch_size": 20,
     "lr": 1e-3,
     # "momentum": 0.9,
     "seed": 38,
     "num_target_classes": 42,
-    "max_epochs": 100,
+    "max_epochs": 500,
     "T_max": 1000,
 }
 
@@ -288,11 +288,11 @@ lit_model = LitVitModel(
 
 # Optimizer learning rate before training the model.
 # Create a Tuner
-tuner = Tuner(trainer)
+#tuner = Tuner(trainer)
 
 # # finds learning rate automatically
 # # sets hparams.lr or hparams.learning_rate to that learning rate
-tuner.lr_find(lit_model, datamodule)
+#tuner.lr_find(lit_model, datamodule)
 
 # Start training
 trainer.fit(lit_model, datamodule=datamodule)

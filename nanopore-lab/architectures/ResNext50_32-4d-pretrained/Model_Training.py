@@ -191,7 +191,7 @@ class LitResModel(pl.LightningModule):
         return preds
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.lr)
+        return torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=1e-5)
         # optimizer = torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.mom)
         #return [self.opt], [{"scheduler": self.scheduler, "interval": "epoch"}]
 
@@ -200,8 +200,8 @@ class LitResModel(pl.LightningModule):
 
 # Hyperparameters (to be tuned)
 hyperparameters = {
-    "batch_size": 10,
-    "lr": 1e-3,
+    "batch_size": 50,
+    "lr": 0.000363078054770101,
     # "momentum": 0.9,
     "seed": 38,
     "num_target_classes": 42,
@@ -240,7 +240,7 @@ checkpoint_callback = pl.callbacks.ModelCheckpoint(
 trainer = pl.Trainer(
     accelerator="gpu",
     logger=logger,
-    accumulate_grad_batches=100,
+    accumulate_grad_batches=20,
     callbacks=[StochasticWeightAveraging(swa_lrs=1e-2), checkpoint_callback],
     devices="auto",
     strategy="ddp",
@@ -273,11 +273,11 @@ lit_model = LitResModel(
 
 # Optimizer learning rate before training the model.
 # Create a Tuner
-tuner = Tuner(trainer)
+#tuner = Tuner(trainer)
 
 # finds learning rate automatically
 # sets hparams.lr or hparams.learning_rate to that learning rate
-tuner.lr_find(lit_model, datamodule)
+#tuner.lr_find(lit_model, datamodule)
 
 # Start training
 trainer.fit(lit_model, datamodule=datamodule)
