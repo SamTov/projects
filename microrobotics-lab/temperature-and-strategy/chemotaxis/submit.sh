@@ -6,38 +6,36 @@
 ### Input parameters for resource allocation ###
 ### ---------------------------------------- ###
 
-#SBATCH -J Find-Location
+#SBATCH -J temperature-study
 
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-
-### ----------------------------------------- ###
-### Input parameters for logging and run time ###
-### ----------------------------------------- ###
-
+#SBATCH --ntasks-per-node=12
+#SBATCH --partition single
 #SBATCH --time=48:00:00
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=stovey@icp.uni-stuttgart.de
+#SBATCH --mem=32gb
+#SBATCH --gres=gpu:1
 
 ### -------------------- ###
 ### Modules to be loaded ###
 ### -------------------- ###
 
-module load gcc/8.4.0
-module load openmpi/4.0.5
-module load cmake/3.19.2
-module load fftw/3.3.9
-module load boost/1.75.0
 
-pypresso=/beegfs/work/stovey/work/PhD/microrobots-brownian/espresso/build/pypresso
-script=find-center-deployment.py
+module load compiler/gnu/12.1   
+module load mpi/openmpi/4.1
+module load devel/cuda/12.1 
+module load devel/cmake/3.24.1
+
+
+source ~/.bashrc
+
+pypresso=/home/st/st_st/st_ac134186/software/SwarmRL/espresso/build/pypresso
+script=find-center-rl.py
 
 ### ------------------------------------- ###
 ### Change into working directory and run ###
 ### ------------------------------------- ###
 
 cd $SLURM_SUBMIT_DIR  # change into working directory
+export OMP_NUM_THREADS=${SLURM_NTASKS}
 
-${pypresso} ${script} > output.out
-
+${pypresso} ${script} >> output.out

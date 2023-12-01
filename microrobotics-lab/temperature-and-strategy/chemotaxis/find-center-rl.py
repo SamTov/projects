@@ -31,13 +31,17 @@ import pint
 simulation_name = "find-center-0"
 seed = np.random.randint(0, 3453276453)
 temperature = TEMP
-n_colloids = 10
+n_colloids = 100
+
+eps = 0
+if temperature == 0.:
+    eps += 10
 
 ureg = pint.UnitRegistry()
 md_params = espresso.MDParams(
     ureg=ureg,
     fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
-    WCA_epsilon=ureg.Quantity(273.15, "kelvin") * ureg.boltzmann_constant,
+    WCA_epsilon=ureg.Quantity(temperature + eps, "kelvin") * ureg.boltzmann_constant,
     temperature=ureg.Quantity(temperature, "kelvin"),
     box_length=ureg.Quantity(1000, "micrometer"),
     time_slice=ureg.Quantity(1.0, "second"),  # model timestep

@@ -1,7 +1,7 @@
 # Submit jobs recursively
 
 ensembles=($(seq 1 1 20))
-embeddings=($(seq 1 1 5))
+embeddings=($(seq 1 2 10))
 
 for i in ${embeddings[@]}
 do
@@ -9,8 +9,8 @@ do
 	for j in ${ensembles[@]}
 	do
 		cd ${j}
-		# sbatch submit.sh
-        echo "I would be submitting now"
+		sbatch helix_submit.sh
+        # echo "I would be submitting now"
 		cd ../
 	done
 	cd ../

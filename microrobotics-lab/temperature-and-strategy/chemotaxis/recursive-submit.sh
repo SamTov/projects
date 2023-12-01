@@ -1,14 +1,18 @@
 # Submit jobs recursively
 
+ensembles=($(seq 1 1 20))
+
 for i in 0 150 273 300 350
 do
 	cp submit.sh ${i}K
-	for j in 1 2 3 4 5 6 7 8 9 10
+	cd ${i}K
+	for j in ${ensembles[@]}
 	do
-		cd ${i}K
 		cp submit.sh ${j}
 		cd ${j}
+		#rm ex-rf training
 		sbatch submit.sh
-		cd ../../
+		cd ../
 	done
+	cd ../
 done

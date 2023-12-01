@@ -95,8 +95,8 @@ class ActorNet(nn.Module):
     
     @nn.compact
     def __call__(self, x):
-        colloid_embedding = self.colloid_embedding(x[:, 0])
-        rod_embedding = self.rod_embeding(x[:, 1])
+        colloid_embedding = self.colloid_embedding(x[:, :, 0])
+        rod_embedding = self.rod_embeding(x[:, :, 1])
         
         x = colloid_embedding + rod_embedding
         x = nn.relu(x)
@@ -116,8 +116,8 @@ class CriticNet(nn.Module):
     
     @nn.compact
     def __call__(self, x):
-        colloid_embedding = self.colloid_embedding(x[:, 0])
-        rod_embedding = self.rod_embeding(x[:, 1])
+        colloid_embedding = self.colloid_embedding(x[:, :, 0])
+        rod_embedding = self.rod_embeding(x[:, :, 1])
         
         x = colloid_embedding + rod_embedding
         x = nn.relu(x)

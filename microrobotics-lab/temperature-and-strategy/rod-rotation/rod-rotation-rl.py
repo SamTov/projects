@@ -105,7 +105,7 @@ loss = srl.losses.ProximalPolicyLoss()
 
 rotation_task = srl.tasks.object_movement.RotateRod(
     particle_type=0,
-    angular_velocity_scale=10000,
+    angular_velocity_scale=100000,
     rod_type=1,
     direction="CCW",
     velocity_history=20,

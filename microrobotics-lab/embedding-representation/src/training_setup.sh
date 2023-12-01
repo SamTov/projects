@@ -6,7 +6,7 @@ export LC_NUMERIC="en_US.UTF-8"
 script=training.py  # name of script to deploy
 submit_script=$1
 
-embeddings=($(seq 1 1 5))
+embeddings=($(seq 1 2 10))
 ensembles=($(seq 1 1 20))
 
 # Loop over temperature

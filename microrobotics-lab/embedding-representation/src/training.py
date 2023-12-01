@@ -19,19 +19,19 @@ import matplotlib.pyplot as plt
 
 # Simulation parameters
 simulation_name = "rod-rotation-embedding-study"
-seed = 42
+seed = np.random.randint(645153513)
 
-temperature = 150.0
-n_colloids = 20
+temperature = 0.0
+n_colloids = 50
 
 ureg = pint.UnitRegistry()
 
 md_params = espresso.MDParams(
     ureg=ureg,
     fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
-    WCA_epsilon=ureg.Quantity(temperature, "kelvin") * ureg.boltzmann_constant,
+    WCA_epsilon=ureg.Quantity(1.0, "kelvin") * ureg.boltzmann_constant,
     temperature=ureg.Quantity(temperature, "kelvin"),
-    box_length=ureg.Quantity(1000, "micrometer"),
+    box_length=ureg.Quantity(150, "micrometer"),
     time_slice=ureg.Quantity(0.2, "second"),  # model timestep
     time_step=ureg.Quantity(0.004, "second"),  # integrator timestep
     write_interval=ureg.Quantity(2, "second"),
@@ -48,12 +48,12 @@ system_runner = srl.espresso.EspressoMD(
 system_runner.add_colloids(
     n_colloids,
     ureg.Quantity(3.08, "micrometer"),
-    ureg.Quantity(np.array([500, 500, 0]), "micrometer"),
-    ureg.Quantity(100, "micrometer"),
+    ureg.Quantity(np.array([75., 75., 0]), "micrometer"),
+    ureg.Quantity(50, "micrometer"),
     type_colloid=0,
 )
 system_runner.add_rod(
-    rod_center=ureg.Quantity([500, 500, 0], "micrometer"),
+    rod_center=ureg.Quantity([75., 75., 0], "micrometer"),
     rod_length=ureg.Quantity(100, "micrometer"),
     rod_thickness=ureg.Quantity(100 / 59, "micrometer"),
     rod_start_angle=90.0,
@@ -63,6 +63,7 @@ system_runner.add_rod(
     rod_particle_type=1,
 )
 
+system_runner.add_confining_walls(wall_type=2)
 
 # Reinforcement learning
 
@@ -87,10 +88,11 @@ class ActorNet(nn.Module):
     
     @nn.compact
     def __call__(self, x):
-        colloid_embedding = self.colloid_embedding(x[:, 0])
-        rod_embedding = self.rod_embeding(x[:, 1])
+        colloid_embedding = self.colloid_embedding(x[:, :, 0])
+        rod_embedding = self.rod_embeding(x[:, :, 1])
         
-        x = colloid_embedding + rod_embedding
+        # x = colloid_embedding + rod_embedding
+        x = jnp.concatenate([colloid_embedding, rod_embedding], axis=-1)
         x = nn.relu(x)
         x = nn.Dense(features=128)(x)
         x = nn.relu(x)
@@ -108,10 +110,11 @@ class CriticNet(nn.Module):
     
     @nn.compact
     def __call__(self, x):
-        colloid_embedding = self.colloid_embedding(x[:, 0])
-        rod_embedding = self.rod_embeding(x[:, 1])
+        colloid_embedding = self.colloid_embedding(x[:, :, 0])
+        rod_embedding = self.rod_embeding(x[:, :, 1])
         
-        x = colloid_embedding + rod_embedding
+        # x = colloid_embedding + rod_embedding
+        x = jnp.concatenate([colloid_embedding, rod_embedding], axis=-1)
         x = nn.relu(x)
         x = nn.Dense(features=128)(x)
         x = nn.relu(x)
@@ -123,102 +126,8 @@ class CriticNet(nn.Module):
 
 ## Train with exploration
 
-n_episodes = 5000
+n_episodes = 10000
 episode_length = 30
-
-# Exploration policy
-exploration_policy = srl.exploration_policies.RandomExploration(probability=0.01)
-
-# Sampling strategy
-sampling_strategy = srl.sampling_strategies.GumbelDistribution()
-
-# Value function
-value_function = srl.value_functions.ExpectedReturns(
-    gamma=0.99, standardize=True
-)
-
-def decay_fn(r: float):
-    return 1 / r
-
-observable = srl.observables.SubdividedVisionCones(
-    vision_range=1000000.0,
-    vision_half_angle=1.4,
-    n_cones=5,
-    radii=jnp.array([3.08 for _ in range(n_colloids)] + [0.84745763 for _ in range(59)])
-)
-
-# Define the loss model
-loss = srl.losses.PolicyGradientLoss(value_function=value_function)
-
-rotation_task = srl.tasks.object_movement.RotateRod(
-    particle_type=0,
-    angular_velocity_scale=100,
-    rod_type=1,
-    direction="CCW",
-    partition=True
-)
-
-rod_finding_task = srl.tasks.searching.SpeciesSearch(
-    particle_type=0,
-    decay_fn=decay_fn,
-    box_length=np.array([1000.0, 1000.0, 1000.0]),
-    scale_factor=10,
-    sensing_type=1
-)
-
-total_task = srl.tasks.MultiTasking(particle_type=0, tasks=[rotation_task, rod_finding_task])
-
-actor = srl.networks.FlaxModel(
-    flax_model=ActorNet(),
-    optimizer=optax.adam(learning_rate=0.001),
-    input_shape=(1, 5, 2),
-    sampling_strategy=sampling_strategy,
-    exploration_policy=exploration_policy,
-)
-
-critic = srl.networks.FlaxModel(
-    flax_model=CriticNet(),
-    optimizer=optax.adam(learning_rate=0.001),
-    input_shape=(1, 5, 2),
-)
-
-translate = Action(force=10.0)
-rotate_clockwise = Action(torque=np.array([0.0, 0.0, 10.0]))
-rotate_counter_clockwise = Action(torque=np.array([0.0, 0.0, -10.0]))
-do_nothing = Action()
-
-actions = {
-    "RotateClockwise": rotate_clockwise,
-    "Translate": translate,
-    "RotateCounterClockwise": rotate_counter_clockwise,
-    "DoNothing": do_nothing,
-}
-
-protocol = srl.rl_protocols.ActorCritic(
-    particle_type=0, 
-    actor=actor, 
-    critic=critic, 
-    task=rod_finding_task, 
-    observable=observable, 
-    actions=actions
-)
-
-rl_trainer = srl.gyms.Gym(
-    [protocol],
-    loss,
-)
-
-rewards = rl_trainer.perform_rl_training(
-    system_runner=system_runner,
-    n_episodes=n_episodes,
-    episode_length=episode_length,
-)
-np.save("exploration.npy", rewards)
-
-rl_trainer.export_models()
-
-
-## Train without exploration
 
 # Exploration policy
 exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
@@ -243,21 +152,12 @@ loss = srl.losses.PolicyGradientLoss(value_function=value_function)
 
 rotation_task = srl.tasks.object_movement.RotateRod(
     particle_type=0,
-    angular_velocity_scale=100,
+    angular_velocity_scale=100000,
     rod_type=1,
     direction="CCW",
-    partition=True
+    partition=False,
+    velocity_history=500
 )
-
-rod_finding_task = srl.tasks.searching.SpeciesSearch(
-    particle_type=0,
-    decay_fn=decay_fn,
-    box_length=np.array([1000.0, 1000.0, 1000.0]),
-    scale_factor=10,
-    sensing_type=1
-)
-
-total_task = srl.tasks.MultiTasking(particle_type=0, tasks=[rotation_task, rod_finding_task])
 
 actor = srl.networks.FlaxModel(
     flax_model=ActorNet(),
@@ -289,22 +189,21 @@ protocol = srl.rl_protocols.ActorCritic(
     particle_type=0, 
     actor=actor, 
     critic=critic, 
-    task=rod_finding_task, 
+    task=rotation_task, 
     observable=observable, 
     actions=actions
 )
+
 rl_trainer = srl.gyms.Gym(
     [protocol],
     loss,
 )
-rl_trainer.restore_models()
 
 rewards = rl_trainer.perform_rl_training(
     system_runner=system_runner,
     n_episodes=n_episodes,
     episode_length=episode_length,
 )
-np.save("no-exploration.npy", rewards)
+np.save("exploration.npy", rewards)
 
 rl_trainer.export_models()
-

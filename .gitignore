@@ -7,6 +7,13 @@
 *.pkl
 *.out
 
+# VSCode 
+*.vscode
+
+# Dask files
+*.err
+*.slurm
+
 # Image files
 *.pdf
 *.png
