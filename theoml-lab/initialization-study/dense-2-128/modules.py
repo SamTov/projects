@@ -64,7 +64,13 @@ class DenseNet(nn.Module):
         """
         x = x.reshape((x.shape[0], -1))
         x = nn.Dense(
-            features=12, 
+            features=128, 
+            kernel_init=self.kernel_init, 
+            bias_init=self.bias_init
+        )(x)
+        x = nn.relu(x)
+        x = nn.Dense(
+            features=128, 
             kernel_init=self.kernel_init, 
             bias_init=self.bias_init
         )(x)
@@ -114,7 +120,7 @@ def main(
     """
     Run the experiment.
     """
-    prefix="dense-1-12" # "/data/stovey/initialization"
+    prefix="./" # "/data/stovey/initialization"
     
     experiment_results = []
     
