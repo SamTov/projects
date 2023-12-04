@@ -6,6 +6,9 @@
 *.npz
 *.pkl
 *.out
+*.csv
+*.pickle
+*.txt
 
 # VSCode 
 *.vscode

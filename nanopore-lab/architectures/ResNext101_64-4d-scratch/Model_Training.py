@@ -50,7 +50,6 @@ class TrainingDataset(Dataset):
     def __getitem__(self, idx):
         with open(self.ds_dir / f"train/{idx}.pk", "rb") as f:
             label, image = pickle.load(f)
-            #print(label)
 
         if self.transform:
             image = self.transform(image)
@@ -116,7 +115,6 @@ class DataModule(L.LightningDataModule):
             num_workers=4,
         )
 
-
 ## Torch model, Lightning model definition
 
 class LitResModel(pl.LightningModule):
@@ -130,7 +128,6 @@ class LitResModel(pl.LightningModule):
         self.opt = optimizer
         self.scheduler = scheduler
 
-        # Needed for manual optimization, see https://lightning.ai/docs/pytorch/stable/model/manual_optimization.html
         # self.automatic_optimization = False
 
         self.model = model
@@ -144,16 +141,12 @@ class LitResModel(pl.LightningModule):
         )
 
     def forward(self, x):
-        out = self.model.forward(x)
-        return out
+        return self.model(x)
 
     def training_step(self, batch, batch_idx):
         inputs, labels = batch
 
-        #class_samples = torch.Tensor([labels[labels == item].shape[0] for item in labels.unique()])
-        #class_weights = class_samples.shape[0] / class_samples
-
-        preds = self.forward(inputs)
+        preds = self(inputs)
         loss = F.cross_entropy(preds, labels)
         acc = self.train_acc(preds.argmax(1), labels)
 
@@ -192,20 +185,17 @@ class LitResModel(pl.LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
-        # optimizer = torch.optim.SGD(self.parameters(), lr=self.lr, momentum=self.mom)
-        #return [self.opt], [{"scheduler": self.scheduler, "interval": "epoch"}]
-
 
 ## Parameter definition, Initialization
 
 # Hyperparameters (to be tuned)
 hyperparameters = {
-    "batch_size": 10,
-    "lr": 1e-3,
+    "batch_size": 50,
+    "lr": 1e-2,
     # "momentum": 0.9,
     "seed": 38,
     "num_target_classes": 42,
-    "max_epochs": 100,
+    "max_epochs": 500,
     "T_max": 1000,
 }
 
@@ -224,8 +214,8 @@ model.fc = torch.nn.Linear(model.fc.in_features, 42)
 
 # Define logger (insert favorite logger)
 logger = pl.loggers.MLFlowLogger(
-    experiment_name="ResNext101_64x4d-scratch",
-    save_dir="/data/stovey/ResNext-Models/ResNext101_64-4d-scratch/mlruns/"
+    experiment_name="ResNext101_64x4d-scratch", 
+    save_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-scratch/mlruns/"
 )
 
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -240,17 +230,16 @@ checkpoint_callback = pl.callbacks.ModelCheckpoint(
 trainer = pl.Trainer(
     accelerator="gpu",
     logger=logger,
-    accumulate_grad_batches=100,
+    accumulate_grad_batches=20,
     callbacks=[StochasticWeightAveraging(swa_lrs=1e-2), checkpoint_callback],
     devices="auto",
     strategy="ddp",
     max_epochs=hyperparameters["max_epochs"],
     log_every_n_steps=1,
-    default_root_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-scratch/ckpts/",
+    default_root_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/ckpts/",
     enable_progress_bar=True,
     sync_batchnorm=True,
 )
-
 
 # Use the custom datamodule
 datamodule = DataModule(
@@ -259,9 +248,8 @@ datamodule = DataModule(
 )
 
 # Optimizer and scheduler
-optimizer = Adam(model.parameters(), lr=hyperparameters["lr"])
+optimizer = Adam(model.parameters(), lr=hyperparameters["lr"], weight_decay=1e-5)
 scheduler = CosineAnnealingLR(optimizer, T_max=hyperparameters["T_max"])
-
 
 # Lightning model definition
 lit_model = LitResModel(
@@ -271,13 +259,9 @@ lit_model = LitResModel(
     scheduler=scheduler,
 )
 
-# Optimizer learning rate before training the model.
-# Create a Tuner
-tuner = Tuner(trainer)
-
-# finds learning rate automatically
-# sets hparams.lr or hparams.learning_rate to that learning rate
-tuner.lr_find(lit_model, datamodule)
+# # Optimizer learning rate before training the model.
+# tuner = Tuner(trainer)
+# tuner.lr_find(lit_model, datamodule)
 
 # Start training
 trainer.fit(lit_model, datamodule=datamodule)
