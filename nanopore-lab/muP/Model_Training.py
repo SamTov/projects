@@ -22,9 +22,8 @@ import torchmetrics
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-# Torchvision imports
+# Model imports
 from torchvision.models import resnext101_64x4d, ResNeXt101_64X4D_Weights
-from torchvision.transforms import v2
 
 # Lightning imports
 import lightning as L
@@ -32,7 +31,14 @@ import lightning.pytorch as pl
 from lightning.pytorch.tuner import Tuner
 from lightning.pytorch.callbacks import StochasticWeightAveraging
 
+# MuP
+from mup import MuReadout, make_base_shapes, set_base_shapes, MuAdam
+
+
 torch.set_float32_matmul_precision('medium')
+
+
+# Create Resnet 16, 50, 100 and use MuP to optimize training.
 
 # Build datasets and dataloaders
 class TrainingDataset(Dataset):
@@ -191,8 +197,8 @@ class LitResModel(pl.LightningModule):
 
 # Hyperparameters (to be tuned)
 hyperparameters = {
-    "batch_size": 5,
-    "lr": 1e-2,
+    "batch_size": 50,
+    "lr": 1e-3,
     # "momentum": 0.9,
     "seed": 38,
     "num_target_classes": 42,
@@ -216,12 +222,12 @@ model.fc = torch.nn.Linear(model.fc.in_features, 42)
 # Define logger (insert favorite logger)
 logger = pl.loggers.MLFlowLogger(
     experiment_name="ResNext101_64x4d-pretrained", 
-    save_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/mlruns/"
+    save_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained_mup/mlruns/"
 )
 
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
     monitor="ptl/validation_accuracy",
-    dirpath="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/ckpts/",
+    dirpath="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained_mup/ckpts/",
     filename="ResNext101_64x4d-pretrained-{epoch:02d}-{ptl/validation_loss:.2f}",
     save_top_k=2,
     mode="max",
@@ -231,28 +237,21 @@ checkpoint_callback = pl.callbacks.ModelCheckpoint(
 trainer = pl.Trainer(
     accelerator="gpu",
     logger=logger,
-    accumulate_grad_batches=10,
+    accumulate_grad_batches=20,
     callbacks=[StochasticWeightAveraging(swa_lrs=1e-2), checkpoint_callback],
     devices="auto",
     strategy="ddp",
     max_epochs=hyperparameters["max_epochs"],
     log_every_n_steps=1,
-    default_root_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/ckpts/",
+    default_root_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained_mup/ckpts/",
     enable_progress_bar=True,
     sync_batchnorm=True,
 )
 
-transforms = v2.Compose(
-    [
-        v2.ToPureTensor(),
-        v2.Normalize(mean=[0.485, 0.456], std=[0.229, 0.224])
-    ]
-)
 # Use the custom datamodule
 datamodule = DataModule(
     data_dir="/data/jhossbach/Image_Dataset/dataset_all",
     batch_size=hyperparameters["batch_size"],
-    transform=None
 )
 
 # Optimizer and scheduler
@@ -267,9 +266,9 @@ lit_model = LitResModel(
     scheduler=scheduler,
 )
 
-# # Optimizer learning rate before training the model.
-# tuner = Tuner(trainer)
-# tuner.lr_find(lit_model, datamodule)
+# Optimizer learning rate before training the model.
+tuner = Tuner(trainer)
+tuner.lr_find(lit_model, datamodule)
 
 # Start training
 trainer.fit(lit_model, datamodule=datamodule)
