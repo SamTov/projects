@@ -3,11 +3,10 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import numpy as np
 import znvis as vis
 import h5py as hf
-prefix="/data/stovey/embedding_representation_data/rod_rotation/CCW"
 
-with hf.File(f"{prefix}/4_dimensions/18/training/trajectory.hdf5") as db:
-    agents = db["colloids"]["Unwrapped_Positions"][:, :40, :][::20]
-    rod = db["colloids"]["Unwrapped_Positions"][:, 40:, :][::20]
+with hf.File(f"deployment/trajectory.hdf5") as db:
+    agents = db["colloids"]["Unwrapped_Positions"][:, :50, :]
+    rod = db["colloids"]["Unwrapped_Positions"][:, 50:, :]
 
 colloid_material = vis.Material(colour=np.array([30, 144, 255]) / 255)
 colloid_mesh = vis.Sphere(radius=2.14, material=colloid_material, resolution=4)
