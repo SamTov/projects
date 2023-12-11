@@ -124,7 +124,7 @@ class ActorCriticNetwork(nn.Module):
         return actions, value
 
 
-n_episodes = 300
+n_episodes = 1000
 episode_length = 20
 
 # Exploration policy
