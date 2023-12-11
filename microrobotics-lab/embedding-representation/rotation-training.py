@@ -134,8 +134,8 @@ exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
 sampling_strategy = srl.sampling_strategies.GumbelDistribution()
 
 # Loss function
-value_function = srl.value_functions.GAE(gamma=0.95, lambda_=0.9)
-loss = srl.losses.ProximalPolicyLoss(entropy_coefficient=0.1, epsilon=0.1)
+value_function = srl.value_functions.GAE(gamma=0.98, lambda_=0.9)
+loss = srl.losses.ProximalPolicyLoss(entropy_coefficient=0.4, epsilon=0.2)
 
 observable = srl.observables.SubdividedVisionCones(
     vision_range=1000000.0,
@@ -155,15 +155,15 @@ rotation_task = srl.tasks.object_movement.RotateRod(
 
 model = srl.networks.FlaxModel(
     flax_model=ActorCriticNetwork(),
-    optimizer=optax.adam(learning_rate=0.001),
+    optimizer=optax.adam(learning_rate=0.005),
     input_shape=(5, 2),
     sampling_strategy=sampling_strategy,
     exploration_policy=exploration_policy,
 )
 # Restore state before continuing training
-model.restore_model_state(
-    filename="Model0", directory="Models/"
-    )
+# model.restore_model_state(
+#     filename="Model0", directory="Models/"
+#     )
 
 translate = Action(force=50.0)
 rotate_clockwise = Action(torque=np.array([0.0, 0.0, 10.0]))
