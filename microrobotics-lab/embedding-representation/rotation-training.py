@@ -31,8 +31,8 @@ def get_engine(system_runner):
         fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
         WCA_epsilon=ureg.Quantity(1.0, "kelvin") * ureg.boltzmann_constant,
         temperature=ureg.Quantity(temperature, "kelvin"),
-        box_length=ureg.Quantity(150, "micrometer"),
-        time_slice=ureg.Quantity(0.5, "second"),  # model timestep
+        box_length=ureg.Quantity(1000, "micrometer"),
+        time_slice=ureg.Quantity(1.0, "second"),  # model timestep
         time_step=ureg.Quantity(0.001, "second"),  # integrator timestep
         write_interval=ureg.Quantity(2, "second"),
     )
@@ -50,12 +50,12 @@ def get_engine(system_runner):
     system_runner.add_colloids(
         n_colloids,
         ureg.Quantity(3.08, "micrometer"),
-        ureg.Quantity(np.array([75., 75., 0]), "micrometer"),
-        ureg.Quantity(50, "micrometer"),
+        ureg.Quantity(np.array([500., 500., 0]), "micrometer"),
+        ureg.Quantity(300, "micrometer"),
         type_colloid=0,
     )
     system_runner.add_rod(
-        rod_center=ureg.Quantity([75., 75., 0], "micrometer"),
+        rod_center=ureg.Quantity([500., 500., 0], "micrometer"),
         rod_length=ureg.Quantity(100, "micrometer"),
         rod_thickness=ureg.Quantity(100 / 59, "micrometer"),
         rod_start_angle=90.0,
@@ -124,8 +124,8 @@ class ActorCriticNetwork(nn.Module):
         return actions, value
 
 
-n_episodes = 1000
-episode_length = 20
+n_episodes = 5000
+episode_length = 100
 
 # Exploration policy
 exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
@@ -135,7 +135,7 @@ sampling_strategy = srl.sampling_strategies.GumbelDistribution()
 
 # Loss function
 value_function = srl.value_functions.GAE(gamma=0.98, lambda_=0.9)
-loss = srl.losses.ProximalPolicyLoss(entropy_coefficient=0.4, epsilon=0.2)
+loss = srl.losses.ProximalPolicyLoss(entropy_coefficient=0.3, epsilon=0.1)
 
 observable = srl.observables.SubdividedVisionCones(
     vision_range=1000000.0,
@@ -161,12 +161,12 @@ model = srl.networks.FlaxModel(
     exploration_policy=exploration_policy,
 )
 # Restore state before continuing training
-# model.restore_model_state(
-#     filename="Model0", directory="Models/"
-#     )
+model.restore_model_state(
+    filename="Model0", directory="Models/"
+    )
 
-translate = Action(force=50.0, torque=np.array([0.0, 0.0, 10.0]))
-rotate_clockwise = Action(torque=np.array([0.0, 0.0, 10.0]))
+translate = Action(force=50.0)
+rotate_clockwise = Action(torque=np.array([0.0, 0.0, 10.0])) 
 rotate_counter_clockwise = Action(torque=np.array([0.0, 0.0, -10.0]))
 do_nothing = Action(torque=np.array([0.0, 0.0, 10.0]))
 
@@ -194,7 +194,6 @@ rewards = rl_trainer.perform_rl_training(
     get_engine=get_engine,
     n_episodes=n_episodes,
     system=system,
-    reset_frequency=10,
     episode_length=episode_length,
             )
 np.save("exploration.npy", rewards)
