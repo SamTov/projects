@@ -165,10 +165,10 @@ model = srl.networks.FlaxModel(
 #     filename="Model0", directory="Models/"
 #     )
 
-translate = Action(force=50.0)
+translate = Action(force=50.0, torque=np.array([0.0, 0.0, 10.0]))
 rotate_clockwise = Action(torque=np.array([0.0, 0.0, 10.0]))
 rotate_counter_clockwise = Action(torque=np.array([0.0, 0.0, -10.0]))
-do_nothing = Action()
+do_nothing = Action(torque=np.array([0.0, 0.0, 10.0]))
 
 actions = {
     "RotateClockwise": rotate_clockwise,

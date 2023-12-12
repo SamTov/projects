@@ -1,10 +1,11 @@
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import numpy as np
 import znvis as vis
 import h5py as hf
+import sys
 
-with hf.File(f"deployment/trajectory.hdf5") as db:
+prefactor = sys.argv[1]
+
+with hf.File(f"{prefactor}/trajectory.hdf5") as db:
     agents = db["colloids"]["Unwrapped_Positions"][:, :50, :]
     rod = db["colloids"]["Unwrapped_Positions"][:, 50:, :]
 
