@@ -1,3 +1,7 @@
+# Oryx runs with GPU 1
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
 # SwarmRL Imports
 import swarmrl as srl
 import swarmrl.engine.espresso as espresso
@@ -136,8 +140,8 @@ exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
 sampling_strategy = srl.sampling_strategies.GumbelDistribution()
 
 # Loss function
-value_function = srl.value_functions.GAE(gamma=0.98, lambda_=0.9)
-loss = srl.losses.ProximalPolicyLoss(entropy_coefficient=0.3, epsilon=0.1)
+value_function = srl.value_functions.GAE(gamma=0.99, lambda_=0.95)
+loss = srl.losses.ProximalPolicyLoss(entropy_coefficient=0.001, epsilon=0.1)
 
 observable = srl.observables.SubdividedVisionCones(
     vision_range=1000000.0,
@@ -148,7 +152,7 @@ observable = srl.observables.SubdividedVisionCones(
 
 rotation_task = srl.tasks.object_movement.RotateRod(
     particle_type=0,
-    angular_velocity_scale=10000,
+    angular_velocity_scale=100,
     rod_type=1,
     direction="CCW",
     partition=True,
@@ -163,15 +167,15 @@ search_task = srl.tasks.searching.SpeciesSearch(
         box_length = np.array([1000.0, 1000.0, 1000.0]),
         sensing_type = 1,
         avoid = False,
-        scale_factor = 100,
+        scale_factor = 10,
         particle_type = 0,
 )
 
-find_and_rotate = srl.tasks.MultiTasking([search_task, rotation_task])
+find_and_rotate = srl.tasks.MultiTasking(particle_type=0, tasks=[search_task, rotation_task])
 
 model = srl.networks.FlaxModel(
     flax_model=ActorCriticNetwork(),
-    optimizer=optax.adam(learning_rate=0.00005),
+    optimizer=optax.adam(learning_rate=0.002),
     input_shape=(5, 2),
     sampling_strategy=sampling_strategy,
     exploration_policy=exploration_policy,
@@ -196,7 +200,7 @@ actions = {
 ac_agent = srl.agents.ActorCriticAgent(
     particle_type=0,
     network=model,
-    task=search_task, 
+    task=find_and_rotate, 
     observable=observable, 
     actions=actions
 )
