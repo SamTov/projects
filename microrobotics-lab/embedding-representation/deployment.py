@@ -191,4 +191,4 @@ system_runner = get_engine(system)
 
 rotation_task.initialize(system_runner.colloids)
 
-system_runner.integrate(5000, force_fn)
+system_runner.integrate(1000, force_fn)

@@ -2,6 +2,7 @@
 import swarmrl as srl
 import swarmrl.engine.espresso as espresso
 from swarmrl.actions import Action
+from swarmrl.components import Colloid
 
 # espresso imports
 import espressomd
@@ -14,6 +15,7 @@ import optax
 
 # Helper imports
 import pint
+from typing import List   
 
 
 system = espressomd.System(box_l=[1, 2, 3])
@@ -32,7 +34,7 @@ def get_engine(system_runner):
         WCA_epsilon=ureg.Quantity(1.0, "kelvin") * ureg.boltzmann_constant,
         temperature=ureg.Quantity(temperature, "kelvin"),
         box_length=ureg.Quantity(1000, "micrometer"),
-        time_slice=ureg.Quantity(1.0, "second"),  # model timestep
+        time_slice=ureg.Quantity(0.1, "second"),  # model timestep
         time_step=ureg.Quantity(0.001, "second"),  # integrator timestep
         write_interval=ureg.Quantity(2, "second"),
     )
@@ -124,7 +126,7 @@ class ActorCriticNetwork(nn.Module):
         return actions, value
 
 
-n_episodes = 5000
+n_episodes = 500
 episode_length = 100
 
 # Exploration policy
@@ -153,17 +155,31 @@ rotation_task = srl.tasks.object_movement.RotateRod(
     velocity_history=100
 )
 
+def decay_fn(x):
+    return 1.0 - x
+
+search_task = srl.tasks.searching.SpeciesSearch(
+        decay_fn=decay_fn,
+        box_length = np.array([1000.0, 1000.0, 1000.0]),
+        sensing_type = 1,
+        avoid = False,
+        scale_factor = 100,
+        particle_type = 0,
+)
+
+find_and_rotate = srl.tasks.MultiTasking([search_task, rotation_task])
+
 model = srl.networks.FlaxModel(
     flax_model=ActorCriticNetwork(),
-    optimizer=optax.adam(learning_rate=0.005),
+    optimizer=optax.adam(learning_rate=0.00005),
     input_shape=(5, 2),
     sampling_strategy=sampling_strategy,
     exploration_policy=exploration_policy,
 )
 # Restore state before continuing training
-model.restore_model_state(
-    filename="Model0", directory="Models/"
-    )
+# model.restore_model_state(
+#     filename="Model0", directory="Models/"
+#     )
 
 translate = Action(force=50.0)
 rotate_clockwise = Action(torque=np.array([0.0, 0.0, 10.0])) 
@@ -180,7 +196,7 @@ actions = {
 ac_agent = srl.agents.ActorCriticAgent(
     particle_type=0,
     network=model,
-    task=rotation_task, 
+    task=search_task, 
     observable=observable, 
     actions=actions
 )
@@ -194,6 +210,7 @@ rewards = rl_trainer.perform_rl_training(
     get_engine=get_engine,
     n_episodes=n_episodes,
     system=system,
+    reset_frequency=10,
     episode_length=episode_length,
             )
 np.save("exploration.npy", rewards)
