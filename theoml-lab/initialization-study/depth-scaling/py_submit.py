@@ -144,32 +144,33 @@ def experiment(
 
     # File name
     name_seed = np.random.randint(97898365)
-    name = f"{w_std}_{b_std}_{width}_{depth}_{activation.__name__}_{name_seed}"
+    prefix="/data/stovey/init_study"
+    name = f"{prefix}/{w_std}_{b_std}_{width}_{depth}_{activation.__name__}_{name_seed}"
 
     # Create the ZnNL model
     model = nl.models.FlaxModel(
             flax_module=network,
             optimizer=optimizer,
-            batch_size=10,
+            batch_size=50,
             seed=seed,
             input_shape=input_shape,
     )
 
     # Create the ZnNL recorders
     train_recorder = nl.training_recording.JaxRecorder(
-        name=f"data/{name}_train_recorder",
+        name=f"{name}_train_recorder",
         loss=True,
         accuracy=True,
         update_rate=1
     )
     test_recorder = nl.training_recording.JaxRecorder(
-        name=f"data/{name}_test_recorder",
+        name=f"{name}_test_recorder",
         loss=True,
         accuracy=True,
         update_rate=1
     )
     cv_recorder = nl.training_recording.JaxRecorder(
-        name=f"data/{name}_cv_recorder",
+        name=f"{name}_cv_recorder",
         entropy=True,
         trace=True,
         update_rate=50
@@ -220,15 +221,15 @@ class ExperimentParameters:
     output_dimension: int = 10
     input_shape: tuple = (1, 28, 28, 1)
     batch_size: int = 128
-    epochs: int = 1000
+    epochs: int = 501
     seed: int = np.random.randint(684831)
-    generator: nl.data.DataGenerator = nl.data.MNISTGenerator(500)
+    generator: nl.data.DataGenerator = nl.data.MNISTGenerator(200)
 
 experiment_parameters = ExperimentParameters(
-    width=512,
-    depth=300,
+    width=128,
+    depth=211,
     activation=nn.relu,
-    w_std=1.0,
+    w_std=0.0,
     b_std=0.05,
 )
 
