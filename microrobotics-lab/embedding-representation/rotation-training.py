@@ -1,6 +1,6 @@
 # Oryx runs with GPU 1
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 
 # SwarmRL Imports
 import swarmrl as srl
@@ -37,7 +37,7 @@ def get_engine(system_runner):
         fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
         WCA_epsilon=ureg.Quantity(1.0, "kelvin") * ureg.boltzmann_constant,
         temperature=ureg.Quantity(temperature, "kelvin"),
-        box_length=ureg.Quantity(1000, "micrometer"),
+        box_length=ureg.Quantity(150, "micrometer"),
         time_slice=ureg.Quantity(0.1, "second"),  # model timestep
         time_step=ureg.Quantity(0.001, "second"),  # integrator timestep
         write_interval=ureg.Quantity(2, "second"),
@@ -56,12 +56,12 @@ def get_engine(system_runner):
     system_runner.add_colloids(
         n_colloids,
         ureg.Quantity(3.08, "micrometer"),
-        ureg.Quantity(np.array([500., 500., 0]), "micrometer"),
-        ureg.Quantity(300, "micrometer"),
+        ureg.Quantity(np.array([75., 75., 0]), "micrometer"),
+        ureg.Quantity(25, "micrometer"),
         type_colloid=0,
     )
     system_runner.add_rod(
-        rod_center=ureg.Quantity([500., 500., 0], "micrometer"),
+        rod_center=ureg.Quantity([75., 75., 0], "micrometer"),
         rod_length=ureg.Quantity(100, "micrometer"),
         rod_thickness=ureg.Quantity(100 / 59, "micrometer"),
         rod_start_angle=90.0,
@@ -80,18 +80,38 @@ def get_engine(system_runner):
 ## Models
 
 class ColloidEmbedding(nn.Module):
+
+    def setup(self):
+        self.kernel_init = nn.initializers.xavier_normal()
+
     @nn.compact
     def __call__(self, x):
-        x = nn.Dense(12)(x)
-        x = nn.relu(x)
-        return nn.Dense(features=5)(x)
+        x = nn.Dense(
+            12, 
+            kernel_init=self.kernel_init, 
+            )(x)
+        x = nn.leaky_relu(x)
+        return nn.Dense(
+            features=5, 
+            kernel_init=self.kernel_init, 
+            )(x)
     
 class RodEmbedding(nn.Module):
+
+    def setup(self):
+        self.kernel_init = nn.initializers.xavier_normal()
+
     @nn.compact
     def __call__(self, x):
-        x = nn.Dense(12)(x)
-        x = nn.relu(x)
-        return nn.Dense(features=5)(x)
+        x = nn.Dense(
+            12, 
+            kernel_init=self.kernel_init, 
+            )(x)
+        x = nn.leaky_relu(x)
+        return nn.Dense(
+            features=5, 
+            kernel_init=self.kernel_init, 
+            )(x)
     
 class ActorCriticNetwork(nn.Module):
     """A simple AC network."""
@@ -99,6 +119,8 @@ class ActorCriticNetwork(nn.Module):
     def setup(self):
         self.colloid_embedding = ColloidEmbedding()
         self.rod_embeding = RodEmbedding()
+
+        self.kernel_init = nn.initializers.xavier_normal()
     
     @nn.compact
     def __call__(self, x):
@@ -110,27 +132,45 @@ class ActorCriticNetwork(nn.Module):
         vision_embedding = jnp.concatenate([colloid_embedding, rod_embedding], axis=-1)
 
         # Actor pass
-        x = nn.Dense(features=12)(vision_embedding)
-        x = nn.relu(x)
-        x = nn.Dense(features=12)(x)
-        x = nn.relu(x)
+        x = nn.Dense(
+            features=12, 
+            kernel_init=self.kernel_init, 
+            )(vision_embedding)
+        x = nn.leaky_relu(x)
+        x = nn.Dense(
+            features=12, 
+            kernel_init=self.kernel_init, 
+            )(x)
+        x = nn.leaky_relu(x)
 
         # Critic pass
-        y = nn.Dense(features=12)(vision_embedding)
-        y = nn.relu(y)
-        y = nn.Dense(features=12)(y)
-        y = nn.relu(y)
+        y = nn.Dense(
+            features=12, 
+            kernel_init=self.kernel_init, 
+            )(vision_embedding)
+        y = nn.leaky_relu(y)
+        y = nn.Dense(
+            features=12, 
+            kernel_init=self.kernel_init, 
+            )(y)
+        y = nn.leaky_relu(y)
 
         # Actor head
-        actions = nn.Dense(features=4)(x)
+        actions = nn.Dense(
+            features=4, 
+            kernel_init=self.kernel_init, 
+            )(x)
 
         # Critic head
-        value = nn.Dense(features=1)(y)
+        value = nn.Dense(
+            features=1, 
+            kernel_init=self.kernel_init, 
+            )(y)
 
         return actions, value
 
 
-n_episodes = 500
+n_episodes = 10000
 episode_length = 100
 
 # Exploration policy
