@@ -1,6 +1,6 @@
 # Oryx runs with GPU 1
-import os
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+# import os
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 # SwarmRL Imports
 import swarmrl as srl
