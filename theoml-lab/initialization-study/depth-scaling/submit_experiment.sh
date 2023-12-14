@@ -16,21 +16,22 @@ sed_function () {
 }
 
 # Experiment parameters
-# w_stds=($(seq 0 0.1 2))
-# b_stds=0.05
-# depths=($(seq 1 10 100))
-# activations=(nn.relu)
-# ensembles=(1)
-# widths=(512)
+w_stds=($(seq 0 0.1 2))
+b_stds=0.05
+depths=($(seq 1 10 300))
+activations=(nn.relu nn.tanh)
+ensembles=(1 2 3 4 5 6 7 8 9 10)
+widths=(128 512)
 
 # Test params
-w_stds=(1.0)
-b_stds=0.05
-depths=(1 10 100 300)
-activations=(nn.relu)
-ensembles=(1)
-widths=(512)
+#w_stds=(1.0)
+#b_stds=0.05
+#depths=(1 10 100 300)
+#activations=(nn.relu)
+#ensembles=(1)
+#widths=(512)
 
+python=/tikhome/stovey/miniconda3/envs/theoml/bin/python
 
 # Loop over parameters and submit jobs.
 for w_std in ${w_stds[@]}
@@ -55,7 +56,9 @@ do
                     sed_function "ENSEMBLE" ${i} ${py_submit}
 
                     # Submit the the cluster
-                    sbatch ${submit_script}
+                    # sbatch ${submit_script}
+                    # Run the script and wait
+                    ${python} py_submit.py
                 done
             done
         done
