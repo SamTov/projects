@@ -32,7 +32,7 @@ def get_engine(system_runner):
         WCA_epsilon=ureg.Quantity(1.0, "kelvin") * ureg.boltzmann_constant,
         temperature=ureg.Quantity(temperature, "kelvin"),
         box_length=ureg.Quantity(150, "micrometer"),
-        time_slice=ureg.Quantity(0.5, "second"),  # model timestep
+        time_slice=ureg.Quantity(0.1, "second"),  # model timestep
         time_step=ureg.Quantity(0.001, "second"),  # integrator timestep
         write_interval=ureg.Quantity(2, "second"),
     )
@@ -41,7 +41,7 @@ def get_engine(system_runner):
         md_params=md_params,
         n_dims=2,
         seed=seed,
-        out_folder=f'./deployment/',
+        out_folder=f'./deployment',
         write_chunk_size=100,
         system=system_runner,
         periodic=False
@@ -51,7 +51,7 @@ def get_engine(system_runner):
         n_colloids,
         ureg.Quantity(3.08, "micrometer"),
         ureg.Quantity(np.array([75., 75., 0]), "micrometer"),
-        ureg.Quantity(50, "micrometer"),
+        ureg.Quantity(25, "micrometer"),
         type_colloid=0,
     )
     system_runner.add_rod(
@@ -91,42 +91,58 @@ class ActorCriticNetwork(nn.Module):
     """A simple AC network."""
     
     def setup(self):
-        self.colloid_embedding = ColloidEmbedding()
-        self.rod_embeding = RodEmbedding()
+        # self.colloid_embedding = ColloidEmbedding()
+        # self.rod_embeding = RodEmbedding()
+
+        self.kernel_init = nn.initializers.xavier_normal()
     
     @nn.compact
     def __call__(self, x):
         # Pass vision cone observations through the embeddings
-        colloid_embedding = self.colloid_embedding(x[:, 0])
-        rod_embedding = self.rod_embeding(x[:, 1])
+        # colloid_embedding = self.colloid_embedding(x[:, 0])
+        # rod_embedding = self.rod_embeding(x[:, 1])
         
         # Concatenate the embeddings
-        vision_embedding = jnp.concatenate([colloid_embedding, rod_embedding], axis=-1)
+        # vision_embedding = jnp.concatenate([colloid_embedding, rod_embedding], axis=-1)
+        vision_embedding = jnp.concatenate([x[:, 0], x[:, 1]], axis=-1)
 
         # Actor pass
-        x = nn.Dense(features=12)(vision_embedding)
-        x = nn.relu(x)
-        x = nn.Dense(features=12)(x)
-        x = nn.relu(x)
+        x = nn.Dense(
+            features=12, 
+            kernel_init=self.kernel_init, 
+            )(vision_embedding)
+        x = nn.leaky_relu(x)
+        x = nn.Dense(
+            features=12, 
+            kernel_init=self.kernel_init, 
+            )(x)
+        x = nn.leaky_relu(x)
 
         # Critic pass
-        y = nn.Dense(features=12)(vision_embedding)
-        y = nn.relu(y)
-        y = nn.Dense(features=12)(y)
-        y = nn.relu(y)
+        y = nn.Dense(
+            features=12, 
+            kernel_init=self.kernel_init, 
+            )(vision_embedding)
+        y = nn.leaky_relu(y)
+        y = nn.Dense(
+            features=12, 
+            kernel_init=self.kernel_init, 
+            )(y)
+        y = nn.leaky_relu(y)
 
         # Actor head
-        actions = nn.Dense(features=4)(x)
+        actions = nn.Dense(
+            features=4, 
+            kernel_init=self.kernel_init, 
+            )(x)
 
         # Critic head
-        value = nn.Dense(features=1)(y)
+        value = nn.Dense(
+            features=1, 
+            kernel_init=self.kernel_init, 
+            )(y)
 
         return actions, value
-
-
-
-n_episodes = 5000
-episode_length = 20
 
 # Exploration policy
 exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
@@ -161,9 +177,9 @@ model = srl.networks.FlaxModel(
     exploration_policy=exploration_policy,
 )
 # Restore state before continuing training
-model.restore_model_state(
-    filename="Model0", directory="Models/"
-    )
+# model.restore_model_state(
+#     filename="ActorCriticAgent_0", directory="Models/"
+#     )
 
 translate = Action(force=10.0)
 rotate_clockwise = Action(torque=np.array([0.0, 0.0, 10.0]))
@@ -184,6 +200,7 @@ ac_agent = srl.agents.ActorCriticAgent(
     observable=observable, 
     actions=actions
 )
+ac_agent.restore_agent("Models/")
 
 force_fn = srl.force_functions.ForceFunction({"0": ac_agent})
 
@@ -191,4 +208,4 @@ system_runner = get_engine(system)
 
 rotation_task.initialize(system_runner.colloids)
 
-system_runner.integrate(6000, force_fn)
+system_runner.integrate(10000, force_fn)

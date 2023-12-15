@@ -76,6 +76,17 @@ def get_engine(system_runner):
     return system_runner
 
 # Reinforcement learning
+#KONSTANZ
+
+# 10s time slice
+# 360 actions in one episode
+# Update every 60 actions
+# Trains in 50-100 episodes
+
+# LR critic 0.01
+# LR actor 0.0005
+# PPO 50 epochs, KL 0.02, entropy 0.01, CL 0.03, gamma 0.995 / 0.999, lambda 0.97
+
 
 ## Models
 
@@ -117,19 +128,20 @@ class ActorCriticNetwork(nn.Module):
     """A simple AC network."""
     
     def setup(self):
-        self.colloid_embedding = ColloidEmbedding()
-        self.rod_embeding = RodEmbedding()
+        # self.colloid_embedding = ColloidEmbedding()
+        # self.rod_embeding = RodEmbedding()
 
         self.kernel_init = nn.initializers.xavier_normal()
     
     @nn.compact
     def __call__(self, x):
         # Pass vision cone observations through the embeddings
-        colloid_embedding = self.colloid_embedding(x[:, 0])
-        rod_embedding = self.rod_embeding(x[:, 1])
+        # colloid_embedding = self.colloid_embedding(x[:, 0])
+        # rod_embedding = self.rod_embeding(x[:, 1])
         
         # Concatenate the embeddings
-        vision_embedding = jnp.concatenate([colloid_embedding, rod_embedding], axis=-1)
+        # vision_embedding = jnp.concatenate([colloid_embedding, rod_embedding], axis=-1)
+        vision_embedding = jnp.concatenate([x[:, 0], x[:, 1]], axis=-1)
 
         # Actor pass
         x = nn.Dense(
@@ -170,7 +182,7 @@ class ActorCriticNetwork(nn.Module):
         return actions, value
 
 
-n_episodes = 10000
+n_episodes = 200
 episode_length = 100
 
 # Exploration policy
@@ -180,8 +192,10 @@ exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
 sampling_strategy = srl.sampling_strategies.GumbelDistribution()
 
 # Loss function
-value_function = srl.value_functions.GAE(gamma=0.99, lambda_=0.95)
-loss = srl.losses.ProximalPolicyLoss(entropy_coefficient=0.001, epsilon=0.1)
+value_function = srl.value_functions.GAE(gamma=0.995, lambda_=0.97)
+loss = srl.losses.ProximalPolicyLoss(
+    entropy_coefficient=0.01, epsilon=0.03
+    )
 
 observable = srl.observables.SubdividedVisionCones(
     vision_range=1000000.0,
@@ -192,7 +206,7 @@ observable = srl.observables.SubdividedVisionCones(
 
 rotation_task = srl.tasks.object_movement.RotateRod(
     particle_type=0,
-    angular_velocity_scale=100,
+    angular_velocity_scale=100000,
     rod_type=1,
     direction="CCW",
     partition=True,
@@ -204,7 +218,7 @@ def decay_fn(x):
 
 search_task = srl.tasks.searching.SpeciesSearch(
         decay_fn=decay_fn,
-        box_length = np.array([1000.0, 1000.0, 1000.0]),
+        box_length = np.array([150.0, 150.0, 150.0]),
         sensing_type = 1,
         avoid = False,
         scale_factor = 10,
@@ -215,17 +229,13 @@ find_and_rotate = srl.tasks.MultiTasking(particle_type=0, tasks=[search_task, ro
 
 model = srl.networks.FlaxModel(
     flax_model=ActorCriticNetwork(),
-    optimizer=optax.adam(learning_rate=0.002),
+    optimizer=optax.adam(learning_rate=0.0001),
     input_shape=(5, 2),
     sampling_strategy=sampling_strategy,
     exploration_policy=exploration_policy,
 )
-# Restore state before continuing training
-# model.restore_model_state(
-#     filename="Model0", directory="Models/"
-#     )
 
-translate = Action(force=50.0)
+translate = Action(force=10.0)
 rotate_clockwise = Action(torque=np.array([0.0, 0.0, 10.0])) 
 rotate_counter_clockwise = Action(torque=np.array([0.0, 0.0, -10.0]))
 do_nothing = Action(torque=np.array([0.0, 0.0, 10.0]))
@@ -240,14 +250,15 @@ actions = {
 ac_agent = srl.agents.ActorCriticAgent(
     particle_type=0,
     network=model,
-    task=find_and_rotate, 
+    task=rotation_task, 
     observable=observable, 
-    actions=actions
+    actions=actions,
+    loss=loss
 )
+ac_agent.restore_agent("Models/")
 
 rl_trainer = srl.trainers.EpisodicTrainer(
     [ac_agent],
-    loss,
 )
 
 rewards = rl_trainer.perform_rl_training(
