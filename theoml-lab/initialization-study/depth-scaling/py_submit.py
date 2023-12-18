@@ -226,10 +226,10 @@ class ExperimentParameters:
     generator: nl.data.DataGenerator = nl.data.MNISTGenerator(200)
 
 experiment_parameters = ExperimentParameters(
-    width=128,
-    depth=211,
+    width=512,
+    depth=161,
     activation=nn.relu,
-    w_std=0.0,
+    w_std=0.5,
     b_std=0.05,
 )
 
