@@ -21,13 +21,16 @@ import optax
 import pint
 from typing import List   
 
+# Task import
+from rotation_task import RotationTask
+
 
 system = espressomd.System(box_l=[1, 2, 3])
 def get_engine(system_runner):
     # Simulation parameters
     seed = np.random.randint(645153513)
 
-    temperature = 0.0
+    temperature = 20.0
     n_colloids = 50
 
     ureg = pint.UnitRegistry()
@@ -35,12 +38,13 @@ def get_engine(system_runner):
     md_params = espresso.MDParams(
         ureg=ureg,
         fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
-        WCA_epsilon=ureg.Quantity(1.0, "kelvin") * ureg.boltzmann_constant,
+        WCA_epsilon=ureg.Quantity(temperature, "kelvin") * ureg.boltzmann_constant,
         temperature=ureg.Quantity(temperature, "kelvin"),
-        box_length=ureg.Quantity(150, "micrometer"),
+        box_length=ureg.Quantity(3 * [150], "micrometer"),
         time_slice=ureg.Quantity(0.1, "second"),  # model timestep
         time_step=ureg.Quantity(0.001, "second"),  # integrator timestep
         write_interval=ureg.Quantity(2, "second"),
+        periodic=False
     )
 
     system_runner = srl.espresso.EspressoMD(
@@ -50,7 +54,6 @@ def get_engine(system_runner):
         out_folder=f'./ep_training/{seed}/training',
         write_chunk_size=100,
         system=system_runner,
-        periodic=False
     )
 
     system_runner.add_colloids(
@@ -98,7 +101,7 @@ class ColloidEmbedding(nn.Module):
     @nn.compact
     def __call__(self, x):
         x = nn.Dense(
-            12, 
+            128, 
             kernel_init=self.kernel_init, 
             )(x)
         x = nn.leaky_relu(x)
@@ -145,24 +148,24 @@ class ActorCriticNetwork(nn.Module):
 
         # Actor pass
         x = nn.Dense(
-            features=12, 
+            features=128, 
             kernel_init=self.kernel_init, 
             )(vision_embedding)
         x = nn.leaky_relu(x)
         x = nn.Dense(
-            features=12, 
+            features=128, 
             kernel_init=self.kernel_init, 
             )(x)
         x = nn.leaky_relu(x)
 
         # Critic pass
         y = nn.Dense(
-            features=12, 
+            features=128, 
             kernel_init=self.kernel_init, 
             )(vision_embedding)
         y = nn.leaky_relu(y)
         y = nn.Dense(
-            features=12, 
+            features=128, 
             kernel_init=self.kernel_init, 
             )(y)
         y = nn.leaky_relu(y)
@@ -182,7 +185,7 @@ class ActorCriticNetwork(nn.Module):
         return actions, value
 
 
-n_episodes = 200
+n_episodes = 5000
 episode_length = 100
 
 # Exploration policy
@@ -204,29 +207,14 @@ observable = srl.observables.SubdividedVisionCones(
     radii=jnp.array([3.08 for _ in range(50)] + [0.84745763 for _ in range(59)])
 )
 
-rotation_task = srl.tasks.object_movement.RotateRod(
-    particle_type=0,
-    angular_velocity_scale=100000,
+task = RotationTask(
     rod_type=1,
+    particle_type=0,
     direction="CCW",
-    partition=True,
-    velocity_history=100
+    sensing_type=1,
+    box_length=np.array([150., 150., 150.]),
+    running_average_window = 10,
 )
-
-def decay_fn(x):
-    return 1.0 - x
-
-search_task = srl.tasks.searching.SpeciesSearch(
-        decay_fn=decay_fn,
-        box_length = np.array([150.0, 150.0, 150.0]),
-        sensing_type = 1,
-        avoid = False,
-        scale_factor = 10,
-        particle_type = 0,
-)
-
-find_and_rotate = srl.tasks.MultiTasking(particle_type=0, tasks=[search_task, rotation_task])
-
 model = srl.networks.FlaxModel(
     flax_model=ActorCriticNetwork(),
     optimizer=optax.adam(learning_rate=0.0001),
@@ -250,7 +238,7 @@ actions = {
 ac_agent = srl.agents.ActorCriticAgent(
     particle_type=0,
     network=model,
-    task=rotation_task, 
+    task=task, 
     observable=observable, 
     actions=actions,
     loss=loss
