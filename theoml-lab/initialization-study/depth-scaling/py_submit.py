@@ -145,6 +145,7 @@ def experiment(
     # File name
     name_seed = np.random.randint(97898365)
     prefix="/data/stovey/init_study"
+    prefix = "./"
     name = f"{prefix}/{w_std}_{b_std}_{width}_{depth}_{activation.__name__}_{name_seed}"
 
     # Create the ZnNL model
@@ -223,13 +224,13 @@ class ExperimentParameters:
     batch_size: int = 128
     epochs: int = 501
     seed: int = np.random.randint(684831)
-    generator: nl.data.DataGenerator = nl.data.MNISTGenerator(200)
+    generator: nl.data.DataGenerator = nl.data.MNISTGenerator(500)
 
 experiment_parameters = ExperimentParameters(
-    width=512,
-    depth=161,
+    width=128,
+    depth=100,
     activation=nn.relu,
-    w_std=0.5,
+    w_std=2.0,
     b_std=0.05,
 )
 
