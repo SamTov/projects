@@ -30,7 +30,7 @@ def get_engine(system_runner):
     # Simulation parameters
     seed = np.random.randint(645153513)
 
-    temperature = 20.0
+    temperature = 0.0
     n_colloids = 50
 
     ureg = pint.UnitRegistry()
@@ -38,7 +38,7 @@ def get_engine(system_runner):
     md_params = espresso.MDParams(
         ureg=ureg,
         fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
-        WCA_epsilon=ureg.Quantity(temperature, "kelvin") * ureg.boltzmann_constant,
+        WCA_epsilon=ureg.Quantity(temperature + 1.0, "kelvin") * ureg.boltzmann_constant,
         temperature=ureg.Quantity(temperature, "kelvin"),
         box_length=ureg.Quantity(3 * [150], "micrometer"),
         time_slice=ureg.Quantity(0.1, "second"),  # model timestep
@@ -51,7 +51,7 @@ def get_engine(system_runner):
         md_params=md_params,
         n_dims=2,
         seed=seed,
-        out_folder=f'./ep_training/{seed}/training',
+        out_folder=f'/data/stovey/ep_training/{seed}/training',
         write_chunk_size=100,
         system=system_runner,
     )
@@ -243,7 +243,7 @@ ac_agent = srl.agents.ActorCriticAgent(
     actions=actions,
     loss=loss
 )
-ac_agent.restore_agent("Models/")
+# ac_agent.restore_agent("Models/")
 
 rl_trainer = srl.trainers.EpisodicTrainer(
     [ac_agent],
