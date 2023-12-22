@@ -157,7 +157,7 @@ class RotationTask(srl.tasks.Task):
         distances = np.take(distances, indices, axis=0)
         field_value = np.max(self.decay_fn(distances))
 
-        return index, field_value - historic_value, field_value
+        return index, field_value, field_value
     
     def compute_sensing_task(self, colloids: List[Colloid]):
         """
