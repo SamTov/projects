@@ -145,14 +145,13 @@ def experiment(
     # File name
     name_seed = np.random.randint(97898365)
     prefix="/data/stovey/init_study"
-    prefix = "./"
     name = f"{prefix}/{w_std}_{b_std}_{width}_{depth}_{activation.__name__}_{name_seed}"
 
     # Create the ZnNL model
     model = nl.models.FlaxModel(
             flax_module=network,
             optimizer=optimizer,
-            batch_size=50,
+            batch_size=10,
             seed=seed,
             input_shape=input_shape,
     )
@@ -224,13 +223,13 @@ class ExperimentParameters:
     batch_size: int = 128
     epochs: int = 501
     seed: int = np.random.randint(684831)
-    generator: nl.data.DataGenerator = nl.data.MNISTGenerator(500)
+    generator: nl.data.DataGenerator = nl.data.MNISTGenerator(200)
 
 experiment_parameters = ExperimentParameters(
     width=128,
-    depth=100,
-    activation=nn.relu,
-    w_std=2.0,
+    depth=151,
+    activation=nn.tanh,
+    w_std=0.1,
     b_std=0.05,
 )
 

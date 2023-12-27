@@ -151,7 +151,7 @@ def experiment(
     model = nl.models.FlaxModel(
             flax_module=network,
             optimizer=optimizer,
-            batch_size=50,
+            batch_size=10,
             seed=seed,
             input_shape=input_shape,
     )
