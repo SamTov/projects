@@ -1,0 +1,3 @@
+[submodule "nanopore-lab/muP/mup"]
+	path = nanopore-lab/muP/mup
+	url = https://github.com/SamTov/mup.git
