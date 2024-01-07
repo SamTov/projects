@@ -227,9 +227,9 @@ class ExperimentParameters:
 
 experiment_parameters = ExperimentParameters(
     width=128,
-    depth=151,
+    depth=31,
     activation=nn.tanh,
-    w_std=0.1,
+    w_std=0.4,
     b_std=0.05,
 )
 
