@@ -112,7 +112,7 @@ def main():
     mean_flow_vel = ureg.Quantity(5, "micrometer/second") 
     # choose box_l along x, infer y length from flowfield
     box_l_x = ureg.Quantity(200, "micrometer")
-    n_colloids = 50
+    n_colloids = 10
     seed = 42
     n_slices = 20000
     

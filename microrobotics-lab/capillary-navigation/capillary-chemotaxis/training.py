@@ -176,7 +176,7 @@ def get_system_runner(system):
     
     # add colloids manually, so we know they are in the fluid zone
 
-    partcl_params = {"radius_colloid": partcl_radius,
+    robot_params = {"radius_colloid": partcl_radius,
                      "type_colloid": 0,
                      "gamma_translation": gamma,
                      "gamma_rotation":gamma_rot,
@@ -188,7 +188,31 @@ def get_system_runner(system):
     add_colloids(
         runner, 
         n_colloids, 
-        partcl_params, 
+        robot_params, 
+        boundary_2d,
+        agrid_x, 
+        agrid_y, 
+        ureg
+        )
+    
+    blood_radii = ureg.Quantity(4, "micrometer")
+    blood_gamma = 6 * np.pi * params.fluid_dyn_viscosity * blood_radii
+    blood_gamma_rot = 8 * np.pi * params.fluid_dyn_viscosity * blood_radii**3
+    n_blood_cells = 100
+
+    blood_params = {"radius_colloid": blood_radii,
+                     "type_colloid": 1,
+                     "gamma_translation": blood_gamma,
+                     "gamma_rotation": blood_gamma_rot,
+                     "mass": blood_gamma * target_momentum_relaxation_timescale,
+                     "rinertia": utils.convert_array_of_pint_to_pint_of_array(
+            3 * [blood_gamma_rot * target_momentum_relaxation_timescale], ureg
+        )}
+
+    add_colloids(
+        runner, 
+        n_blood_cells, 
+        blood_params, 
         boundary_2d,
         agrid_x, 
         agrid_y, 
@@ -229,7 +253,7 @@ def get_system_parameters(system):
         temperature=ureg.Quantity(311.15, "kelvin"),
         box_length=box_l,
         time_step=ureg.Quantity(0.005, "second"),
-        time_slice=ureg.Quantity(0.01, "second"),
+        time_slice=ureg.Quantity(0.1, "second"),
         write_interval=ureg.Quantity(0.2, "second"),
         thermostat_type="langevin",
     )
@@ -294,13 +318,13 @@ def main():
 
     # RL setup
     observable = ChemotaxisObservable(
-        source=np.array([149.7, 94.2, 0]),
+        source=np.array([119.0, 175.0, 0]),
         decay_fn=field_decay,
         box_length = np.array([box_l_x.magnitude, box_l_y.magnitude, box_l_x.magnitude]),
         scale_factor = 100,
     )
     task = ChemotaxisTask(
-        source = np.array([149.7, 94.2, 0]),
+        source = np.array([119.0, 175.0, 0]),
         decay_function = field_decay,
         box_length = np.array([box_l_x.magnitude, box_l_y.magnitude, box_l_x.magnitude]),
         reward_scale_factor = 10,
@@ -323,7 +347,7 @@ def main():
         "RotateCounterClockwise": rotate_counter_clockwise,
         "DoNothing": do_nothing,
     }
-    loss = srl.losses.ProximalPolicyLoss()
+    loss = srl.losses.ProximalPolicyLoss(entropy_coefficient=0.02, epsilon=0.2)
     agent = srl.agents.ActorCriticAgent(
         particle_type=0,
         network=network,
@@ -339,8 +363,8 @@ def main():
                 get_engine=get_system_runner,
                 n_episodes=500,
                 system=system,
-                reset_frequency=20,
-                episode_length=200,
+                reset_frequency=100,
+                episode_length=10,
             )
     rl_trainer.export_models()
 
