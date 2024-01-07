@@ -109,10 +109,10 @@ def get_flow_and_boundary(flow_results:dict, mean_flow_vel):
 def main():
     ureg = pint.UnitRegistry()
     swim_vel = ureg.Quantity(5, "micrometer/second")
-    mean_flow_vel = ureg.Quantity(5, "micrometer/second")
+    mean_flow_vel = ureg.Quantity(5, "micrometer/second") 
     # choose box_l along x, infer y length from flowfield
     box_l_x = ureg.Quantity(200, "micrometer")
-    n_colloids = 0
+    n_colloids = 50
     seed = 42
     n_slices = 20000
     
@@ -137,8 +137,8 @@ def main():
     params = espresso.MDParams(
         ureg=ureg,
         fluid_dyn_viscosity=ureg.Quantity(8.9e-3, "pascal * second"),
-        WCA_epsilon=ureg.Quantity(300, "kelvin") * ureg.boltzmann_constant,
-        temperature=ureg.Quantity(300, "kelvin"),
+        WCA_epsilon=ureg.Quantity(311.15, "kelvin") * ureg.boltzmann_constant,
+        temperature=ureg.Quantity(311.15, "kelvin"),
         box_length=box_l,
         time_step=ureg.Quantity(0.005, "second"),
         time_slice=ureg.Quantity(0.01, "second"),
@@ -191,7 +191,6 @@ def main():
         )}
 
     add_colloids(runner, n_colloids, partcl_params, boundary_2d, agrid_x, agrid_y, ureg)
-    
 
     active_force = fluid_force.m_as("sim_force")
     active_torque = (active_ang_vel * gamma_rot).m_as("sim_torque")
@@ -241,7 +240,7 @@ def plot_trajectories():
     
     fig, ax = plt.subplots()
     ax.pcolormesh(xs, ys, flow_norm.T)
-    ax.plot(positions[:, :, 0], positions[:, :, 1])
+    ax.plot(positions[0, :, 0], positions[0, :, 1], "o")
     ax.set_aspect("equal")
     fig.savefig(OUT_DIR / "trajectory.png")
     

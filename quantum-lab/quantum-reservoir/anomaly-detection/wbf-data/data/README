@@ -1,8 +1,0 @@
-Use pickle module to read to file( Unpickle function in utils.py with <name> in {hdm_h_ll_z_inv,zz_ll_inv}) 
-
-It is a python dictionary containing (parton-level)Leptons and Inv(neutrinos) with (10000,2) dimensional numpy arrays
-for 10000 events with 2 leptons(charged and neutral) in each event, each of these entries are TLorentzVectors 
-Requires pyROOT>=6.04 ( it can be installed with: conda install -c conda-forge root # may clash with preinstalled root!!)
-
-Put these two pickle files in ./passed_events in the working directory
-Use data_convert.py to extract csv files
