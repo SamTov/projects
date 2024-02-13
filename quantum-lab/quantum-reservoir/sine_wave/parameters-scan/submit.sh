@@ -27,4 +27,4 @@ conda activate zincware
 
 cd $SLURM_SUBMIT_DIR  # change into working directory
 
-python crop_code.py > output.out
+python parameter-scan.py --coupling ${1} --state_size ${2} --prediction_length ${3}
