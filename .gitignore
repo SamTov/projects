@@ -10,6 +10,14 @@
 *.pickle
 *.txt
 *.qu
+*.pgf
+*.obj
+*.pick
+
+# Tex files
+*.aux
+*.bbl
+*.blg
 
 # VSCode 
 *.vscode
