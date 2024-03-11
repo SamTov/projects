@@ -1,10 +1,10 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 from modules import *
 
 
-w_stds = np.linspace(0, 1., 51)
+w_stds = np.linspace(0, 2., 101)
 b_stds = np.linspace(0, 1., 51)
 
 x, y = np.meshgrid(w_stds, b_stds)
