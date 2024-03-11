@@ -21,16 +21,13 @@ import optax
 import pint
 from typing import List   
 
-# Task import
-from rotation_task import RotationTask
-
 
 system = espressomd.System(box_l=[1, 2, 3])
 def get_engine(system_runner):
     # Simulation parameters
     seed = np.random.randint(645153513)
 
-    temperature = 0.0
+    temperature = TEMP
     n_colloids = 50
 
     ureg = pint.UnitRegistry()
@@ -38,22 +35,22 @@ def get_engine(system_runner):
     md_params = espresso.MDParams(
         ureg=ureg,
         fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
-        WCA_epsilon=ureg.Quantity(temperature + 1.0, "kelvin") * ureg.boltzmann_constant,
+        WCA_epsilon=ureg.Quantity(1.0 + temperature, "kelvin") * ureg.boltzmann_constant,
         temperature=ureg.Quantity(temperature, "kelvin"),
-        box_length=ureg.Quantity(3 * [150], "micrometer"),
+        box_length=ureg.Quantity(150, "micrometer"),
         time_slice=ureg.Quantity(0.1, "second"),  # model timestep
         time_step=ureg.Quantity(0.001, "second"),  # integrator timestep
-        write_interval=ureg.Quantity(2, "second"),
-        periodic=False
+        write_interval=ureg.Quantity(1.0, "second"),
     )
 
     system_runner = srl.espresso.EspressoMD(
         md_params=md_params,
         n_dims=2,
         seed=seed,
-        out_folder=f'/data/stovey/ep_training/{seed}/training',
+        out_folder=f'./deployment',
         write_chunk_size=100,
         system=system_runner,
+        periodic=False
     )
 
     system_runner.add_colloids(
@@ -77,19 +74,6 @@ def get_engine(system_runner):
     # system_runner.add_confining_walls(wall_type=2)
 
     return system_runner
-
-# Reinforcement learning
-#KONSTANZ
-
-# 10s time slice
-# 360 actions in one episode
-# Update every 60 actions
-# Trains in 50-100 episodes
-
-# LR critic 0.01
-# LR actor 0.0005
-# PPO 50 epochs, KL 0.02, entropy 0.01, CL 0.03, gamma 0.995 / 0.999, lambda 0.97
-
 
     
 class ActorCriticNetwork(nn.Module):
@@ -116,12 +100,32 @@ class ActorCriticNetwork(nn.Module):
             kernel_init=self.kernel_init, 
             )(x)
         x = nn.leaky_relu(x)
+        x = nn.Dense(
+            features=128, 
+            kernel_init=self.kernel_init, 
+            )(x)
+        x = nn.leaky_relu(x)
+        x = nn.Dense(
+            features=128, 
+            kernel_init=self.kernel_init, 
+            )(x)
+        x = nn.leaky_relu(x)
 
         # Critic pass
         y = nn.Dense(
             features=128, 
             kernel_init=self.kernel_init, 
             )(vision_embedding)
+        y = nn.leaky_relu(y)
+        y = nn.Dense(
+            features=128, 
+            kernel_init=self.kernel_init, 
+            )(y)
+        y = nn.leaky_relu(y)
+        y = nn.Dense(
+            features=128, 
+            kernel_init=self.kernel_init, 
+            )(y)
         y = nn.leaky_relu(y)
         y = nn.Dense(
             features=128, 
@@ -143,8 +147,8 @@ class ActorCriticNetwork(nn.Module):
 
         return actions, value
 
-n_episodes = 5000
 
+n_episodes = 10000
 episode_length = 100
 
 # Exploration policy
@@ -166,13 +170,13 @@ observable = srl.observables.SubdividedVisionCones(
     radii=jnp.array([3.08 for _ in range(50)] + [0.84745763 for _ in range(59)])
 )
 
-task = RotationTask(
-    rod_type=1,
+rotation_task = srl.tasks.object_movement.RotateRod(
     particle_type=0,
+    angular_velocity_scale=100000,
+    rod_type=1,
     direction="CCW",
-    sensing_type=1,
-    box_length=np.array([150., 150., 150.]),
-    running_average_window = 10,
+    partition=True,
+    velocity_history=20
 )
 
 def decay_fn(x):
@@ -209,6 +213,11 @@ actions = {
     "DoNothing": do_nothing,
 }
 
+system_runner = get_engine(system)
+
+find_and_rotate.initialize(system_runner.colloids)
+observable.initialize(system_runner.colloids)
+
 ac_agent = srl.agents.ActorCriticAgent(
     particle_type=0,
     network=model,
@@ -217,19 +226,11 @@ ac_agent = srl.agents.ActorCriticAgent(
     actions=actions,
     loss=loss
 )
-# ac_agent.restore_agent("Models/")
 
-rl_trainer = srl.trainers.EpisodicTrainer(
-    [ac_agent],
-)
+ac_agent.restore_agent("Models")
 
-rewards = rl_trainer.perform_rl_training(
-    get_engine=get_engine,
-    n_episodes=n_episodes,
-    system=system,
-    reset_frequency=10,
-    episode_length=episode_length,
-            )
-np.save("exploration.npy", rewards)
+force_fn = srl.force_functions.ForceFunction({"0": ac_agent})
 
-rl_trainer.export_models()
+# Run the simulation
+
+system_runner.integrate(36000, force_fn)
