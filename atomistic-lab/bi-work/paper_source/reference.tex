@@ -29,14 +29,14 @@
 %%% TITLE, AUTHORS, AFFILIATION, ABSTRACT %%%
 %%% 
 \title{Local Structure Effects on Molecular Self-Diffusion}
+\author{Samuel Tovey}
+\affiliation{Institute for Computational Physics, University of Stuttgart, Allmandring 3, D-70569 Stuttgart, Germany} 
+\author{Christian Holm}
+\affiliation{Institute for Computational Physics, University of Stuttgart, Allmandring 3, D-70569 Stuttgart, Germany} 
 \author{Jens Smiatek}
 \email{smiatek@icp.uni-stuttgart.de}
 \affiliation{Institute for Computational Physics, University of Stuttgart, Allmandring 3, D-70569 Stuttgart, Germany} 
 \affiliation{Boehringer Ingelheim Pharm GmbH \& Co. KG, Development NCE, Birkendorfer Strasse 67, D-88397 Biberach (Riss), Germany} 
-\author{Christian Holm}
-\affiliation{Institute for Computational Physics, University of Stuttgart, Allmandring 3, D-70569 Stuttgart, Germany} 
-\author{Samuel Tovey}
-\affiliation{Institute for Computational Physics, University of Stuttgart, Allmandring 3, D-70569 Stuttgart, Germany} 
 
 \begin{abstract}
 We present the results of Langevin Dynamics (LD) simulations in combination with analytical calculations to describe the self-diffusion of tracer particles in continuum solvents. In terms of expressions for Fick and Maxwell-Stefan diffusion coefficients in binary solutions, we show that the self-diffusion coefficients exhibit a significant dependence on the local environment. According to Kirkwood-Buff theory, the respective self-diffusion coefficients depend on the derivatives of the thermodynamic activity, which changes significantly with the addition of further particles. These results show that the local environment has a decisive influence on the self-diffusion of particles. All simulation results show good agreement with the analytical expressions. The corresponding results thus provide a solid background for a deeper understanding of the relationships between local structures and their influence on the dynamics of individual particles.
@@ -195,7 +195,7 @@ with the mass $m_i$ of a particle $i$ fom the chosen species, the velocity $\tex
 \langle R_{\alpha,i}(t)R_{\beta,j}(t_0)\rangle = 2 m_i k_BT \delta_{ij}\delta_{\alpha\beta}\delta(t-t_0)
 \end{equation}
 in combination with  $\langle {\textbf{R}}_i(t)\rangle = 0 $. The temperature was set to $T=300$ K in all runs and the friction coefficient was chosen as $\gamma = 0.5$ ps$^{-1}$. 
-We used NVT simulation with a fixed length of $L_B = 3$ nm for the cubic simulation boxes. Constant box lengths are essential to avoid varying finite size effects for our calculations \cite{yeh04a}. Random insertion of $N=20, 22, 24, 26, 28, 30, 32,34,36, 38, 40, 42$ and $44$ spherical particles for the individual  simulations resulted in different number densities ranging from $\rho_1 =  (0.78 - 1.71)$ nm$^{-3}$. The corresponding water particle simulations correspond to $N = 2,3,4,5$ and 6 water molecules resulting in particle densities of $\rho_1 = (0.08 - 0.23)$ nm$^{-3}$. Each system was simulated for 50 ns with a time step of $\Delta$t = 2 fs and the first 2 ns were used for equilibration. 
+We used NVT simulation with a fixed length of $L_B = 3$ nm for the cubic simulation boxes. Constant box lengths are essential to avoid varying finite size effects for our calculations \cite{yeh04a}. Random insertion of $N=20, 22, 24, 26, 28, 30, 32,34,36, 38, 40, 42$ and $44$ spherical particles for the individual  simulations resulted in different number densities ranging from $\rho_1 =  (0.78 - 1.71)$ nm$^{-3}$. The corresponding water particle simulations correspond to $N = 2,3,4,5$ and 6 water molecules resulting in particle densities of $\rho_1 = (0.08 - 0.23)$ nm$^{-3}$. Each system was simulated for 50 ns with a time step of $\Delta$t = 2 fs and the first 2 ns were used for equilibration. For the water particle simulations, we used a PME approach \cite{darden93a} with a Fourier grid spacing of 0.5 nm. For the uncharged spherical particles, all Coulomb interactions were switched off.
 
 
 \section{Results}
@@ -295,9 +295,21 @@ The corresponding values for the diffusion coefficients and the inverse derivati
         \caption{Self-diffusion coefficients $D_{11}^s$ for different water particle densities in comparison to  $1/a_{11}(r)$ (red circles). The corresponding black line shows the results of a linear fit in accordance with Eqn.~\eqref{eq:tracerdiff} with values of fit $D=-6.868\cdot 10^{-5}$ cm$^2$/s and $D_{cm}=121.854 \cdot 10^{-5}$ cm$^2$/s. The correlation coefficient reads $R^2 = -0.98$.}
         \label{fig9}
 \end{figure}
-In agreement with all previous findings, one can also observe a linear relationship which highlights the validity of Eqn.~\eqref{eq:tracerdiff} even for non-spherical particles. A linear fit in accordance with Eqn.~\eqref{eq:tracerdiff} yields $D=-6.868\cdot 10^{-5}$ cm$^2$/s and $D_{cm}=121.854 \cdot 10^{-5}$ cm$^2$/s with a correlation coefficient  of $R^2 = -0.98$.
-
- 
+In agreement with all previous findings, one can also observe a linear relationship which highlights the validity of Eqn.~\eqref{eq:tracerdiff} even for non-spherical particles. A linear fit in accordance with Eqn.~\eqref{eq:tracerdiff} yields $D=-6.868\cdot 10^{-5}$ cm$^2$/s and $D_{cm}=121.854 \cdot 10^{-5}$ cm$^2$/s with a correlation coefficient  of $R^2 = -0.98$.\\
+For the study of higher water densities, we also simulated $N=100, 110, 120, 130$ and $N=150$ water molecules in a larger simulation box with $L =  5$ nm corresponding to water number densities of $\rho_l = (0.83, 0.91, 1.00, 1.08, 1.25)$ nm$^{-3}$. The corresponding results for the radial distribution function are shown in Fig.~\ref{fig10}. 
+\begin{figure}[tbh!]
+        \includegraphics[width=0.5\textwidth]{fig10.pdf} \\
+        \caption{Center-of-mass radial distribution functions $g_{11}(r)$ for different water particle densities at larger simulation box sizes $L=5$ nm.}
+        \label{fig10}
+\end{figure}
+In comparison to Fig.~\ref{fig7}, one can clearly see that higher water densities lead to a more pronounced long range structuring effect. While the first  does not differ in its position, one can notice the occurrence of second and even third local solvation shells at distances of $r = 0.45$ nm and between $0.60 < r < 0.66$ nm. Accordingly, higher water densities lead to more compact and higher local solvation shells which crucially change the corresponding thermodynamic factors.\\ 
+The resulting consequences on the diffusive motion are shown in Fig.~\ref{fig11}. 
+\begin{figure}[tbh!]
+        \includegraphics[width=0.5\textwidth]{fig11.pdf} \\
+        \caption{Self-diffusion coefficients $D_{11}^s$ for different water particle densities in comparison to  $1/a_{11}(r)$ (red circles) with larger simulation box sizes $L = 5$. The corresponding black line shows the results of a linear fit in accordance with Eqn.~\eqref{eq:tracerdiff} with values of fit $D=-0.045\cdot 10^{-5}$ cm$^2$/s and $D_{cm}=195.085 \cdot 10^{-5}$ cm$^2$/s. The correlation coefficient reads $R^2 = -0.99$.}
+        \label{fig11}
+\end{figure}
+As can be seen, despite the significantly higher values of $1/a_{11}$ compared to Fig.~\ref{fig9},  the aforementioned discussed linear relationship $D_{11}^s \propto 1/a_{11}$ remains valid. A linear fit in accordance with Eqn.~\eqref{eq:tracerdiff} provides $D=-0.045\cdot 10^{-5}$ cm$^2$/s and $D_{cm}=195.085 \cdot 10^{-5}$ cm$^2$/s with a correlation coefficient  of $R^2 = -0.99$. Such findings reveal the crucial influence of local structure effects at low and moderate densities on the self-diffusion of spherical  and non-spherical particles. The differences in the center-of-mass diffusion coefficients $D_{cm}=195.085 \cdot 10^{-5}$ cm$^2$/s for large and $D_{cm}=121.854 \cdot 10^{-5}$  cm$^2$/s for smaller box sizes can be mainly attributed to finite-size effects and the corresponding influence on the diffusive motion \cite{yeh04a}. Corresponding conclusions can also be drawn for the significant differences in the fitting parameter $D$. However, despite the numerical differences, it becomes obvious that thermodynamic factors and thus the local environment and structure affect the molecular self-diffusion behavior. 
 
 \section{Summary and Conclusion}
 We have studied the self-diffusion of spherical and non-spherical tracer particles at different densities in an implicit solvent using LD simulations. In addition, we have also derived an analytical expression for self-diffusion coefficients, based in particular on an interpretation of the thermodynamic factor in the framework of Kirkwood-Buff theory. The results of the simulations are in very good agreement with the analytical expressions, which proves the validity of our considerations. Accordingly, we were able to show that varying particle density is accompanied by a change in the self-diffusion coefficients, which is caused by a change in the derivatives of the thermodynamic activity. However, since the thermodynamic activity is significantly influenced by deviations from the ideal behavior, it can be seen that local accumulation effects and thus the structure of the local environment have a decisive influence on the diffusive properties of the particles. \\
