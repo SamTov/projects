@@ -1,3 +1,6 @@
 [submodule "nanopore-lab/muP/mup"]
 	path = nanopore-lab/muP/mup
 	url = https://github.com/SamTov/mup.git
+[submodule "quantum-lab/ballistic-diamond/lammps"]
+	path = quantum-lab/ballistic-diamond/lammps
+	url = https://github.com/lammps/lammps.git
