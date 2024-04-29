@@ -13,6 +13,7 @@
 # System imports and GPU settings
 import pathlib
 import pickle
+import glob
 
 # Torch imports
 import torch
@@ -21,9 +22,10 @@ import torch.nn.functional as F
 import torchmetrics
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from torchvision import transforms
 
 # Model imports
-from torchvision.models import resnext101_64x4d, ResNeXt101_64X4D_Weights
+from torchvision.models import resnext50_32x4d
 
 # Lightning imports
 import lightning as L
@@ -50,6 +52,7 @@ class TrainingDataset(Dataset):
     def __getitem__(self, idx):
         with open(self.ds_dir / f"train/{idx}.pk", "rb") as f:
             label, image = pickle.load(f)
+            image = torch.Tensor(image)
 
         if self.transform:
             image = self.transform(image)
@@ -73,7 +76,7 @@ class ValidationDataset(Dataset):
     def __getitem__(self, idx):
         with open(self.ds_dir / f"validation/{idx}.pk", "rb") as f:
             label, image = pickle.load(f)
-            # print(label)
+            image = torch.Tensor(image)
 
         if self.transform:
             image = self.transform(image)
@@ -187,19 +190,22 @@ class LitResModel(pl.LightningModule):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
 ## Parameter definition, Initialization
+image_size = 64
 
 # Hyperparameters (to be tuned)
 hyperparameters = {
     "batch_size": 50,
-    "lr": 1e-2,
+    "lr": 1e-4,
     # "momentum": 0.9,
     "seed": 38,
     "num_target_classes": 42,
-    "max_epochs": 500,
+    "max_epochs": 5000,
     "T_max": 1000,
 }
 
-model = resnext101_64x4d()
+# Create default resenet and change first layer to handle
+# new data input.
+model = resnext50_32x4d()
 # Change the first layer
 layer = model.conv1
 new_layer = torch.nn.Conv2d(in_channels=2,
@@ -212,16 +218,18 @@ new_layer = torch.nn.Conv2d(in_channels=2,
 model.conv1 = new_layer
 model.fc = torch.nn.Linear(model.fc.in_features, 42)
 
+
 # Define logger (insert favorite logger)
 logger = pl.loggers.MLFlowLogger(
-    experiment_name="ResNext101_64x4d-scratch", 
-    save_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-scratch/mlruns/"
+    experiment_name=f"resnext50_32x4d-{image_size}", 
+    save_dir=f"/work/stovey/resnext/resnext50_32x4d-{image_size}/mlruns/"
 )
 
+# Checkpointing for training state.
 checkpoint_callback = pl.callbacks.ModelCheckpoint(
     monitor="ptl/validation_accuracy",
-    dirpath="/data/stovey/ResNext-Models/ResNext101_64x4d-scratch/ckpts/",
-    filename="ResNext101_64x4d-pretrained-{epoch:02d}-{ptl/validation_loss:.2f}",
+    dirpath=f"/work/stovey/resnext/resnext50_32x4d-{image_size}/ckpts/",
+    filename="resnext50_32x4d-{epoch:02d}-{ptl/validation_loss:.2f}",
     save_top_k=2,
     mode="max",
 )
@@ -230,21 +238,32 @@ checkpoint_callback = pl.callbacks.ModelCheckpoint(
 trainer = pl.Trainer(
     accelerator="gpu",
     logger=logger,
-    accumulate_grad_batches=20,
+    accumulate_grad_batches=100,
     callbacks=[StochasticWeightAveraging(swa_lrs=1e-2), checkpoint_callback],
     devices="auto",
     strategy="ddp",
     max_epochs=hyperparameters["max_epochs"],
-    log_every_n_steps=1,
-    default_root_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/ckpts/",
+    log_every_n_steps=10,
+    default_root_dir=f"/work/stovey/resnext/resnext50_32x4d-{image_size}/mlruns/",
     enable_progress_bar=True,
     sync_batchnorm=True,
 )
 
+# Define the normalization transform
+mean = torch.tensor([3.6632e-05, 6.1436e-06])
+std = torch.tensor([0.0169, 0.0168])
+transform = transforms.Compose(
+    [
+        transforms.Normalize(mean, std),
+        transforms.Resize((image_size, image_size)),
+    ]
+)
+
 # Use the custom datamodule
 datamodule = DataModule(
-    data_dir="/data/jhossbach/Image_Dataset/dataset_all",
+    data_dir="/work/jhossbach/Image_Dataset_old/dataset_all",
     batch_size=hyperparameters["batch_size"],
+    transform=transform,
 )
 
 # Optimizer and scheduler
@@ -259,9 +278,10 @@ lit_model = LitResModel(
     scheduler=scheduler,
 )
 
-# # Optimizer learning rate before training the model.
-# tuner = Tuner(trainer)
-# tuner.lr_find(lit_model, datamodule)
+# ckpts = glob.glob(f"/work/stovey/resnext/resnext50_32x4d-{image_size}/ckpts/*")
+# epochs = [int(ckpt.split("/")[-1].split("-")[1].split("=")[-1]) for ckpt in ckpts]
+# max_epoch_location = epochs.index(max(epochs))
+# ckpt_path = glob.glob(f"{ckpts[max_epoch_location]}/*")[0]
 
 # Start training
 trainer.fit(lit_model, datamodule=datamodule)

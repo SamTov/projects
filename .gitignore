@@ -13,12 +13,22 @@
 *.pgf
 *.obj
 *.pick
-
+*.v2
+*.conllu
+*.xml
+*.gz
+*.pb
+ckpt*
+*COPYING*
+*.tgz
+*.bib
+*.jar
 # Tex files
 *.aux
 *.bbl
 *.blg
-
+*.code-workspace
+*checkpoint*
 # VSCode 
 *.vscode
 
