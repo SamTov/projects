@@ -191,11 +191,11 @@ class LitResModel(pl.LightningModule):
 # Hyperparameters (to be tuned)
 hyperparameters = {
     "batch_size": 50,
-    "lr": 1e-2,
+    "lr": 1e-4,
     # "momentum": 0.9,
     "seed": 38,
     "num_target_classes": 42,
-    "max_epochs": 500,
+    "max_epochs": 5000,
     "T_max": 1000,
 }
 
@@ -230,12 +230,12 @@ checkpoint_callback = pl.callbacks.ModelCheckpoint(
 trainer = pl.Trainer(
     accelerator="gpu",
     logger=logger,
-    accumulate_grad_batches=20,
+    accumulate_grad_batches=100,
     callbacks=[StochasticWeightAveraging(swa_lrs=1e-2), checkpoint_callback],
     devices="auto",
     strategy="ddp",
     max_epochs=hyperparameters["max_epochs"],
-    log_every_n_steps=1,
+    log_every_n_steps=10,
     default_root_dir="/data/stovey/ResNext-Models/ResNext101_64x4d-pretrained/ckpts/",
     enable_progress_bar=True,
     sync_batchnorm=True,
