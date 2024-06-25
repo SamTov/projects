@@ -20,9 +20,7 @@ from torchvision.models import resnext101_64x4d, ResNeXt101_64X4D_Weights
 
 # Lightning imports
 import lightning as L
-import lightning.pytorch as pl
-from lightning.pytorch.tuner import Tuner
-from lightning.pytorch.callbacks import StochasticWeightAveraging
+from lightning.callbacks import StochasticWeightAveraging
 import matplotlib.pyplot as plt
 torch.set_printoptions(profile="full")
 torch.set_float32_matmul_precision('medium')
