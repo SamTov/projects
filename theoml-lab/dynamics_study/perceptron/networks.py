@@ -16,7 +16,7 @@ class Perceptron(nn.Module):
     # Attributes
     width: int
     activation: callable = nn.relu
-    bias: bool = True
+    bias: bool = False
 
     # Methods
     @nn.compact
@@ -28,7 +28,8 @@ class Perceptron(nn.Module):
         x = nn.Dense(self.width, use_bias=self.bias)(x)
         x = self.activation(x)
 
-        return nn.Dense(2)(x)
+        return nn.Dense(2, use_bias=False)(x)
+        # return x
 
 
 # Dense network
@@ -53,7 +54,7 @@ class DenseNetwork(nn.Module):
             x = nn.Dense(self.width, use_bias=self.bias)(x)
             x = self.activation(x)
 
-        return nn.Dense(1)(x)
+        return x
     
 
 @dataclass

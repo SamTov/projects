@@ -48,12 +48,15 @@ class DenseNetwork(nn.Module):
         """
         Forward pass.
         """
+        # Flatten
+        x = x.reshape((x.shape[0], -1))
+        
         # Dense layers
         for _ in range(self.depth):
             x = nn.Dense(self.width, use_bias=self.bias)(x)
             x = self.activation(x)
 
-        return nn.Dense(1)(x)
+        return nn.softmax(nn.Dense(10)(x))
     
 
 @dataclass
@@ -85,12 +88,15 @@ class ConvolutionalNetwork(nn.Module):
         """
         # Convolutional layers
         for _ in range(self.depth):
-            x = nn.Conv(self.width, use_bias=self.bias)(x)
+            x = nn.Conv(self.width, kernel_size=self.pool.window_shape, use_bias=self.bias)(x)
             x = self.activation(x)
             x = self.pool.pool_op(
                 x, 
                 window_shape=self.pool.window_shape, 
                 strides=self.pool.strides
             )
-
-        return x
+        x = x.reshape((x.shape[0], -1))
+        x = nn.Dense(128)(x)
+        x = self.activation(x)
+        
+        return nn.Dense(10)(x)

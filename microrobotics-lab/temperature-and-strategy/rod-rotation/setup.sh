@@ -2,7 +2,7 @@
 # RL experiments.
 
 script=rod-rotation-rl.py
-for i in 0 150 273 300 350
+for i in 0 300 # 150 273 300 350
 do
 	mkdir ${i}K
 	cp ${script} ${i}K
