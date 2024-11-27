@@ -28,7 +28,7 @@ class Perceptron(nn.Module):
         x = nn.Dense(self.width, use_bias=self.bias)(x)
         x = self.activation(x)
 
-        return x
+        return nn.Dense(2)(x)
 
 
 # Dense network
@@ -53,7 +53,7 @@ class DenseNetwork(nn.Module):
             x = nn.Dense(self.width, use_bias=self.bias)(x)
             x = self.activation(x)
 
-        return x
+        return nn.Dense(1)(x)
     
 
 @dataclass

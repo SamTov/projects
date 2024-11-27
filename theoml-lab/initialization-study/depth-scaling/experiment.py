@@ -144,7 +144,7 @@ def experiment(
 
     # File name
     name_seed = np.random.randint(97898365)
-    prefix="/data/stovey/init_study"
+    prefix="/data/stovey/init_study_small"
     name = f"{prefix}/{w_std}_{b_std}_{width}_{depth}_{activation.__name__}_{name_seed}"
 
     # Create the ZnNL model

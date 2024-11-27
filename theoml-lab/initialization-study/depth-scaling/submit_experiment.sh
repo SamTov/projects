@@ -23,11 +23,11 @@ sed_function () {
 # ensembles=(1 2 3 4 5 6 7 8 9 10)
 # widths=(128 512)
 
-w_stds=($(seq 0.4 0.1 2))
+w_stds=($(seq 0.1 0.1 2))
 b_stds=0.05
-depths=($(seq 1 10 300))
+depths=($(seq 1 1 10))
 activations=(nn.relu nn.tanh)
-ensembles=(1 2 3 4 5)
+ensembles=(1)
 widths=(128 512)
 
 # Test params

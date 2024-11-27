@@ -10,10 +10,10 @@
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=1
 #SBATCH --partition single
-#SBATCH --time=120:00:00
-#SBATCH --mem=32gb
+#SBATCH --time=48:00:00
+#SBATCH --mem=24gb
 
 ### -------------------- ###
 ### Modules to be loaded ###
@@ -29,6 +29,8 @@ source ~/.bashrc
 
 pypresso=/home/st/st_st/st_ac134186/software/SwarmRL/espresso/build/pypresso
 script=rod-rotation-rl.py
+# script=rod-rotation-deploy.py
+
 
 ### ------------------------------------- ###
 ### Change into working directory and run ###

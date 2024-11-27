@@ -23,12 +23,12 @@ from typing import List
 
 
 system = espressomd.System(box_l=[1, 2, 3])
-def get_engine(system_runner):
+def get_engine(system_runner, cycle_index: str = "0"):
     # Simulation parameters
     seed = np.random.randint(645153513)
 
-    temperature = 0.
-    n_colloids = 20
+    temperature = TEMP
+    n_colloids = 100
 
     ureg = pint.UnitRegistry()
 
@@ -37,20 +37,21 @@ def get_engine(system_runner):
         fluid_dyn_viscosity=ureg.Quantity(8.9e-4, "pascal * second"),
         WCA_epsilon=ureg.Quantity(1.0 + temperature, "kelvin") * ureg.boltzmann_constant,
         temperature=ureg.Quantity(temperature, "kelvin"),
-        box_length=ureg.Quantity(150, "micrometer"),
-        time_slice=ureg.Quantity(1.0, "second"),  # model timestep
-        time_step=ureg.Quantity(0.001, "second"),  # integrator timestep
+        box_length=ureg.Quantity([150] * 3, "micrometer"),
+        time_slice=ureg.Quantity(10.0, "second"),  # model timestep
+        time_step=ureg.Quantity(0.01, "second"),  # integrator timestep
         write_interval=ureg.Quantity(2000000, "second"),
+        periodic=False,
     )
 
     system_runner = srl.espresso.EspressoMD(
         md_params=md_params,
         n_dims=2,
         seed=seed,
-        out_folder=f'./ep_training/{seed}/training',
+        out_folder=f'./training',
         write_chunk_size=100,
         system=system_runner,
-        periodic=False
+        h5_group_tag=cycle_index
     )
 
     system_runner.add_colloids(
@@ -148,8 +149,8 @@ class ActorCriticNetwork(nn.Module):
         return actions, value
 
 
-n_episodes = 200
-episode_length = 600
+n_episodes = 500
+episode_length = 360
 
 # Exploration policy
 exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
@@ -167,7 +168,7 @@ observable = srl.observables.SubdividedVisionCones(
     vision_range=1000000.0,
     vision_half_angle=1.4,
     n_cones=5,
-    radii=jnp.array([3.08 for _ in range(50)] + [0.84745763 for _ in range(59)])
+    radii=jnp.array([3.08 for _ in range(100)] + [0.84745763 for _ in range(59)])
 )
 
 rotation_task = srl.tasks.object_movement.RotateRod(
@@ -176,26 +177,12 @@ rotation_task = srl.tasks.object_movement.RotateRod(
     rod_type=1,
     direction="CCW",
     partition=True,
-    velocity_history=20
+    velocity_history=100
 )
-
-def decay_fn(x):
-    return 1.0 - x
-
-search_task = srl.tasks.searching.SpeciesSearch(
-        decay_fn=decay_fn,
-        box_length = np.array([150.0, 150.0, 150.0]),
-        sensing_type = 1,
-        avoid = False,
-        scale_factor = 0.1,
-        particle_type = 0,
-)
-
-find_and_rotate = srl.tasks.MultiTasking(particle_type=0, tasks=[search_task, rotation_task])
 
 model = srl.networks.FlaxModel(
     flax_model=ActorCriticNetwork(),
-    optimizer=optax.adamw(learning_rate=1e-3),
+    optimizer=optax.adamw(learning_rate=1e-4),
     input_shape=(5, 2),
     sampling_strategy=sampling_strategy,
     exploration_policy=exploration_policy,
@@ -216,7 +203,7 @@ actions = {
 ac_agent = srl.agents.ActorCriticAgent(
     particle_type=0,
     network=model,
-    task=find_and_rotate, 
+    task=rotation_task, 
     observable=observable, 
     actions=actions,
     loss=loss
@@ -231,9 +218,10 @@ rewards = rl_trainer.perform_rl_training(
     get_engine=get_engine,
     n_episodes=n_episodes,
     system=system,
-    reset_frequency=10,
+    reset_frequency=1,
     episode_length=episode_length,
-            )
+)
+
 np.save("rewards.npy", rewards)
 
 rl_trainer.export_models()

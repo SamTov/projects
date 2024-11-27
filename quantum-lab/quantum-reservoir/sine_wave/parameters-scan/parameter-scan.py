@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-
 # Quantum simulation libraries
 from qutip import (
     basis, 
@@ -369,7 +365,7 @@ def run_simulation(coupling_strength: float):
         "driving": field_generator
     }
 
-    times = np.linspace(0, 500, 10000)
+    times = np.linspace(0, 500, 15000)
     results = mesolve(compute_hamiltonian, simulation_state.quantum_state, times, [], [], args)
 
     fit_generator = BFieldGenerator(1.0, 0.1 * np.pi, length=20)
@@ -479,16 +475,16 @@ prediction_length = args.prediction_length
 
 # Run simulation and save results
 try:
-    results = qutip.qload(f"simulation_states/{coupling_strength}")
+    results = qutip.qload(f"/work/stovey/sine_scan/simulation_states/{coupling_strength}")
     field_data = np.load(
-        "simulation_states/{coupling_strength}_field.npy", allow_pickle=True
+        "/work/stovey/sine_scan/simulation_states/{coupling_strength}_field.npy", allow_pickle=True
     )
     print(f"Loading Spin Chain with {coupling_strength} coupling strength.")
 except FileNotFoundError:
     print(f"Simulating Spin Chain with {coupling_strength} coupling strength.")
     results, field_data = run_simulation(coupling_strength)
-    qutip.qsave(results, f"simulation_states/{coupling_strength}")
-    np.save(f"simulation_states/{coupling_strength}_field.npy", field_data)
+    qutip.qsave(results, f"/work/stovey/sine_scan/simulation_states/{coupling_strength}")
+    np.save(f"/work/stovey/sine_scan/simulation_states/{coupling_strength}_field.npy", field_data)
 
 # Extract states
 states = results.states[1:]
@@ -496,13 +492,13 @@ states = results.states[1:]
 # Compute observable representation and save
 try:
     observables = np.load(
-        f"reservoir_measurements/{coupling_strength}_{state_size}.npy", allow_pickle=True    
+        f"/work/stovey/sine_scan/reservoir_measurements/{coupling_strength}_{state_size}.npy", allow_pickle=True    
     )
     print(f"Loading state description with {state_size} elements.")
 except FileNotFoundError:
     print(f"Computing state description with {state_size} elements.")
     observables = compute_state_description(states, state_size)
-    np.save(f"reservoir_measurements/{coupling_strength}_{state_size}.npy", observables)
+    np.save(f"/work/stovey/sine_scan/reservoir_measurements/{coupling_strength}_{state_size}.npy", observables)
 
 # Train and save results
 print(f"Fitting readout for a prediction length {prediction_length} steps.")
@@ -532,4 +528,4 @@ measurement = Measurement(
     test_pearson=test_pearson,
     train_pearson=train_pearson,
 )
-np.save(f"fit_results/{coupling_strength}_{state_size}_{prediction_length}.npy", measurement)
+np.save(f"/work/stovey/sine_scan/fit_results/{coupling_strength}_{state_size}_{prediction_length}.npy", measurement)

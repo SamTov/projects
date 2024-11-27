@@ -28,7 +28,7 @@ def get_engine(system_runner):
     seed = np.random.randint(645153513)
 
     temperature = TEMP
-    n_colloids = 50
+    n_colloids = 20
 
     ureg = pint.UnitRegistry()
 
@@ -38,16 +38,16 @@ def get_engine(system_runner):
         WCA_epsilon=ureg.Quantity(1.0 + temperature, "kelvin") * ureg.boltzmann_constant,
         temperature=ureg.Quantity(temperature, "kelvin"),
         box_length=ureg.Quantity(150, "micrometer"),
-        time_slice=ureg.Quantity(0.1, "second"),  # model timestep
+        time_slice=ureg.Quantity(10.0, "second"),  # model timestep
         time_step=ureg.Quantity(0.001, "second"),  # integrator timestep
-        write_interval=ureg.Quantity(1.0, "second"),
+        write_interval=ureg.Quantity(1, "second"),
     )
 
     system_runner = srl.espresso.EspressoMD(
         md_params=md_params,
         n_dims=2,
         seed=seed,
-        out_folder=f'./deployment',
+        out_folder=f'deployment',
         write_chunk_size=100,
         system=system_runner,
         periodic=False
@@ -146,10 +146,7 @@ class ActorCriticNetwork(nn.Module):
             )(y)
 
         return actions, value
-
-
-n_episodes = 10000
-episode_length = 100
+    
 
 # Exploration policy
 exploration_policy = srl.exploration_policies.RandomExploration(probability=0.0)
@@ -167,7 +164,7 @@ observable = srl.observables.SubdividedVisionCones(
     vision_range=1000000.0,
     vision_half_angle=1.4,
     n_cones=5,
-    radii=jnp.array([3.08 for _ in range(50)] + [0.84745763 for _ in range(59)])
+    radii=jnp.array([3.08 for _ in range(20)] + [0.84745763 for _ in range(59)])
 )
 
 rotation_task = srl.tasks.object_movement.RotateRod(
@@ -221,7 +218,7 @@ observable.initialize(system_runner.colloids)
 ac_agent = srl.agents.ActorCriticAgent(
     particle_type=0,
     network=model,
-    task=find_and_rotate, 
+    task=rotation_task, 
     observable=observable, 
     actions=actions,
     loss=loss
@@ -233,4 +230,4 @@ force_fn = srl.force_functions.ForceFunction({"0": ac_agent})
 
 # Run the simulation
 
-system_runner.integrate(36000, force_fn)
+system_runner.integrate(5000, force_fn)
