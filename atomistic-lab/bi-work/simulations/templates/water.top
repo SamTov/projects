@@ -1,0 +1,11 @@
+#include "gromos43a1.ff/forcefield.itp"
+#include "gromos43a1.ff/methanol.itp"
+#include "gromos43a1.ff/spc.itp"
+
+[ system ]
+; Name
+spc in phantom in water
+
+[ molecules ]
+; Compound  #mols
+SOL                NATOMS 

@@ -1,42 +1,42 @@
 #! /bin/bash
 
-# RL Brownian Studies
+# TheoML Dynamics Study
 
 ### ---------------------------------------- ###
 ### Input parameters for resource allocation ###
 ### ---------------------------------------- ###
 
-#SBATCH -J temperature-study
+#SBATCH -J NN-dynamics
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #SBATCH --partition single
-#SBATCH --time=48:00:00
-#SBATCH --mem=24gb
+#SBATCH --gres=gpu:2
+#SBATCH --time=96:00:00
+#SBATCH --mem=32gb
+#SBATCH --output=result.out
+#SBATCH --error=error.err
 
 ### -------------------- ###
 ### Modules to be loaded ###
 ### -------------------- ###
 
-
 module load compiler/gnu/12.1   
 module load mpi/openmpi/4.1
 module load devel/cmake/3.24.1
 
-
+# Source the bashrc file.
 source ~/.bashrc
 
-pypresso=/home/st/st_st/st_ac134186/software/SwarmRL/espresso/build/pypresso
-script=rod-rotation-rl.py
-# script=rod-rotation-deploy.py
-
+# Activate the conda environment.
+conda activate zincware
 
 ### ------------------------------------- ###
 ### Change into working directory and run ###
 ### ------------------------------------- ###
 
-cd $SLURM_SUBMIT_DIR  # change into working directory
+cd ${SLURM_SUBMIT_DIR}  # change into working directory
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
-
-${pypresso} ${script} >> output.out
+echo ${1} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10} ${11} ${12} ${13}
+python train.py --data ${1} --size ${2} --epochs ${3} --lr ${4} --batch ${5} --architecture ${6} --width ${7} --depth ${8} --activation ${9} --ntk_batch ${10} --input_shape ${11} --accuracy ${12} --loss_fn ${13}
