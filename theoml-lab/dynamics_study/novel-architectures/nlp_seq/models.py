@@ -214,8 +214,8 @@ class Transformer(nn.Module):
     assert inputs.ndim == 2  # (batch, len)
 
     config = self.config
-
     x = inputs.astype('int32')
+
     x = nn.Embed(
         num_embeddings=config.vocab_size, features=config.emb_dim, name='embed'
     )(x)
@@ -231,4 +231,5 @@ class Transformer(nn.Module):
         kernel_init=config.kernel_init,
         bias_init=config.bias_init,
     )(x)
-    return logits
+
+    return logits # np.max(jnp.max(logits, axis=-1), axis=-1).reshape(-1, 1)

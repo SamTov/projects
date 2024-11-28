@@ -11,6 +11,11 @@ import matplotlib.pyplot as plt
 from train import *
 from compute_ntk import *
 
+import glob
+import numpy as np
+
+from rich.progress import track
+
 
 def get_config():
   """Get the default hyperparameter configuration."""
@@ -18,7 +23,7 @@ def get_config():
 
   config.learning_rate = 0.001
   config.latents = 20
-  config.batch_size = 128
+  config.batch_size = 784
   config.num_epochs = 200
   return config
 
@@ -36,12 +41,13 @@ def get_dataset():
 
 def get_apply_fn(config):
 
+
     def apply_fn(params, inputs):
         rng = jax.random.key(0)
         rng, init_rng = jax.random.split(rng)
         return models.model(config.latents).apply(
             {"params": params}, inputs, rng
-        )[0]
+        )[1]
 
     return apply_fn
 
@@ -61,6 +67,8 @@ if __name__ == "__main__":
     # Get the config
     config = get_config()
     orbax_checkpointer = orbax.checkpoint.StandardCheckpointer()
+
+    
     # Set rng
     rng = random.key(0)
     rng, key = random.split(rng)
@@ -68,19 +76,63 @@ if __name__ == "__main__":
     # Load the dataset
     train_dataset = get_dataset()
 
-    model = models.model(config.latents)
-    apply_fn = get_apply_fn(config)
+    entropies = []
+    traces = []
+    loss = []
 
-    ntk_fn = get_ntk_fn(apply_fn)
+    files = np.sort(glob.glob("/work/stovey/novely-model-study/vae/model_*"))
+    nums = [int(item.split("/")[-1].split("_")[-1]) for item in files]
+    indices = np.argsort(nums)
+    n_sub_samples = 100
+    ds =np.array([item for item in next(train_dataset)])
+    
+    for item in track(files[indices]):
+        sub_entropies = []
+        sub_traces = []
+        state = load_state(orbax_checkpointer, item)
+
+        rng, z_key, eval_rng = random.split(rng, 3)
+        z = random.normal(z_key, (64, config.latents))
+        # vae = models.model(config.latents)
+
+        # recon_images, mean, logvar = vae.apply(
+        #     {"params": state["params"]}, ds, rng
+        # )
+
+        loss.append(eval_f(
+           state["params"], ds, z, eval_rng, config.latents
+        )[0]["loss"] / 784
+        )    
+
+        # for _ in range(n_sub_samples):
+            
+        #     ds_indices = np.random.choice(np.shape(ds)[0], 10, replace=False)
+        #     test_ds = jnp.take(
+        #         jnp.array(ds), ds_indices, axis=0
+        #     )
+        #     ntk = ntk_fn(
+        #         test_ds,
+        #         test_ds,
+        #         state["params"]
+        #     )
 
 
+        #     e, t = compute_cvs(ntk)
+        #     sub_entropies.append(e)
+        #     sub_traces.append(t)
 
-    state = load_state(orbax_checkpointer, "/work/stovey/novely-model-study/vae/model_14")
-    test_ds = next(train_dataset)[0:4]
-    ntk = full_ntk_matrix(state['params'], test_ds, ntk_fn, 2)
+        # entropies.append(
+        #     [np.mean(sub_entropies), np.std(sub_entropies)]
+        # )
+        # traces.append(
+        #     [np.mean(sub_traces), np.std(sub_traces)]
+        # )
 
-    e, t = compute_cvs(ntk)
+    # np.save("entropy.npy", entropies)
+    # np.save("traces.npy", traces)
 
-    print(e)
-    print(t)
+    # print(entropies)
+    # print(traces)
 
+    np.save("losses.npy", loss)
+        

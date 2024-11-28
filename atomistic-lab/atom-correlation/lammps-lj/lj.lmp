@@ -1,90 +1,27 @@
-# -------------------------------- #
-# Set global simulation parameters #
-# -------------------------------- #
+# Lennard-Jones Fluid in NVT Ensemble
+units		lj
+atom_style	atomic
 
-units  lj
-atom_style atomic
+lattice		fcc 0.8442
+region		box block 0 5 0 5 0 5
+create_box	1 box
+create_atoms	1 box
+mass		1 1.0
 
-# ------------------ #
-# Set run parameters #
-# ------------------ #
+velocity	all create 3.0 87287 loop geom
 
-variable temperature equal 1.0  # Set by run script
-variable pressure equal PRESS  # Set by run script
-variable npt_runtime equal 50000  # Increase for production
-variable nvt_runtime equal 5000  # Increase for production
+pair_style	lj/cut 2.5
+pair_coeff	1 1 1.0 1.0 2.5
 
-# -------------------- #
-# Build simulation box #
-# -------------------- #
+# Thermostat and Dynamics
+velocity all create 1.0 12345  # Set initial temperature
+fix 1 all nvt temp 1.0 1.0 1.0  # NVT ensemble with target temp of 1.0 and time constant of 1.0
 
-lattice  fcc 0.8442
-region  box block 0 10.0 0 10.0 0 10.0
-create_box 1 box
+# Output Settings
+timestep 0.005
+thermo 100  # Output thermodynamic info every 100 timesteps
+dump 1 all custom 1 lj_nvt.lammpstrj id type x y z vx vy vz # Save atomic positions every 100 timesteps
+dump_modify 1 sort id
 
-# ---------------- #
-# Initialize atoms #
-# ---------------- #
-
-create_atoms 1 box
-mass  1 1.0
-velocity all create 4 87287 loop geom
-
-# ------------------------ #
-# Define pair interactions #
-# ------------------------ #
-
-pair_style lj/cut 2.5
-pair_coeff 1 1 1.0 1.0 2.5
-
-# --------------------------------- #
-# Update neighbour cutoff (Remove?) #
-# --------------------------------- #
-
-neighbor 0.3 bin
-neigh_modify delay 0 every 40 check no
-
-# --------------------- #
-# Geometry minimization #
-# --------------------- #
-
-# Perform minimization
-minimize 1.0e-4 1.0e-6 100 1000
-
-# Reset the timestep
-reset_timestep 0
-
-# ------------------ #
-# Run NPT simulation #
-# ------------------ #
-
-# Define the barostat
-fix 1 all npt temp ${temperature} ${temperature} $(100.0*dt) iso ${pressure} ${pressure} $(300.0*dt)
-
-# Define the output
-thermo 100
-thermo_style custom elapsed pe ke etotal press temp density
-
-# Run the simulation
-run ${npt_runtime}
-
-# Reset timestep for NVT stage
-reset_timestep 0
-unfix 1
-
-# ------------------ #
-# Run NVT simulation #
-# ------------------ #
-
-# Define thermostat
-fix 2 all nvt temp ${temperature} ${temperature} $(100.0*dt)
-
-# Define the output
-thermo 100
-thermo_style custom elapsed pe ke etotal press temp
-
-dump trajectory all custom 1 dumpy.lammpstraj id type x y z vx vy vz  # Dump all necessary information
-dump_modify trajectory sort id  # Sort the output of the simulation
-
-# Run the simulation
-run ${nvt_runtime}
+# Run Simulation
+run 50000

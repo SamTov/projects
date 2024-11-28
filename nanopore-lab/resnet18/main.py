@@ -119,74 +119,7 @@ class DataModule(L.LightningDataModule):
 
 ## Torch model, Lightning model definition
 
-class LitResModel(pl.LightningModule):
-    def __init__(self, hyperparameters, model, optimizer, scheduler):
-        super().__init__()
 
-        self.lr = hyperparameters["lr"]
-        self.mom = hyperparameters.get("momentum", None)
-        pl.seed_everything(hyperparameters["seed"])
-
-        self.opt = optimizer
-        self.scheduler = scheduler
-
-        # self.automatic_optimization = False
-
-        self.model = model
-
-        # Accuracy measures
-        self.train_acc = torchmetrics.Accuracy(
-            task="multiclass", num_classes=hyperparameters["num_target_classes"]
-        )
-        self.valid_acc = torchmetrics.Accuracy(
-            task="multiclass", num_classes=hyperparameters["num_target_classes"]
-        )
-
-    def forward(self, x):
-        return self.model(x)
-
-    def training_step(self, batch, batch_idx):
-        inputs, labels = batch
-
-        preds = self(inputs)
-        loss = F.cross_entropy(preds, labels)
-        acc = self.train_acc(preds.argmax(1), labels)
-
-        self.log("ptl/train_loss", loss, sync_dist=True)
-        self.log(
-            "ptl/train_accuracy",
-            acc,
-            sync_dist=True,
-        )
-        return loss
-
-    def on_train_epoch_end(self, *args):
-        for indx, lr in enumerate(self.scheduler.get_last_lr()):
-            self.log(f"ptl/learning_rate_{indx}", lr)
-
-    def validation_step(self, batch, batch_idx):
-        inputs, labels = batch
-
-        preds = self.forward(inputs)
-        loss = F.cross_entropy(preds, labels)
-        acc = self.valid_acc(preds.argmax(1), labels)
-
-        self.log("ptl/validation_loss", loss, sync_dist=True)
-        self.log(
-            "ptl/validation_accuracy",
-            acc,
-            sync_dist=True,
-        )
-        return {"val_loss": loss, "val_accuracy": acc}
-
-    def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        inputs, labels = batch
-        with torch.no_grad():
-            preds = self.forward(inputs)
-        return preds
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.lr)
 
 ## Parameter definition, Initialization
 image_size = 4

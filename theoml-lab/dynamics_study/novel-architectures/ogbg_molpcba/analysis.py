@@ -10,9 +10,11 @@ import numpy as np
 import models
 from train import *
 import input_pipeline
+import glob
 
 # Helper functions
 from rich import print
+import matplotlib.pyplot as plt
 
 
 def get_config():
@@ -42,13 +44,16 @@ def get_config():
   config.num_classes = 128
   config.skip_connections = True
   config.layer_norm = True
+
   return config
+
 
 def load_state(checkpointer, file):
    """ Load a model state. """
    state = checkpointer.restore(file)
 
    return state["model"]
+
 
 def load_datasets(config):
    """ Load up the datasets. """
@@ -64,7 +69,18 @@ def load_datasets(config):
    return graphs
 
 
-def get_ntk_apply_fn(network, ds):
+def compute_cvs(ntk):
+
+    eigs, _ = np.linalg.eigh(ntk)
+
+    eigs = np.clip(eigs, 1e-11, None)
+
+    eigs /= eigs.sum()
+
+    return -np.sum(eigs * np.log(eigs)), np.trace(ntk)
+
+
+def get_ntk_apply_fn(network):
         """
         Return an NTK capable apply function.
 
@@ -87,9 +103,8 @@ def get_ntk_apply_fn(network, ds):
         def apply_fn(params, inputs):
             rng = jax.random.key(0)
             rng, init_rng = jax.random.split(rng)
-            inputs = np.take(ds, inputs)
             return network.apply(
-                params, jraph.batch(inputs), rngs=rng
+                params, inputs, rngs=rng
             ).globals
 
         return apply_fn
@@ -97,7 +112,6 @@ def get_ntk_apply_fn(network, ds):
 if __name__ == "__main__":
     # For repeated use
     orbax_checkpointer = orbax.checkpoint.StandardCheckpointer()
-    base_path = "/work/stovey/novely-model-study/ogbg_molpcba/"
 
     config = get_config()  # Load the config
 
@@ -105,35 +119,68 @@ if __name__ == "__main__":
     network = create_model(config, deterministic=False)
 
     # Load the data
-    train_graphs = jraph.unbatch(load_datasets(config))[0:20]
+    ds = load_datasets(config)
 
-    state = load_state(orbax_checkpointer, base_path + "/model_1950")
+    entropies = []
+    traces = []
+    loss = []
+
+    files = np.sort(glob.glob("/work/stovey/novely-model-study/ogbg_molpcba/model_*"))
+    nums = [int(item.split("/")[-1].split("_")[-1]) for item in files]
+    indices = np.argsort(nums)
+    n_sub_samples = 50
+    print(len(indices))
+
+
+    for item in files[indices][::10]:
+        sub_entropies = []
+        sub_traces = []
+        state = load_state(orbax_checkpointer, item)
+        # print(state.apply)
+        labels = ds.globals
+
+        graphs = replace_globals(ds)
+        rng = jax.random.key(0)
+        rngs, init_rng = jax.random.split(rng)
+
+        pred_graphs = network.apply(state["params"], graphs, rngs=rngs)
+
+        logits = pred_graphs.globals
+        mask = get_valid_mask(labels, graphs)
+        sl = binary_cross_entropy_with_mask(logits=logits, labels=labels, mask=mask)
+        ssl = EvalMetrics.single_from_model_output(
+        loss=sl, logits=logits, labels=labels, mask=mask
+        ).compute()
+        # Compute the various metrics.
+        loss.append(ssl)
+
+        
+
+        # for _ in range(n_sub_samples):
+            
+        #     ds_indices = np.random.choice(len(ds), 10, replace=False)
+
+        #     test_ds = [ds[i] for i in ds_indices]
+
+        #     # ntk = ntk_fn(
+        #     #     jraph.batch(test_ds),
+        #     #     jraph.batch(test_ds),
+        #     #     state["params"]
+        #     # )
+
+        #     # e, t = compute_cvs(ntk)
+        #     # sub_entropies.append(e)
+        #     # sub_traces.append(t)
+
+        # entropies.append(
+        #     [np.mean(sub_entropies), np.std(sub_entropies)]
+        # )
+        # traces.append(
+        #     [np.mean(sub_traces), np.std(sub_traces)]
+        # )
+
     
-    apply_fn = get_ntk_apply_fn(network, train_graphs)
-    
-    ntk_fn = nt.batch(
-        nt.empirical_ntk_fn(apply_fn),
-        2
-    )
-
-    indices = jnp.array([i for i in range(len(train_graphs))])
-
-    ntk = ntk_fn(
-        indices,
-        indices,
-        state["params"]
-    )
-
-    # eigs, _ = jnp.linalg.eigh(ntk)
-    # eigs /= eigs.sum()
-    # eigs = jnp.clip(eigs, 1e-12, None)
-
-    # print(f"Entropy: {-1 * (eigs * jnp.log(eigs)).sum()}")
-    # print(f"Trace: {jnp.trace(ntk)}")
-
-    # print(network.apply(state["params"], train_graphs, rngs=rng).globals)
-
-    
-    
-
+    # np.save("entropy.npy", entropies)
+    # np.save("traces.npy", traces)
+    np.save("losses.npy", loss)
 

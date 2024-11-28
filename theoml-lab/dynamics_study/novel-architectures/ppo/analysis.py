@@ -10,10 +10,14 @@ import models
 import neural_tangents as nt
 import orbax.checkpoint as ocp
 import numpy as np
+import jax.numpy as jnp
 
 import ml_collections
 import matplotlib.pyplot as plt
 from compute_ntk import get_ntk_fn, full_ntk_matrix
+from test_episodes import policy_test
+
+import glob
 
 
 def get_config():
@@ -87,35 +91,69 @@ if __name__ == "__main__":
     num_actions = env_utils.get_num_actions(game)
 
     # Load the model
-    model = models.Actor(num_outputs=num_actions)
+    model = models.ActorCritic(num_outputs=num_actions)
 
     # Load the data
     data = np.load("data.npy", allow_pickle=True)
 
-    # ntk_fn = nt.batch(
-    #     nt.empirical_ntk_fn(model.apply),
-    #     2
-    # )
+    ntk_fn = nt.empirical_ntk_fn(model.apply)
 
-    ntk_fn = get_ntk_fn(model.apply)
+    files = np.sort(glob.glob("/work/stovey/novely-model-study/ppo/model_*"))
+    nums = [int(item.split("/")[-1].split("_")[-1]) for item in files]
+    indices = np.argsort(nums)
+    n_sub_samples = 100
 
-    root = "/work/stovey/novely-model-study/ppo/model_"
-    restore_states = [
-        f"{root}39061",
-        f"{root}0",
-        f"{root}19500"
-    ]
+    actor_entropies = []
+    critic_entropies = []
+    actor_traces = []
+    critic_traces = []
+    rewards = []
 
-    data_point = data[0:4].astype(np.float32)
-    print(data_point)
-    state = load_state(orbax_checkpointer, restore_states[1])
-    actor_ntk = full_ntk_matrix(state['params'], data_point, ntk_fn, 2)
+    n_sub_samples = 100
 
-    # actor_ntk, critic_ntk = ntk_fn(data_point, data_point, {'params': state['params']})
 
-    ae, at = compute_cvs(actor_ntk)
-    # ce, ct = compute_cvs(critic_ntk)
+    for item in files[indices][::100]:
+        sub_actor_entropies = []
+        sub_actor_traces = []
+        sub_critic_entropies = []
+        sub_critic_traces = []
 
-    print(f"Actor: {ae}, {at}")
-    # print(f"Critic: {ce}, {ct}")
-  
+        state = load_state(orbax_checkpointer, item)
+
+        for _ in range(n_sub_samples):
+            
+            ds_indices = np.random.choice(np.shape(data)[0], 10, replace=False)
+            test_ds = jnp.take(jnp.array(data), ds_indices, axis=0)
+
+            actor_ntk, critic_ntk = ntk_fn(test_ds, test_ds, {'params': state['params']})
+
+            ae, at = compute_cvs(actor_ntk)
+            ce, ct = compute_cvs(critic_ntk)
+
+            sub_actor_entropies.append(ae)
+            sub_actor_traces.append(at)
+            sub_critic_entropies.append(ce)
+            sub_critic_traces.append(ct)
+
+        actor_entropies.append(
+            [np.mean(sub_actor_entropies), np.std(sub_actor_entropies)]
+        )
+        actor_traces.append(
+            [np.mean(sub_actor_traces), np.std(sub_actor_traces)]
+        )
+        critic_entropies.append(
+            [np.mean(sub_critic_entropies), np.std(sub_critic_entropies)]
+        )
+        critic_traces.append(
+            [np.mean(sub_critic_traces), np.std(sub_critic_traces)]
+        )
+
+        rewards.append(policy_test(1, model.apply, state['params'], game))
+
+    np.save("actor_entropy.npy", actor_entropies)
+    np.save("actor_traces.npy", actor_traces)
+
+    np.save("critic_entropy.npy", critic_entropies)
+    np.save("critic_traces.npy", critic_traces)
+
+    np.save("rewards.npy", rewards)

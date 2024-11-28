@@ -1,0 +1,104 @@
+# Initialization
+units       metal
+dimension   3
+boundary    p p p     # Periodic in x, y and free in z direction
+atom_style  atomic
+
+# User variables
+variable annealtemp equal 1400
+variable strikeangle equal 75
+variable strikespeed equal 5256.86052036
+
+# Computed variables
+variable posx equal 42.885349000000005+(5*cos((90-${strikeangle}))*PI/180)
+variable posz equal 710+(5*sin((90-${strikeangle})*PI/180))
+variable posy equal 34.3068485
+variable velx equal ${strikespeed}*cos((90-${strikeangle})*PI/180)
+variable velz equal ${strikespeed}*sin((90-${strikeangle})*PI/180)
+
+# Create Atom Structure (assuming diamond cubic lattice)
+lattice     diamond 3.567 orient x 1 1 0 orient y 0 0 -1 orient z -1 1 0  # Diamond lattice constant for carbon in Angstroms with 1 0 0 x direction orientation.
+region      box block 0 20 0 20 0 200 units lattice
+create_box  2 box
+region      slab block 0 20 0 20 60 140 units lattice
+create_atoms 1 region slab
+
+# Add tin atom
+create_atoms 2 single ${posx} ${posy} ${posz} units lattice  # Position tin atom above the slab
+
+# Define Potential
+pair_style      hybrid tersoff lj/cut 2.5  # tersoff
+pair_coeff      * * tersoff /home/stovey/work/projects/quantum-lab/ballistic-diamond/lammps/potentials/SiC.tersoff C C # You may need to adjust the file name depending on your LAMMPS distribution
+pair_coeff      1 2 lj/cut 0.01058 3.664 12.824 # Mixed LJ parameters for C-Sn interactions, adjust as necessary
+pair_coeff      2 2 lj/cut 0.01029 3.55  # Example LJ parameters for Sn-Sn, adjust as needed
+
+
+# Settings for carbon
+mass        1 12.01
+# Settings for tin
+mass        2 118.71  # Mass of tin atom
+
+# Create the atom groups
+group           diamond type 1
+group           tin type 2
+
+velocity    diamond create 20 4928459 rot yes dist gaussian  # Initialize velocities
+velocity    tin set 0.0 0.0 0.0 units box # Freeze for the warmup
+
+# --------------------- #
+# Diamond Equilibration #
+# --------------------- #
+
+# Define settings for dynamics
+fix diamondNVT all nvt temp 300 300 $(100.0*dt)
+fix tinfreeze tin setforce 0.0 0.0 0.0
+
+# Thermo output
+thermo      1000                # Output thermo info every 1000 steps
+
+# Dump settings for MD
+dump equilibrate all custom 10000 /work/stovey/ballistic-diamond/tersoff-sweep/velocity-${strikespeed}/temperature-${annealtemp}/angle-${strikeangle}/equilibration.lammpstraj id type x y z vx vy vz
+dump_modify equilibrate sort id
+
+timestep 0.002
+
+# Run Simulation 100 ps equilibration
+run         50000              # Number of timesteps to simulate
+undump equilibrate
+# -------------------- #
+# Collision simulation #
+# -------------------- #
+
+# Define settings for dynamics
+velocity tin set -${velx} 0.0 -${velz} units box # Shoot the tin atom towards the diamond
+unfix tinfreeze
+
+# Thermo output
+thermo      1000                # Output thermo info every 1000 steps
+
+# Dump settings for MD
+dump collision all custom 100 /work/stovey/ballistic-diamond/tersoff-sweep/velocity-${strikespeed}/temperature-${annealtemp}/angle-${strikeangle}/collision.lammpstraj id type x y z vx vy vz
+dump_modify collision sort id
+
+timestep 0.0001
+# Run Simulation 5 ps collision
+run         50000              # Number of timesteps to simulate
+undump collision
+# -------------------- #
+# Annealing Simulation #
+# -------------------- #
+
+# Define settings for dynamics
+unfix diamondNVT
+fix diamondNVT2 all nvt temp ${annealtemp} ${annealtemp} $(100.0*dt)
+
+# Thermo output
+thermo      1000                # Output thermo info every 1000 steps
+
+# Dump settings for MD
+dump anneal all custom 10000 /work/stovey/ballistic-diamond/tersoff-sweep/velocity-${strikespeed}/temperature-${annealtemp}/angle-${strikeangle}/annealing.lammpstraj id type x y z vx vy vz
+dump_modify anneal sort id
+
+timestep 0.001
+# Run Simulation 3 ns annealing
+run        3000000              # Number of timesteps to simulate

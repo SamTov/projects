@@ -1,0 +1,33 @@
+LAMMPS (7 Feb 2024 - Development - patch_7Feb2024_update1-147-g4d89741d8c)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (src/comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+# Initialization
+units       metal
+dimension   3
+boundary    p p p     # Periodic in x, y and free in z direction
+atom_style  atomic
+
+# User variables
+variable annealtemp equal 500
+variable strikeangle equal 0
+variable strikespeed equal 500
+
+# Computed variables
+variable posx equal 10+(5*cos((90-${strikeangle}))*PI/180)
+variable posx equal 10+(5*cos((90-0))*PI/180)
+variable posz equal 140+(5*sin((90-${strikeangle})*PI/180))
+variable posz equal 140+(5*sin((90-0)*PI/180))
+variable velx equal ${strikespeed}*cos((90-${strikeangle})*PI/180)
+variable velx equal 500*cos((90-${strikeangle})*PI/180)
+variable velx equal 500*cos((90-0)*PI/180)
+variable velz equal ${strikespeed}*sin((90-${strikeangle})*PI/180)
+variable velz equal 500*sin((90-${strikeangle})*PI/180)
+variable velz equal 500*sin((90-0)*PI/180)
+
+print ${velx}
+print 3.06161699786838e-14
+3.06161699786838e-14
+print ${velz}
+print 500
+500
+Total wall time: 0:00:00

@@ -17,6 +17,7 @@
 *.conllu
 *.xml
 *.gz
+*.gif
 *.pb
 ckpt*
 *COPYING*
@@ -31,6 +32,7 @@ ckpt*
 *checkpoint*
 # VSCode 
 *.vscode
+*.bsh
 
 # Dask files
 *.err
