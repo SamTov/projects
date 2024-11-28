@@ -4,3 +4,6 @@
 [submodule "quantum-lab/ballistic-diamond/lammps"]
 	path = quantum-lab/ballistic-diamond/lammps
 	url = https://github.com/lammps/lammps.git
+[submodule "quantum-lab/lammps"]
+	path = quantum-lab/lammps
+	url = https://github.com/lammps/lammps.git

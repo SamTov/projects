@@ -121,10 +121,7 @@ def build_network(width: int, depth: int):
     ----------
     width : int
             How many unit in hidden layers.
-    depth : int
-            How many hidden layers.
-    """
-    # Template of a layer.
+    depth : int20
     class HiddenLayer(nn.Module):
         @nn.compact
         def __call__(self, x):
