@@ -43,7 +43,6 @@ def linear_boundary(
     # y = m * x + c
     reference_values = gradient * data[:, 0] + intercept
     
-    
     differences = data[:, 1] - reference_values
     differences[differences > 0] = 1
     differences[differences < 0.] = 0
@@ -121,7 +120,10 @@ def build_network(width: int, depth: int):
     ----------
     width : int
             How many unit in hidden layers.
-    depth : int20
+    depth : int
+            How many hidden layers.
+    """
+    # Template of a layer.
     class HiddenLayer(nn.Module):
         @nn.compact
         def __call__(self, x):
@@ -192,13 +194,13 @@ def train_step(state, batch):
 
 
 def get_ntk_function(apply_fn, batch_size: int):
-    empirical_ntk = nt.empirical_ntk_fn(
+    empirical_ntk = nt.batch(nt.empirical_ntk_fn(
         f=apply_fn, 
         trace_axes=(-1,),
         implementation=nt.NtkImplementation.JACOBIAN_CONTRACTION
-    )
+    ), 10)
     
-    return jax.jit(empirical_ntk)
+    return empirical_ntk
 
 
 

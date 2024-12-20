@@ -1,0 +1,401 @@
+\documentclass[aip,jcp,reprint]{revtex4-1}
+
+\usepackage{natbib}
+
+%\usepackage{libertine}
+%\usepackage[libertine]{newtxmath}
+%\usepackage{sansmath}
+%\renewcommand{\familydefault}{\sfdefault}
+
+\usepackage{color}
+\usepackage{dcolumn}% Align table columns on decimal point
+\usepackage{bm}% bold math
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{eqnarray}
+
+\newcommand{\un}[1]{\,\mathrm{#1}}  % for units
+\newcommand{\bt}[1]{$\mathtt{#1}$}  % for beadtypes
+\newcommand{\E}[1]{\cdot 10^{#1}}   % for normdarstellung
+
+%%%%% BEGIN OF DOCUMENT %%%%%
+%%%%%
+\begin{document}
+
+
+%%% TITLE, AUTHORS, AFFILIATION, ABSTRACT %%%
+%%% 
+\title{Self- and Fick Diffusion Coefficients in Implicit Solvent Simulations: Influence of Local Aggregation Effects and Thermodynamic Factors}
+\author{Samuel Tovey}
+\affiliation{Institute for Computational Physics, University of Stuttgart, Allmandring 3, D-70569 Stuttgart, Germany}
+\author{Christian Holm}
+\affiliation{Institute for Computational Physics, University of Stuttgart, Allmandring 3, D-70569 Stuttgart, Germany}
+\author{Jens Smiatek}
+\email{smiatek@icp.uni-stuttgart.de}
+\affiliation{Institute for Computational Physics, University of Stuttgart, Allmandring 3, D-70569 Stuttgart, Germany}
+\affiliation{Boehringer Ingelheim Pharma GmbH \& Co.~KG, Development NCE, Birkendorfer Strasse 67, D-88397 Biberach (Riss), Germany}
+
+\begin{abstract}
+This article discusses the relationship and the transition between self or tracer to Fick diffusion coefficients in continuous implicit solvents for varying particle densities.
+Using the corresponding expressions for Fick and self-diffusion coefficients in binary solutions, we discuss the influence of the local environment in terms of thermodynamic factors, which can be easily calculated in the framework of Kirkwood-Buff (KB) theory. With respect to their original meaning, the thermodynamic factors can be interpreted as derivatives of the thermodynamic activity, which change in particular with variation of the local densities in the context of aggregation effects. Accordingly, a transition from self to Fick diffusion coefficients can be interpreted as a variation of the thermodynamic factors.
+The corresponding Langevin dynamics simulations at low number densities show excellent agreement with the derived analytical expressions.
+Our results thus provide a deeper understanding of the relationships between local structures and their influence on the dynamics of individual particles in the framework of KB theory and the transition from Fick to self-diffusion coefficients.
+\end{abstract}
+
+\maketitle
+%%%
+
+
+%%% INTRO %%%
+%%%
+
+\section{Introduction}
+Understanding diffusive motion is of fundamental importance for many technical applications.
+Almost all chemical separation processes, such as distillation, absorption, extraction or condensation, are based on the transport of substances within a liquid mixture or across a phase boundary \cite{seader06a,wankat22a}.
+The corresponding diffusion processes are often the rate-determining step for such separation mechanisms, which is why optimizing these processes also requires a fundamental understanding of the governing principles. In terms of their relevance for chemical and industrial processes, much effort has been spent on the investigation of diffusive behavior in different solvent mixtures \cite{maxwell67a,bird04a,newman12a, groot13a} in the form of numerical and experimental techniques \cite{kincaid83a,derlacki85a,vink85a,trullas93a,vergara01a, keffer05a,rehfeldt07a,krishna08a,krishna09a,rehfeldt10a,liu11a,moggridge12a,liu13a,parez13a,zhu15a,bardow15a,guevara16a,janzen17a}.
+One can generally distinguish between self-diffusion and collective or transport diffusion of particles.
+In contrast to self-diffusion of isolated single tracer particles,  transport diffusion can be regarded as a collective transport mechanism due to correlations between the components of a solution \cite{taylor93a,bird04a,newman12a,groot13a,liu13a,guevara16a,janzen17a}.\\
+Whereas self-diffusion of tracer particles can be studied experimentally via advanced NMR measurements or microscopy techniques \cite{kashyap11a},  the investigation of transport diffusion by  Raman
+spectroscopy, diaphragm cell techniques, interferometry,
+microfluidics, or quasi-elastic neutron scattering experiments, is far more complicated \cite{liu13a,taylor93a}.
+Moreover, the individual diffusion coefficients for components in binary mixtures often reveal significant deviations from Fick diffusion coefficients, such that introducing effective diffusion coefficients, even in non-porous environments, becomes obligatory \cite{taylor93a}.  
+Thus, most of the previous works on diffusive motion rely on the evaluation of tracer diffusion, which ignores the presence of other molecules  \cite{liu13a}.  \\
+However, these simplifications are often not expedient, as molecular correlation often plays a vital role in the dynamics of liquids~\cite{jones22a, bergstrom23a}. 
+A prominent example is correlations in electrolyte solutions and their influence on the dynamic behavior and the resulting charge transport \cite{kashyap11a,smiatek18a}.
+A vital example of this is the crucial limiting of transport processes due to the formation of ion pairs~\cite{marcus06a,vanderVegt16a,smiatek18a,smiatek20a,narayanan18a,smiatek20b,miranda20a,yang20a,krishnamoorthy18b,smiatek19a}.
+This formation has been shown, for example, to significantly reduce ionic conductivitiy\cite{schroder09a,krishnamoorthy16a,smiatek18a,smiatek20a,krishnamoorthy18c,nandy19a}.
+% A crucial limitation for most charge transport processes is the formation of ion pairs  \cite{marcus06a,vanderVegt16a,smiatek18a,smiatek20a,narayanan18a,smiatek20b,miranda20a,yang20a,krishnamoorthy18b,smiatek19a}, whose occurrence significantly lowers the ionic conductivity as one of the most prominent examples \cite{schroder09a,krishnamoorthy16a,smiatek18a,smiatek20a,krishnamoorthy18c,nandy19a}. \\
+Similarly, the role of local structures in diffusion processes still needs to be fully understood. However, in the last few years, some work linking the thermodynamic factors and the local environment within the framework of Kirkwood-Buff (KB) integrals has provided some new insights \cite{bardow15a,guevara16a,janzen17a,liu11a,liu13a,rosenberger20a}. Accordingly, it was shown that Maxwell-Stefan and Fick diffusion coefficients could be effectively calculated via consideration of the derivative of the thermodynamic activity in the framework of the Kirkwood-Buff (KB) theory \cite{bardow15a,guevara16a,janzen17a,liu11a,liu13a,rosenberger20a,kirkwood51,ben13a,pierce08a,smith06,smiatek17a,zingrebe18b,simon22a}. Thus far, the corresponding simulations and expressions have only been evaluated for collective diffusion, whereby self-diffusion has not yet been taken into account. However, molecular self-diffusion is of great interest to several processes, including diffusion in nanopores, confined geometries, and crowded solutions. Accordingly, the transition from self to collective diffusion based on the insights gained from understanding the influence of the local environment through the description of expressions of KB theory is of great interest. \cite{simon22a,jamali18a,jamali20a,roosen11a,dix08a}. \\
+In addition, many simulation approaches rely on implicit solvents \cite{roux99a,onufriev08a}, where only one component of the solution, often the main solute, is considered for computational efficiency. Accordingly, the relationship between self and collective transport diffusion coefficients must still be fully defined in these simulations \cite{kalz22a,lowen93a,medina88a}. For low particle densities, for example, it was reported that the self-diffusion coefficients change linearly with density variations \cite{kalz22a,batchelor76a,felderhof78a,hanna82a}. Here, explicit reference was made to self-diffusion coefficients, whereby the collective diffusion coefficients were not considered. \\
+In this article, we present expressions for the transition of self-diffusion coefficients into Fick diffusion coefficients with increasing concentration. We show that the local environmental structure in terms of KB integrals and the corresponding derivative of the thermodynamic activity crucially influences the diffusive behaviour. Our expressions are validated by Langevin Dynamics (LD) simulations, which allow us to make a detailed comparison with the analytical findings. Accordingly, our results reveal that previous empirical relations in terms of linearly varying self-diffusion coefficients upon number density variation can be simply regarded as transitions from self to Fick diffusion coefficients by means of thermodynamic factor changes. \\
+The paper is organized as follows. In the next section, we present the theoretical background of our approach in combination with the corresponding expressions. In the third section, we discuss the details of the
+simulations. All computational results are presented in the fourth section.
+We conclude with a summary in the last section.
+
+\section{Theoretical Background}
+The following subsection will first give general background information on the thermodynamic relations for diffusive motion. The corresponding results are essential for discussing the relationship between Fick and self-diffusion coefficients in terms of thermodynamic factors. The second subsection will show how the thermodynamic factor can be calculated using KB theory. 
+
+\subsection{Basic Thermodynamics: Diffusive Motion}
+As a starting point, the fundamental equation of entropy production  for a non-equilibrium system reads
+\begin{equation}
+\label{eq:entropyprod}
+\sigma=\sum_{A=1}^\mathcal{N} J_{A} X_{A}\geq 0
+\end{equation}
+in which $X_{A}$ and $J_A$ represent $\mathcal{N}$ generalized thermodynamic forces and fluxes, respectively. 
+As it was often discussed  in detail elsewhere \cite{groot13a,lebon08a}, the thermodynamic fluxes can also be expressed
+by
+\begin{equation}
+\label{eq:fundflux}
+J_{A}=\sum_{B=1}^\mathcal{N} L_{AB} X_{B},
+\end{equation}
+where $L_{AB}>0$ represent the phenomenological Onsager coefficients, such that Eqn.~\eqref{eq:entropyprod} can be written as\cite{groot13a}
+\begin{equation}
+\label{eq:combflux}
+\sigma=\sum_{A=1}^\mathcal{N} \sum_{B=1}^\mathcal{N} L_{AB} X_{A}X_{B}\geq 0
+\end{equation}
+in order to include all irreversible processes that contribute to the entropy production of the system. For clarity, we omit vector notation for the following discussion. In regards to a constant temperature $T$, a constant pressure $p$, and in the absence of any external potential fields and chemical reactions with $\mathcal{N}=1$ and thus $\sigma=L_{11}X_1X_1$, the entropy production of a system with $C$ components reads \cite{lebon08a}
+\begin{equation}
+\label{eq:simpleprod}
+\sigma=-\sum_{\alpha=1}^C {J}_{\alpha} {\nabla}\left(\frac{\mu_{\alpha}}{T}\right)
+\end{equation}
+with mass fluxes ${J}_{\alpha}$ of the individual species \mbox{$\alpha=1,\ldots, C$} and the chemical potential $\mu_{\alpha}$. 
+With regard to conservation of mass and momentum, it follows \mbox{$\sum_{\alpha=1}^C{J}_{\alpha}=0$}, and Eqn.~\eqref{eq:simpleprod} can be rewritten as
+\begin{equation}
+\label{eq:explicitprod}
+\sigma=-\sum_{\alpha=1}^{C-1} {J}_{\alpha} {\nabla}\left(\frac{\mu_{\alpha}-\mu_C}{T}\right)
+\end{equation}
+in accordance with ${J}_C=-\sum_{\alpha=1}^{C-1}{J}_{\alpha}$.
+Specifically for a binary mixture ($C=2$) with components $\alpha$ and $\beta$,  the entropy production in Eqn.~\eqref{eq:explicitprod} under the requirement  ${J}_{\alpha}=-{J}_{\beta}$ reads  
+\begin{equation}
+\label{eq:entropyprodsimple}
+\sigma=-{{J}}_{\alpha}{ \nabla}\left(\frac{\mu_{\alpha}-\mu_{\beta}}{T}\right),
+\end{equation}
+such that, in accordance with a linear force-flux relation (Eqn.~\eqref{eq:combflux}), the corresponding entropy production and thermodynamic mass flux at constant temperature can be identified  as
+\begin{equation}
+\sigma=\frac{L_{11}}{T}{\nabla}\left(\mu_{\alpha}-\mu_{\beta}\right){ \nabla}\left(\mu_{\alpha}-\mu_{\beta}\right)\geq 0
+\end{equation}
+and
+\begin{equation}
+\label{eq:J1}
+J_{\alpha}=-D^{\dag}{ \nabla}\left(\mu_{\alpha}-\mu_{\beta}\right)
+\end{equation}
+with $D^{\dag}=L_{11}/T$. 
+The gradient in Eqn.~\eqref{eq:J1}  can be further simplified in terms of the following
+relation for the mole fractions 
+\begin{equation}
+\label{eq:hats}
+\sum_{\alpha=1}^C x_{\alpha}=1,
+\end{equation}
+and in combination with the general Gibbs-Duhem relation \cite{atkins10a} 
+\begin{equation}
+\label{eq:gidu}
+\sum_{\alpha=1}^C x_{\alpha}\textrm{d}\mu_{\alpha}=0,
+\end{equation}
+according to
+$x_{\alpha}\text{d}\mu_{\alpha} + x_{\beta}\text{d}\mu_{\beta}=0$
+for a binary mixture, which yields 
+\begin{equation}
+\label{eq:premu}
+{ \nabla}(\mu_{\alpha}-\mu_{\beta}) = \frac{\rho}{\rho_{\beta}}{\nabla}\mu_{\alpha},
+\end{equation}
+with the number density $\rho_{\alpha} = x_{\alpha}\cdot \rho$ and the total bulk number density $\rho=\sum_{\alpha=1}^CN_{\alpha}/V$, including $N_{\alpha}$ molecules of species $\alpha$ in volume $V$
+for insertion into Eqn.~\eqref{eq:J1}. 
+With regard to its dependencies, the total derivative of the chemical potential at constant pressure and temperature can be written as 
+ \begin{equation}
+\label{eq:expansion}
+{\nabla}\mu_{\alpha} =
+ \left(\frac{\partial \mu_{\alpha}}{\partial \rho_{\alpha}}\right)_{T,p}  {\nabla}\rho_{\alpha},
+\end{equation}
+such that the resulting relation  after combination with Eqn.~\eqref{eq:premu} reads
+ \begin{equation}
+{ \nabla}(\mu_{\alpha}-\mu_{\beta}) = \frac{\rho}{\rho_{\beta}}\left(\frac{\partial \mu_{\alpha}}{\partial \rho_{\alpha}}\right)_{T,p} {\nabla}\rho_{\alpha},
+\end{equation}
+which gives 
+\begin{equation}
+\label{eq:j1_pre}
+{J}_{\alpha}=-D^{\dag}\frac{\rho}{\rho_{\beta}}\left(\frac{\partial \mu_{\alpha}}{\partial \rho_{\alpha}}\right)_{T,p}  { \nabla}\rho_{\alpha}
+\end{equation}
+after insertion into Eqn.~\eqref{eq:J1}.\\
+Accordingly, one can define the Fick diffusion coefficient
+\begin{equation}
+\label{eq:finaldiff1}
+D= D^{\dag}\left(\frac{\rho}{\rho_{\beta}}\right)\left(\frac{\partial \mu_{\alpha}}{\partial \rho_{\alpha}}\right)_{T,p},
+\end{equation}
+which can be transformed into  \cite{ben13a}
+\begin{equation}
+\left(\frac{\partial \mu_{\alpha}}{\partial x_{\alpha}}\right)=\left(\frac{\partial \mu_{\alpha}}{\partial \rho_{\alpha}}\right)\left(\frac{\partial \rho_{\alpha}}{\partial x_{\alpha}}\right) = \left(\frac{\partial \mu_{\alpha}}{\partial \rho_{\alpha}}\right)\rho^2\bar{V}_{\beta}
+\end{equation}
+with the partial molar volume $\bar{V}_{\beta}=(\partial \mu_{\beta}/\partial p)_{T}$,
+yielding
+\begin{equation}
+\label{eq:prems1}
+D=D^{\dag}\left(\frac{1}{\rho \rho_{\beta}\bar{V}_{\beta}}\right)\left(\frac{\partial \mu_{\alpha}}{\partial x_{\alpha}}\right)_{T,p}
+\end{equation}
+by using the identity\cite{ben13a}
+$(\partial x_{\alpha}/\partial \rho_{\alpha})_{T,p}=1/(\rho^2\bar{V}_{\beta})$.
+A combination of  Eqn.~\eqref{eq:thermodyn_fact}  and $\nabla \rho_{\alpha} = \rho^2 \bar{V}_{\beta} \nabla x_{\alpha}$ finally provides the expression
+\begin{equation}
+\label{eq:prems2}
+J_{\alpha}= - \rho D^{\dag}RT\left(\frac{1}{\rho_{\alpha}\rho_{\beta}}\right)\;\Gamma\,{\nabla}x_{\alpha}
+\end{equation}
+in agreement with Eqn.~\eqref{eq:fick1} and with the definition of the thermodynamic factor \cite{guevara16a,janzen17a,lecce17a}
+\begin{equation}
+ \label{eq:thermodyn_fact}
+    \Gamma=\frac{\rho_{\alpha}}{RT}\left(\frac{\partial \mu_{\alpha}}{\partial \rho_{\alpha}}\right)_{T,p}
+\end{equation}
+which is also valid for $\Gamma=\Gamma_{\alpha}=\Gamma_{\beta}$ with regard to reasons of symmetry and vanishing mass flux for a two-component system.
+
+\subsection{Diffusion Coefficients, Thermodynamic Factors and KB Theory}
+As a standard approach for  the description  of the correlated diffusive motion of molecules in a mixture, the molar flux $J_{\alpha}$ of component $\alpha$ in a solution with $C$ components can be written by the generalized Fick law \cite{liu13a,bird04a}
+\begin{equation}
+ \label{eq:fick1}
+ J_{\alpha}=- \rho \sum_{\beta=1}^{C-1} D_{\alpha\beta} \nabla x_{\beta}
+\end{equation}
+with the total bulk number density $\rho=\sum_{\alpha=1}^CN_{\alpha}/V$, including $N_{\alpha}$ molecules of species $\alpha$ in volume $V$. As can be seen, the mass flux $J_{\alpha}$ depends on the gradient of  the mole fraction $x_{\alpha}=\rho_{\alpha}/\rho$ and is proportional to the Fick  diffusion coefficients $D_{\alpha\beta}$ with $\beta=1,\ldots,C-1$.
+For binary mixtures $(C=2)$ with components $\alpha\neq \beta$ and with regard to momentum conservation in terms of  $J_{\alpha} = - J_{\beta}$,  it follows that only one identical Fick diffusion coefficient $D=D_{\alpha\beta}=D_{\beta\alpha}$ for both components exists \cite{liu13a,taylor93a,newman12a}. This Fick diffusion coefficient in Eqn.~\eqref{eq:fick1} then reduces to
+\begin{equation}
+ \label{eq:fickbin}
+ J_{\alpha}= -\rho D \nabla x_{\alpha}.
+\end{equation}
+by way of symmetry. After comparison with Eqn.~\eqref{eq:prems2}, it follows that the Fick diffusion coefficient can also be written as 
+\begin{equation}
+\label{eq:ident}
+D = D^{\dag}RT\left(\frac{1}{\rho_{\alpha}\rho_{\beta}}\right)\;\Gamma.
+\end{equation}
+which highlights the influence of the thermodynamic factor. 
+Noteworthy, for low densities of component $\alpha$ in binary mixtures, the Fick and self-diffusion coefficients become identical  in accordance with the relation\cite{liu13a}  
+\begin{equation} 
+\label{eq:equiv}
+D_s = \lim_{\rho_{\alpha}\rightarrow 0}D
+\end{equation}
+with self-diffusion coefficient $D_{s}$ \cite{bardow15a,liu11a,liu13a}. 
+In terms of a more detailed interpretation, thermodynamic factors account for the non-ideality of the solution and thus provide a connection between transport mechanisms and thermodynamics. Notably, non-ideal effects are evident for all values $\Gamma \neq 1$ as for most real solutions, highlighting their potential importance for diffusive processes.
+In accordance with the relation
+\begin{equation}
+ \label{eq:Gamma}
+    \frac{x_{\alpha}}{RT}\left(\frac{\partial \mu_{\alpha}}{\partial x_{\alpha}}\right)_{T,p} = \frac{1}{RT}\left(\frac{\partial \mu_{\alpha}}{\partial \ln \rho_{\alpha}}\right)_{T,p},
+\end{equation}
+one can insert the basic definition of the chemical potential
+\begin{equation}
+    \mu_{\alpha} = \mu_{\alpha}^0 + RT\ln a_{\alpha}
+\end{equation}
+with the thermodynamic activity $a_{\alpha}$ into Eqn.~\eqref{eq:Gamma}, leading to
+\begin{equation}
+ \label{eq:KBGamma}
+    \frac{1}{RT}\left(\frac{\partial \mu_{\alpha}}{\partial \ln \rho_{\alpha}}\right)_{T,p}=\left(\frac{\partial \ln a_{\alpha}}{\partial \ln \rho_{\alpha}}\right)_{T,p}
+\end{equation}
+with the derivative of the  thermodynamic activity  
+\begin{equation}
+a_{\alpha\alpha} = \left(\frac{\partial \ln a_{\alpha}}{\partial \ln \rho_{\alpha}}\right)_{T,p}.
+\end{equation}
+For a binary solution, this expression can also be written in the framework of KB theory \cite{ben13a,smiatek18a,pierce08a,smith06}
+according to
+\begin{equation}
+ \label{eq:act}
+ a_{\alpha\alpha} = \left(\frac{\partial \ln a_{\alpha}}{\partial \ln \rho_{\alpha}}\right)_{T,p} = \frac{1}{1+\rho_{\alpha}(G_{\alpha\alpha}-G_{\alpha\beta})}
+\end{equation}
+with the KB integrals
+\begin{equation}
+ \label{eq:KBI}
+ G_{\alpha\beta} = 4\pi \int_0^{\infty}r^2\, (g_{\alpha\beta}(r) - 1)\,\textrm{d}r
+\end{equation}
+including the radial distribution function $g_{\alpha\beta}(r)$. In consequence, the thermodynamic factor $\Gamma$ can be identified as the derivative of the thermodynamic activity $\Gamma = \Gamma_{\beta} = \Gamma_{\alpha} = a_{\alpha\alpha}$, such that Eqn.~\eqref{eq:ident} reads
+\begin{equation}
+ \label{eq:DMS}
+D = D^{\dag}RT\left(\frac{1}{\rho_{\alpha}\rho_{\beta}}\right)\cdot \left( \frac{1}{1+\rho_{\alpha}(G_{\alpha\alpha}-G_{\alpha\beta})}\right)
+\end{equation}
+which already highlights the integral importance of the local environment on the diffusion process in terms of the KB integrals. 
+
+\subsection{Self-Diffusion Coefficients and Computer Simulations}
+In terms of Eqn.~\eqref{eq:ident} and Eqn.~\eqref{eq:equiv}, one can already notice that 
+\begin{equation}
+D_{s} = \lim_{\rho_{\alpha}\rightarrow 0}D =  D^{\dag}RT\left(\frac{1}{\rho_{\alpha}\rho_{\beta}}\right)\; \lim_{\rho_{\alpha}\rightarrow 0}\Gamma
+\end{equation}
+where the thermodynamic factor reads
+\begin{equation}
+\lim_{\rho\rightarrow\infty} \Gamma = 1
+\end{equation}
+for low number densities and nearly ideal solutions, which also leads to the identity
+\begin{equation}
+D_s =  D^{\dag}RT\left(\frac{1}{\rho_{\alpha}\rho_{\beta}}\right)
+\end{equation}
+for the self-diffusion coefficients. 
+Notably, it is common to calculate the self-diffusion coefficient in computer simulations $D_{s}^{s}$ in terms of velocity autocorrelation functions or the mean-square displacement averaged over all particles of the corresponding species \cite{allen17a}. For reliable simulation protocols, one can conclude that $D_s^{s} = D_s$ which corresponds to the relation $D_s^{s} \approx D/\Gamma$ and hence
+\begin{equation}
+\label{eq:tracerdiff}
+D_s^{s} = \frac{D}{\Gamma} - D_{cm}
+\end{equation}
+after subtraction of the centre of mass diffusion coefficient in order to conserve momentum. Accordingly, one can conclude that even the self-diffusion coefficient in computer simulations depends on the Fick diffusion coefficient and thus depends on non-ideal and colligative effects. 
+Such assumptions were also previously discussed in Ref.~\citenum{kalz22a}, where the diffusion coefficients were described by
+\begin{equation}
+D_s = D_0(1-\chi\phi)
+\end{equation}
+where $\phi$ is the area fraction, $D_0$ is the diffusion coefficient at infinite dilution, and thus the self-diffusion coefficient and $\chi$ is a numerical factor that depends on the nature of interactions. 
+
+\section{Simulation Details}
+We performed  Langevin Dynamics (LD) simulations for a varying amount of single particles in a continuum solvent. The systems were simulated with the GROMACS 5.0.2 software package \cite{vanderspoel05a,gromacs08a,pronk13a}.
+The spherical particles were modified from the GROMOS 43a1 force field \cite{gunsteren96a}. The corresponding mass of the particles was set identically to sodium ions Na$^+$ (atom type 'NA') while the Lennard-Jones interaction parameters were taken from Zn$^{2+}$ ions (atom type 'ZN2+'). In addition, the charge was set to zero. The smaller sodium mass was chosen to sample the phase space efficiently for the given time scale. In addition, slight attractive dispersion interactions, as represented by the Lennard-Jones parameters from the Zn$^{2+}$ ions, enforce weak particle interactions and accumulation.\\
+A leap-frog stochastic dynamics integrator \cite{vangunsteren88a} was used to reproduce the stochastic motion of the particles. The equation of motion reads
+\begin{equation}
+ \label{eq:LD}
+ m_i\dot{\textbf{v}}_i(t) = {\textbf{F}}_i^R(t)-m_i\gamma_i{\textbf{v}}_i(t)+{\textbf{R}}_i(t)
+\end{equation}
+with the mass $m_i$ of a particle $i$ fom the chosen species, the velocity $\textbf{v}_i$, the conservative forces $ {\textbf{F}}_i^R(t)$, the friction coefficient $\gamma_i$ and the random force ${\textbf{R}}_i$. The random force obeys the conditions of Gaussian white noise in terms of
+\begin{equation}
+    \langle R_{\alpha,i}(t)R_{\beta,j}(t_0)\rangle = 2 m_i k_BT \delta_{ij}\delta_{\alpha\beta}\delta(t-t_0)
+\end{equation}
+in combination with  $\langle {\textbf{R}}_i(t)\rangle = 0 $. The temperature was set to $T=300$ K in all runs, and the friction coefficient was chosen as $\gamma = 0.5$ ps$^{-1}$.
+We used NVT simulation with a fixed length of $L_B = 3$ nm for the cubic simulation boxes in order to avoid varying finite size effects  \cite{yeh04a}. Random insertion of $N=1, 18, 20, 22, 24, 26, 28, 30, 32,34,36, 38, 40, 42$ and $44$ spherical particles for the individual simulations resulted in different number densities ranging from $\rho_{\alpha} =  (0.04 - 1.71)$ nm$^{-3}$. Each system was simulated for 50 ns with a time step of $\Delta$t = 2 fs, and the first two ns were used for equilibration. For the uncharged spherical particles, all Coulomb interactions were switched off.\\
+Due to finite box sizes, we introduced a correction scheme \cite{krueger12a,rosenberger20a} for the calculation of KB integrals (Eqn.~\eqref{eq:KBI})  in terms of 
+\begin{equation}
+\label{eq:KBIr}
+G_{\alpha\beta}^V = 4\pi \int_0^{L_B}r^2\, (g_{\alpha\beta}(r) - 1)\left(1+\frac{1}{2}\left(\zeta^3-3\zeta\right)\right) \,\textrm{d}r
+\end{equation}
+with $\zeta = r/L_B$ \cite{simon22a}. Accordingly, also the corresponding KB integrals  for the calculation of $a_{\alpha\alpha}$ in 
+Eqn.~\eqref{eq:act} was calculated with the expressions from Eqn.~\eqref{eq:KBIr}.
+
+\section{Results}
+\subsection{Structural and Thermodynamic Properties}
+In the following, we denote all solute particles with the subscript "1", while the continuum phantom solvent is denoted with the subscript '2' for reasons of clarity.
+The radial distribution functions $g_{11}(r)$ for chosen particle densities are presented in Fig.~\ref{fig1}.
+\begin{figure}[tbh!]
+    \includegraphics[width=0.5\textwidth]{fig1.pdf} \\
+    \caption{Center-of-mass radial distribution functions $g_{11}(r)$ for different densities of spherical particles.}
+    \label{fig1}
+\end{figure}
+As can be seen, the particles reveal a pronounced short-range ordering as reflected by the high peak values at $r \approx 0.19$ nm. This local ordering can be attributed to the attractive part of the Lennard-Jones potential, which induces slight accumulation effects in terms of first-contact shells. One can recognize a steep decrease of the radial distribution functions with convergence to $g_{11}(r)\approx 1$ at distances $r\geq 0.8$ nm, highlighting the transition from local to bulk regions. At particle densities of $\rho_1 \geq 1.40$ nm$^{-3}$, the formation of a slight shoulder between $r= (0.25 - 0.5)$ nm can be identified, which indicates the formation of larger or even second-order contact pair shells. In summary, one can conclude that the particles show slight accumulation effects due to attractive Lennard-Jones potentials.\\
+These effects are also evident in terms of the potential of mean forces \cite{chandler87a} according to
+\begin{equation}
+ \label{eq:pmf}
+    \mathrm{PMF}(r) = - k_BT\ln g_{11}(r)
+\end{equation}
+as shown in Fig.~\ref{fig2}. As can be seen, the strong similarity of all PMF curves with the analytical result for Lennard-Jones interaction energies between two particles for the corresponding parameters becomes clear. It can be concluded that the interactions and also the radial distribution function are determined only by the empirical Lennard-Jones interactions.
+\begin{figure}
+    \includegraphics[width=0.5\textwidth]{fig2.pdf} \\
+    \caption{Potential of mean forces calculated from Eqn.~\eqref{eq:pmf} for different densities of spherical particles. The blue dashed line is the analytic result for the Lennard-Jones potential for interactions between two particles. }
+    \label{fig2}
+\end{figure}
+Despite the large variation in particle densities, it becomes obvious that the potential of mean forces is largely comparable, with differences in the maximum values around $\Delta$PMF $\approx 0.2 k_BT$. Moreover, it can be seen that these forces are attractive on length scales up to 0.55 nm with a maximum value of PMF $\approx -(1.8 - 2.0) k_BT$ at $r= 0.19$ nm. The corresponding findings highlight that accumulation is driven by attractive Lennard-Jones interactions whose values allow for a proper binding and unbinding equilibrium. According to the rather low energy barriers, the particles are free to move in the simulation box with a moderate tendency for accumulation. \\
+Such findings are also evident with regard to the running KB integrals $G_{11}(r)$ (Eqn.~\eqref{eq:KBI} as shown in Fig.~\ref{fig3}.
+\begin{figure}
+    \includegraphics[width=0.5\textwidth]{fig3.pdf} \\
+    \caption{Running KB integrals $G_{11}(r)$ for different representative densities of spherical particles.}
+    \label{fig3}
+\end{figure}
+In general, KB integrals can be interpreted as excess volumes relative to the ideal state \cite{smiatek17a}.
+Accordingly, all KB integrals show a slight decrease at short distances $r < 0.19$ nm due to excluded volume effects. A rapid increase of the KB integrals can be observed between $r = (0.20 - 0.30)$ nm, corresponding to the first contact pair shell in agreement with Fig.~\ref{fig1}. For larger distances than $r \geq 1.4$ nm, the KB integrals finally converge to a constant value as defined by Eqn.~\eqref{eq:KBI}. With reference to Fig.~\ref{fig3}, the corresponding values of $G_{11}$ are ordered as a function of the particle density. This means that higher particle densities lead to larger KB integrals. Such findings are consistent with the accumulation effects already observed. Since KB integrals represent the deviation from an ideal state, it can be concluded that higher particle densities deviate more strongly from a homogeneous distribution. \\
+Comparable findings can also be observed for the preferential binding coefficients $\nu_{11}(r)$ and the derivatives of the thermodynamic activity $a_{11}(r)$ as shown in Fig.~\ref{fig4}.
+The preferential binding coefficient, defined by \cite{smiatek17a,zingrebe18b}
+\begin{equation}
+ \label{eq:nu11}
+    \nu_{11}(r) = \rho_1(G_{11}(r)-G_{12}(r))
+\end{equation}
+allows us to estimate the tendency of the aggregation effects. We can identify a preferential binding mechanism for positive and negative values, a preferential exclusion effect \cite{smiatek17a,zingrebe18b,smiatek18a}. As can be seen, the second KB integral $G_{12}(r)$ denotes the interaction between the particles and the implicit continuum solvent. In general, implicit solvents lead to radial distribution functions $g_{12}(r) = 1$, so that $G_{12}(r) = 0$ (Eqn.~\eqref{eq:KBI}) and thus to the approximation
+\begin{equation}
+    \nu_{11}(r) = \rho_1 G_{11}(r)
+\end{equation}
+whose values are shown in the upper panel of Fig.~\ref{fig4}. It is clear that the converged values for distances larger than $r = 0.2$ nm are positive and show a strong ordering in the densities $\rho_1 = (0.74 - 1.16)$ nm$^{-3}$. Accordingly, one can assume that the strength of the preferential binding mechanism increases monotonously with increasing particle densities. The largest preferential binding coefficient can be observed for the highest particle density, which also reveals the strongest accumulation effect.\\
+In accordance with Eqn.~\eqref{eq:nu11}, the derivative of the thermodynamic activity  (Eqn.~\eqref{eq:act}), can also be written as
+\begin{equation}
+ a_{11} = \left(\frac{\partial \ln a_1}{\partial \ln \rho_1}\right)_{T,p} = \frac{1}{1+\nu_{11}}
+\end{equation}
+which highlights the pronounced influence of the local structure in terms of accumulation effects for the derivative of the thermodynamic activity. The corresponding results for the derivatives of the thermodynamic activity are shown in the lower panel of Fig.~\ref{fig4}.
+\begin{figure}
+    \includegraphics[width=0.5\textwidth]{fig4a.pdf} \\
+    \includegraphics[width=0.5\textwidth]{fig4b.pdf}
+    \caption{Top: Running preferential binding coefficient $\nu_{11}(r)$ and derivative of the thermodynamic activity (bottom) for different particle densities in a cubic simulation box of constant length.}
+    \label{fig4}
+\end{figure}
+The converged values are between $a_{11} = 0.7 - 0.9$, which highlights minimal or even moderate differences to the ideal or homogeneous state as denoted by $a_{11} = 1$. Lower values of $a_{11}$ are related to higher particle densities, which shows the influence of accumulation effects compared to the ideal distribution. Thus, one can see that the local structure, in terms of surrounding particles, strongly affects the derivatives of the thermodynamic activity regarding non-ideal and inhomogeneous distributions. 
+
+\subsection{Dynamic Properties and Diffusive Motion}
+The corresponding dynamic properties are studied by the mean-square displacement (MSD) for the particles as defined by
+\begin{equation}
+ \label{eq:msd}
+    \lim_{t\rightarrow \infty} \langle (\textbf{r}_i(t) - \textbf{r}_i(t_0))^2\rangle = 6 D_s t
+\end{equation}
+with the position $\textbf{r}_i$ of particle $i$ at different times $t$ and $t_0$ and the self diffusion coefficient $D_{s}$. The efficient evaluation of the corresponding values over long particle trajectories can be achieved by the methods outlined in Ref.~\citenum{maginn19a}.
+All results for the MSDs with regard to different particle densities are shown in the top panel of Fig.~\ref{fig5}.
+\begin{figure}
+    \includegraphics[width=0.5\textwidth]{fig5a.pdf} \\
+    \includegraphics[width=0.5\textwidth]{fig5b.pdf} \\
+    \caption{Mean square displacement of particles at different densities in a log-log plot (top) and linear representation (bottom).}
+    \label{fig5}
+\end{figure}
+The corresponding representation in a log-log plot (top panel) shows the presence of two regimes, which are known as ballistic and diffusive regimes \cite{smiatek09a,paul99a}. The ballistic regime scales with $\langle (\textbf{r}_i(t) - \textbf{r}_i(t_0))^2\rangle \propto t^2$ which can be attributed to the initial motion of particles $\langle (\textbf{r}_i(t) - \textbf{r}_i(t_0))^2\rangle \propto v_i^2(t)t^2$ for short times. This finding is also important for Langevin Dynamics simulations (Eqn.~\eqref{eq:LD}), as the mass is not neglected compared to Brownian Dynamics simulations. For later times, the particles usually follow the diffusive regime, which is characterized by Eqn.~\eqref{eq:msd} and thus a linear scaling with time $\langle (\textbf{r}_i(t) - \textbf{r}_i(t_0))^2\rangle \propto t$. It can be observed that all particle densities have a comparable transition time between $t = (2 - 10)$ ps, where the diffusive motion dominates. The coincidence of these values highlights the non-existent correlations between the particles so that the transition time depends only on the mass and the friction coefficient.
+Further evaluation of the MSDs for different particle densities is shown in the bottom panel of Fig.~\ref{fig5}. One can notice that the MSDs significantly decrease with increasing particle densities. \\
+The corresponding values for the self-diffusion coefficients from computer simulations $D_s^s$ with reference $1\Gamma$ according to  Eqn.~\eqref{eq:tracerdiff} and Eqn.~\eqref{eq:Gamma} are presented in Fig.~\ref{fig6}.
+\begin{figure}
+    \includegraphics[width=0.5\textwidth]{fig6.pdf} \\
+    \caption{Self diffusion coefficients $D_s^s$ computed from LD simulations in terms of Eqn.~\eqref{eq:msd} for increasing particle densities in comparison to  $1/\Gamma$ (red circles). The corresponding black line shows the results of a linear fit in accordance with Eqn.~\eqref{eq:tracerdiff} with fit values of fit $D=-(87.65 \pm 3.09)\cdot 10^{-5}$ cm$^2$/s and $D_{cm}=(301.15\pm 4.74) \cdot 10^{-5}$ cm$^2$/s. The correlation coefficient reads $R^2 = -0.99$. The blue dot denotes the corresponding value for a single particle with $N=1$ and $1/\Gamma = 1$ by definition.}
+    \label{fig6}
+\end{figure}
+The black solid line depicts a linear regression in agreement with Eqn.~\eqref{eq:tracerdiff} with fit values $D=-(87.65 \pm 3.09)\cdot 10^{-5}$ cm$^2$/s and $D_{cm}=(301.15\pm 4.74) \cdot 10^{-5}$ cm$^2$/s. The correlation coefficient reads $R^2 = -0.99$, and the corresponding self-diffusion coefficients scale with the inverse of the derivative of the thermodynamic activity in agreement with Eqn.~\eqref{eq:tracerdiff}. From further analytic considerations, one can also compute the self-diffusion coefficient from stochastic dynamics simulations in terms of  \cite{spiechowicz22a}
+\begin{equation}
+D_s = \frac{k_BT}{m\gamma}
+\end{equation}
+with the mass of the particle $m$ and the corresponding value $D_s = 216.996 \cdot 10^5$ cm$^2$/s. This analytic result is in good agreement with the corresponding data point at $\Gamma=1$ in ig.~\ref{fig6}, which corresponds to the evaluation of the diffusion coefficient for a single particle with $N=!$. 
+These results indicate that the local environment's accumulation effects significantly impact the self-diffusion coefficients.
+
+
+
+\section{Summary and Conclusion}
+We have studied the self-diffusion of spherical tracer particles at different densities in an implicit solvent using LD simulations. In addition, we have also derived an analytical expression for self-diffusion coefficients, based in particular on an interpretation of the thermodynamic factor in the framework of KB theory. The results of the simulations are in agreement with the analytical expressions, which proves the validity of our considerations. Accordingly, we were able to show that a varying particle density is accompanied by a change in the self-diffusion coefficients, which is caused by a change in the derivatives of the thermodynamic activity. However, since the thermodynamic activity is significantly influenced by deviations from the ideal behaviour, it can be seen that local accumulation effects and, thus, the structure of the local environment have a decisive influence on the diffusive properties of the particles. These findings show that the common calculation of self-diffusion coefficients from computer simulations strongly depends on the local density and further aggregation effects.\\
+As shown in previous publications \cite{ben13a,smith06,smiatek17a}, the derivatives of the thermodynamic activity can be expressed in KB integrals for which the complete integration of the corresponding radial distribution functions allows the estimation of the excess volumes. Suppose the particle densities are low and a homogeneous continuum solvent is assumed, which is often the case for stochastic descriptions of particle motion. In that case, the corresponding KB integrals can be reduced to simple expressions. \\
+Accordingly, the derivatives of the thermodynamic activity can be interpreted as an effective mean field, which defines the deviation from the ideality of the distribution in the local environment. If the distribution is ideal, the diffusion coefficients are not affected. However, if non-homogeneities occur due to accumulation effects, these manifest themselves in a change in the local field, which influences the diffusion coefficients accordingly. These are not only pure correlation effects, but the mere presence of other particles can also be important. This reveals a deeper connection between the Fick and self-diffusion coefficients, even in simple LD simulations in a continuum solvent. Accordingly, the analytical self-diffusion coefficient can only be estimated at $\Gamma=1$ and strictly for $N=1$, which is often different. For this value, a transition from the Fick to the true self-diffusion coefficient can be observed. Such analytic considerations were also validated by our simulations, where such a transition became evident.  \\
+Our results show that the experimental measurement of self-diffusion coefficients can mainly strongly depend on the effects of such a local environment in terms of varying particle densities. It has to be noted that the corresponding results are not only valid for minor deviations from ideality. Hence, one can expect that for very dense solutions, further effects may occur \cite{rex08a}. In more detail, effects such as lane formation in combination with higher-order correlation effects and hydrodynamic interactions have not been treated in our description. Despite these limitations, our findings help shed more light on interpreting self-diffusion coefficients in computer simulations and low particle densities.  
+
+\section{Acknowledgements}
+The authors thank Seishi Shimizu, Paul E. Smith and Diddo Diddens for their valuable suggestions, hints, and discussions.
+CH and ST acknowledge financial support from the German Funding Agency (Deutsche Forschungsgemeinschaft DFG) under Germany's Excellence Strategy EXC 2075-390740016.
+CH and ST acknowledge financial support from the German Funding Agency (Deutsche Forschungsgemeinschaft DFG) under the Priority Program SPP 2363, "Utilization and Development of Machine Learning for Molecular Applications - Molecular Machine Learning" Project No. 497249646.
+The authors acknowledge support by the state of Baden-Württemberg through bwHPC and the German Research Foundation (DFG) through grant INST 35/1597-1 FUGG.
+The authors acknowledge support from the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) Compute Cluster grant no. 492175459.
+
+\section*{References}
+\bibliographystyle{aipnum4-1}
+\bibliography{ref}
+\end{document}
