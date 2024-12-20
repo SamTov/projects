@@ -9,6 +9,7 @@
 *.csv
 *.pickle
 *.txt
+*/log.lammps
 *.qu
 *.pgf
 *.obj
