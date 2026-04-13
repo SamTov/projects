@@ -11,7 +11,7 @@
 #SBATCH --error=error.err                # Error file
 #SBATCH --nodes=1                        # Number of nodes
 #SBATCH --ntasks=64                # Number of task
-#SBATCH --time=48:00:00                  # Time limit hrs:min:sec
+#SBATCH --time=4:00:00                  # Time limit hrs:min:sec
 
 ### -------------------- ###
 ### Modules to be loaded ###
@@ -33,4 +33,4 @@ cd $SLURM_SUBMIT_DIR  # change into working directory
 lmp=/home/stovey/work/projects/quantum-lab/ballistic-diamond/lammps/build/lmp
 export OMP_NUM_THREADS=32
 # Run the script with arguments.
-srun ${lmp} -in simulate.lmp
+srun ${lmp} -var rseed ${RANDOM} -in simulate.lmp

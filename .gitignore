@@ -34,7 +34,8 @@ ckpt*
 # VSCode 
 *.vscode
 *.bsh
-
+*.lammpstraj
+*.lammpstrj
 # Dask files
 *.err
 *.slurm
