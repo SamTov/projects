@@ -1,5 +1,5 @@
 # ============================================================
-# Sn implantation in diamond -- ballistic + cascade + anneal
+# Pb implantation in diamond -- ballistic + cascade + anneal
 #
 #   Phase 1: warmup      -- Langevin equilibration of the slab (ion frozen)
 #   Phase 2: collision   -- ion strike with adaptive dt, boundary-only
@@ -29,16 +29,16 @@ variable    warmup_steps    index 25000      # 50 ps at dt=0.002
 variable    collision_steps index 100000     # adaptive dt, ~5-10 ps
 variable    anneal_steps    index 1000000    # 1 ns at dt=0.001
 
-# ---------- Species constants (Sn) ----------
-variable    species     string sn
-variable    mass_ion    equal 118.71
-variable    z_ion       equal 50
+# ---------- Species constants (Pb) ----------
+variable    species     string pb
+variable    mass_ion    equal 207.2
+variable    z_ion       equal 82
 
 # ---------- Paths (cluster) ----------
 variable    pot_root    string /home/stovey/work/projects/quantum-lab/ballistic-diamond
 variable    tersoff_pot string ${pot_root}/lammps/potentials/SiC.tersoff
 variable    stop_file   string ${pot_root}/classical-simulations/potentials/electron-stopping-${species}.dat
-variable    scratch     string /work/stovey/ballistic-diamond/tersoff-sweep/energy-${energy_keV}/temperature-${temperature}/angle-${angle_deg}-${ensemble}
+variable    scratch     string /work/stovey/ballistic-diamond/tersoff-sweep-pb/energy-${energy_keV}/temperature-${temperature}/angle-${angle_deg}-${ensemble}
 
 # ---------- Derived quantities ----------
 # v[A/ps] = 138.91 * sqrt(E[eV] / M[amu])  for LAMMPS "metal" units

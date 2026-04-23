@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy the formal Sn-implantation sweep:
+# Deploy the formal Pb-implantation sweep:
 #   energies      (keV) : 20 35 60
 #   tilt angles   (deg) : 0 0.5 2
 #   temperatures  (K)   : 0 300 900
@@ -16,7 +16,7 @@ angles=(0 0.5 2)
 temperatures=(0 300 900)
 ensembles=100
 
-scratch_root=/work/stovey/ballistic-diamond/tersoff-sweep
+scratch_root=/work/stovey/ballistic-diamond/tersoff-sweep-pb
 mkdir -p logs
 
 for energy in "${energies[@]}"; do

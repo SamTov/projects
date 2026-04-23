@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Single-job SLURM submission for one (energy, angle, temperature, ensemble)
-# combination of the Sn implantation sweep.  deploy-experiment.sh copies this
+# combination of the Pb implantation sweep.  deploy-experiment.sh copies this
 # file into each per-job working directory and sbatches it there.
 
-#SBATCH --job-name=bd-sn
+#SBATCH --job-name=bd-pb
 #SBATCH --output=result.out
 #SBATCH --error=error.err
 #SBATCH --nodes=1
