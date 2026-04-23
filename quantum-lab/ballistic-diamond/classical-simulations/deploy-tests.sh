@@ -64,13 +64,20 @@ for species_src in "sn:tersoff-sweep" "pb:tersoff-sweep-pb"; do
 #SBATCH --ntasks=32
 #SBATCH --time=00:30:00
 
+source /etc/profile 2>/dev/null || source /etc/profile.d/modules.sh 2>/dev/null || true
+source ~/.bashrc 2>/dev/null || true
+
+module purge
 module load spack/default
 module load gcc/12.3.0
 module load openmpi/4.1.6
 module load fftw/3.3.10
 
-source ~/.bashrc
-conda activate nanopore
+if ! command -v mpirun >/dev/null 2>&1; then
+    echo "ERROR: openmpi module failed to load; current modules:" >&2
+    module list 2>&1 >&2
+    exit 1
+fi
 
 cd "\${SLURM_SUBMIT_DIR}"
 
@@ -78,7 +85,7 @@ lmp=/home/stovey/work/projects/quantum-lab/ballistic-diamond/lammps/build/lmp
 export OMP_NUM_THREADS=1
 
 rseed=\$(( (SLURM_JOB_ID * 2654435761) % 2147483647 ))
-srun "\${lmp}" \\
+srun --export=ALL "\${lmp}" \\
     -var rseed \${rseed} \\
     -var warmup_steps ${warmup_steps} \\
     -var collision_steps ${collision_steps} \\
