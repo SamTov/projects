@@ -69,7 +69,7 @@ source ~/.bashrc 2>/dev/null || true
 
 module purge
 module load spack/default
-module load gcc/12.3.0
+module load gcc/12.5.0
 module load openmpi/4.1.6
 module load fftw/3.3.10
 
