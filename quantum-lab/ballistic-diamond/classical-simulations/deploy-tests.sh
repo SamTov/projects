@@ -25,10 +25,12 @@ test_temp=300
 test_ensemble=0
 angles=(0 0.5 2)
 
-# Short run lengths (override the index defaults in simulate.lmp via -var)
+# Short run lengths (override the index defaults in simulate.lmp via -var).
+# Anneal is the slowest phase per step -- 5 ps is enough to confirm the
+# phase runs end-to-end and produces final.data.
 warmup_steps=2500       # 5 ps
 collision_steps=10000   # adaptive, bounded to <~1 ps
-anneal_steps=20000      # 20 ps
+anneal_steps=5000       # 5 ps
 
 scratch_root=/work/stovey/ballistic-diamond/tests
 mkdir -p tests
@@ -62,7 +64,7 @@ for species_src in "sn:tersoff-sweep" "pb:tersoff-sweep-pb"; do
 #SBATCH --error=error.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=32
-#SBATCH --time=00:30:00
+#SBATCH --time=01:00:00
 
 source /etc/profile 2>/dev/null || source /etc/profile.d/modules.sh 2>/dev/null || true
 source ~/.bashrc 2>/dev/null || true

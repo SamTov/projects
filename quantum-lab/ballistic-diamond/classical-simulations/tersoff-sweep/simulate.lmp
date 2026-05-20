@@ -132,13 +132,14 @@ else &
 fix         eqbath diamond langevin ${temperature} ${temperature} 0.1 ${seed_eq} zero yes
 fix         eqdyn  diamond nve
 
-dump        warmup all custom 5000 ${scratch}/warmup.lammpstraj id type x y z vx vy vz
-dump_modify warmup sort id
+# No dump during warmup: the ion is frozen and the slab is just thermalising,
+# nothing to track frame-by-frame.  If we ever want a "before strike" snapshot
+# for defect analysis, uncomment the next line.
+# write_data  ${scratch}/before-strike.data
 
 timestep    0.002
 run         ${warmup_steps}
 
-undump      warmup
 unfix       eqdyn
 unfix       eqbath
 unfix       freezeion
@@ -156,7 +157,9 @@ fix         coldt  all dt/reset 1 1.0e-7 1.0e-4 0.05 units box
 # Lindhard-Scharff electronic stopping; minneigh=1 keeps it off the ion while in vacuum.
 fix         elstop all electron/stopping 10.0 ${stop_file} minneigh 1
 
-dump        collision all custom 1000 ${scratch}/collision.lammpstraj id type x y z vx vy vz
+# Ion-only trajectory: tiny (one atom per frame), so we dump frequently to
+# resolve the cascade trajectory cleanly.  ~1000 frames at adaptive dt.
+dump        collision ion custom 100 ${scratch}/collision-ion.lammpstraj id type x y z vx vy vz
 dump_modify collision sort id
 
 timestep    1.0e-4
@@ -174,7 +177,9 @@ unfix       colbath
 fix         annbath bath langevin ${temperature} ${temperature} 0.1 ${seed_anneal} zero yes
 fix         anndyn  all nve
 
-dump        anneal all custom 10000 ${scratch}/annealing.lammpstraj id type x y z vx vy vz
+# Ion-only trajectory through the anneal: ion is mostly stopped, so coarser
+# sampling is fine.  ~1000 frames over 1 ns.
+dump        anneal ion custom 1000 ${scratch}/anneal-ion.lammpstraj id type x y z vx vy vz
 dump_modify anneal sort id
 
 timestep    0.001
