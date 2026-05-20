@@ -14,7 +14,8 @@
 # ---------- Initialisation ----------
 units       metal
 dimension   3
-boundary    p p f               # periodic in x,y (lattice); non-periodic in z
+boundary    p p p               # fully periodic; sputtered atoms wrap harmlessly
+                                # (ion can't traverse the 2500 A slab at these E)
 atom_style  atomic
 
 # ---------- Sweep parameters ----------
