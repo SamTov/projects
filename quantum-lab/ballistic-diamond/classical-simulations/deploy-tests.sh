@@ -43,6 +43,10 @@ for species_src in "sn:tersoff-sweep" "pb:tersoff-sweep-pb"; do
         workdir=tests/${species}-angle-${angle}
         rm -rf "${workdir}"
         mkdir -p "${workdir}"
+        # Wipe scratch too, so stale outputs from earlier dump strategies
+        # (warmup.lammpstraj, full-atom collision/anneal dumps, etc.) don't
+        # mix with the new ion-only outputs.
+        rm -rf "${scratch_root}/${species}-angle-${angle}"
         mkdir -p "${scratch_root}/${species}-angle-${angle}"
 
         # --- Copy + substitute simulate.lmp ---

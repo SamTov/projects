@@ -120,6 +120,13 @@ shell       mkdir -p ${scratch}
 # ---------- Thermo ----------
 thermo      1000
 thermo_style custom step time dt temp ke pe etotal press
+# With p p p and possible high-KE cascade tails, occasionally an atom NaNs
+# out (especially during the anneal when a sputtered carbon re-enters the
+# slab through the periodic wrap).  Warn but don't abort -- losing 1 of
+# 1.5M atoms doesn't move the physics, but we DO need to check post-hoc
+# that the ion itself wasn't the one lost.  The analysis package handles
+# that via the `ok` column.
+thermo_modify lost warn flush yes
 
 # ============================================================
 # Phase 1: Warmup -- full-slab Langevin, ion held fixed
