@@ -1,0 +1,43 @@
+## Ideal-gas Langevin dynamics for Experiment 1 (noise convergence).
+## Interatomic forces disabled so the off-diagonal of C is pure sampling noise.
+##
+## Jinja2 context expected:
+##   seed            integer RNG seed
+##   n_atoms         number of atoms
+##   box_length      cubic box edge (Angstrom, units real)
+##   temperature     target T (Kelvin)
+##   timestep        integrator dt (fs)
+##   n_equil         equilibration steps
+##   n_prod          production steps
+##   sample_every    dump velocity every N steps
+##   out_dump        trajectory output path
+##   mass            per-atom mass (g/mol; argon default 39.948)
+
+units           real
+atom_style      atomic
+boundary        p p p
+
+region          box block 0 {{ box_length }} 0 {{ box_length }} 0 {{ box_length }}
+create_box      1 box
+create_atoms    1 random {{ n_atoms }} {{ seed }} box
+mass            1 {{ mass | default(39.948) }}
+
+# No pair interactions: forces come only from the Langevin thermostat.
+pair_style      zero 2.0
+pair_coeff      * *
+
+velocity        all create {{ temperature }} {{ seed }} mom yes rot yes dist gaussian
+
+timestep        {{ timestep }}
+fix             integrate all nve
+fix             thermostat all langevin {{ temperature }} {{ temperature }} 100.0 {{ seed }}
+
+thermo          1000
+thermo_style    custom step temp etotal press vol
+
+run             {{ n_equil }}
+
+reset_timestep  0
+dump            d_vel all custom {{ sample_every }} {{ out_dump }} id type vx vy vz
+dump_modify     d_vel sort id
+run             {{ n_prod }}

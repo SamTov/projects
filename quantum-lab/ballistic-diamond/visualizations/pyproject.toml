@@ -1,0 +1,17 @@
+[project]
+name = "znvis"
+version = "0.1.0"
+description = "High-performance atomistic simulation visualization tool"
+authors = [
+    { name = "Samuel James Tovey" }
+]
+dependencies = [
+    "taichi>=1.7.0",
+    "numpy>=1.24.0",
+    "trimesh>=4.0.0",
+    "pandas>=3.0.3",
+]
+requires-python = ">=3.11,<3.12"
+
+# Explicit specification of the file and its content-type
+readme = { file = "README.markdown", content-type = "text/markdown" }

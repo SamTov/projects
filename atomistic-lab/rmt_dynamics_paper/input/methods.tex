@@ -1,0 +1,83 @@
+\section{Methods}
+\label{sec:methods}
+
+\subsection{Construction of the Correlation Matrix}
+\label{subsec:matrix-computation}
+Given a molecular dynamics trajectory of length $T_{\text{traj}}$ from which we sample $M$ velocity snapshots at uniform intervals $\delta t$, we compute the finite-sample estimator of Equation~\ref{eqn:Cij} as
+\begin{align}
+    \hat{C}_{ij} = \delta t \sum\limits_{\tau = 0}^{\tau_{\max}/\delta t} \frac{1}{M - \tau} \sum\limits_{m = 0}^{M - \tau - 1} \mathbf{v}_{i}(t_{m} + \tau\, \delta t) \cdot \mathbf{v}_{j}(t_{m}),
+    \label{eqn:Chat}
+\end{align}
+where the outer sum is a Riemann approximation to the time integral, truncated at a lag $\tau_{\max}$ that we choose to be several times the integral relaxation time of the velocity autocorrelation (see below), and the inner sum averages over time origins $t_{m}$.
+
+Evaluating Equation~\ref{eqn:Chat} by direct summation costs $\mathcal{O}(|\N|^{2} M^{2})$ and is intractable at the system sizes we use.
+Instead, for each pair $(i,j)$ we compute the cross-correlation in frequency space via the Wiener--Khinchin theorem, using a single pair of FFTs per Cartesian component and summing the three component contributions, reducing the cost to $\mathcal{O}(|\N|^{2} M \log M)$.
+The implementation is memory-bound at large $|\N|$, so we process blocks of pair indices in sequence and reuse the forward transforms of each atom's velocity time series.
+
+Two practical points deserve attention.
+First, when $a_{i}$ is a vector such as velocity, we compute $\hat{C}_{ij}$ per Cartesian component and average; this reduces variance by a factor of three relative to using a scalar projection and preserves rotational invariance.
+Second, the choice of $\tau_{\max}$ is not innocuous.
+Too short a cutoff under-integrates long-lived correlations and biases $\hat{C}$ downward; too long a cutoff accumulates noise from the flat tail of the autocorrelation function and inflates the variance of every off-diagonal entry.
+We estimate the integral relaxation time
+\begin{align}
+    \tau_{\text{int}} = \int\limits_{0}^{\infty} dt \, \frac{\langle \mathbf{v}_{i}(t) \cdot \mathbf{v}_{i}(0) \rangle}{\langle \mathbf{v}_{i}(0) \cdot \mathbf{v}_{i}(0) \rangle}
+    \label{eqn:tau-int}
+\end{align}
+directly from the trajectory, averaging over atoms, and set $\tau_{\max} = 10\, \tau_{\text{int}}$ by default.
+The same estimate provides the effective number of independent time samples $T_{\text{eff}} = T_{\text{traj}} / \tau_{\text{int}}$ used in the noise model of Section~\ref{subsec:de-noising-correlation-matrices}.
+
+\subsection{De-noising via the Marchenko--Pastur Null}
+\label{subsec:de-noising-correlation-matrices}
+For a system of $|\N|$ non-interacting particles sampled at $T_{\text{eff}}$ independent times, the bulk of the eigenvalue distribution of the trace-normalised correlation matrix $\hat{C} / \mathrm{Tr}(\hat{C})$ follows the Marchenko--Pastur density~\cite{TODO:marchenko1967},
+\begin{align}
+    \rho_{\text{MP}}(\mu) = \frac{1}{2 \pi q\, \sigma^{2}\, \mu} \sqrt{(\mu_{+} - \mu)(\mu - \mu_{-})}, \qquad \mu \in [\mu_{-}, \mu_{+}],
+    \label{eqn:mp-density}
+\end{align}
+with aspect ratio $q = |\N| / T_{\text{eff}}$, edges $\mu_{\pm} = \sigma^{2}\, (1 \pm \sqrt{q})^{2}$, and noise scale $\sigma^{2}$ fitted from the bulk.
+We refer to $\rho_{\text{MP}}$ as the noise-only null and use it in two ways.
+
+First, we test how close the empirical spectrum $\rho_{\text{emp}}(\mu)$ is to the null using the Kolmogorov--Smirnov distance $D_{\mathrm{KS}}(\rho_{\text{emp}}, \rho_{\text{MP}})$ and a comparison between the empirical largest eigenvalue $\mu_{\max}$ and the MP edge $\mu_{+}$.
+For a system with genuine correlation structure, $D_{\mathrm{KS}}$ remains non-trivial even in the $T_{\text{eff}} \to \infty$ limit and $\mu_{\max}$ sits above $\mu_{+}$; for an uncorrelated reference, both quantities approach zero.
+
+Second, we use the null to separate signal from noise in the entropy observable.
+Eigenvalues above a threshold $\mu_{\text{cut}} = \mu_{+} (1 + \kappa / \sqrt{T_{\text{eff}}})$, with $\kappa$ a small safety factor set to $\kappa = 3$ throughout, are classified as outliers; the remainder of the spectrum is taken to be consistent with the null.
+We report two entropy quantities: the raw $S(\hat{C})$ of Equation~\ref{eqn:vnentropy} and the de-noised version
+\begin{align}
+    S_{\text{signal}}(\hat{C}) = S(\hat{C}) - S_{\text{bulk}}(\hat{C}),
+    \label{eqn:signal-entropy}
+\end{align}
+where $S_{\text{bulk}}$ is the von Neumann entropy computed from only those eigenvalues below $\mu_{\text{cut}}$.
+$S_{\text{signal}}$ is the component of the spectrum that cannot be explained by the noise-only null and is the quantity most sensitive to the physical features we want to expose.
+
+We validate this machinery on synthetic trajectories with prescribed correlation structure before applying it to molecular dynamics output; the validation is reported in Experiment~\ref{subsec:convergence-of-the-noise-term}.
+
+\subsection{Molecular Dynamics Simulations}
+\label{subsec:molecular-dynamics-simulations}
+Simulations fall into three families, one per experimental system, and use the classical molecular dynamics code LAMMPS~\cite{TODO:lammps} unless otherwise noted.
+All production runs use Langevin dynamics in the constant-$NVT$ ensemble unless $NPT$ is explicitly required, with a damping time of $0.1$~ps.
+For $NPT$ runs we use a Nos\'e--Hoover barostat with coupling constants of $0.1$~ps (thermostat) and $1.0$~ps (barostat).
+Each run is initialised from a randomly seeded velocity distribution and separately reported in output metadata, and every reported observable is averaged over a minimum of three and up to five independent seeds.
+
+\paragraph{Lennard-Jones fluids (Experiments~\ref{subsec:convergence-of-the-noise-term}, \ref{subsec:bond-addition}, and~\ref{subsec:lennard-jones-phases}).}
+The Lennard-Jones potential is taken with argon parameters $\sigma = 3.4$~\AA{}, $\varepsilon / k_{B} = 120$~K, and particle mass $40$~amu, cut and shifted at $r_{c} = 2.5\,\sigma$.
+System size is $|\N| = 512$ for the phase sweep and the bond-addition experiment, and we sweep $|\N| \in \{64, 256, 1024, 4096\}$ in the noise-convergence study.
+The integration timestep is $\delta t = 2$~fs.
+For the phase sweep we equilibrate for $10^{5}$ steps in $NPT$ at $P = 1$~atm and run for $5 \times 10^{5}$ steps of production; for the bond-addition experiment we equilibrate an $NVT$ liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$ before inserting bonds and running for $5 \times 10^{5}$ production steps; for the non-interacting noise study we disable the pair potential entirely and run at low density and high temperature.
+Harmonic bonds for the bond-addition experiment are added between random eligible pairs with stiffness $k_{b} = 100\,\varepsilon/\sigma^{2}$ and rest length set at the current pair separation.
+When run-time bond insertion is required we use ESPResSo~\cite{TODO:espresso} in place of LAMMPS.
+
+\paragraph{Water (Experiment~\ref{subsec:water-phases}).}
+Water is modelled with TIP4P/2005~\cite{TODO:tip4p-2005}, with rigid geometry maintained by SHAKE.
+We use $|\N_{\text{water}}| = 512$ molecules (1536 atoms) in a cubic box with periodic boundary conditions, a $10$~\AA{} real-space cutoff for the Lennard-Jones contribution, and a particle-particle particle-mesh Ewald treatment of long-range electrostatics with a real-space cutoff of $12$~\AA{}.
+The integration timestep is $\delta t = 1$~fs.
+The liquid branch is equilibrated in $NPT$ at $P = 1$~atm for $1$~ns and run for $5$~ns of production at each temperature in $\{240, 260, 280, 300, 320, 350, 400, 450, 500\}$~K; the ice branch at $240$~K is initialised from a proton-disordered ice Ih configuration and monitored through a pair correlation function to confirm the crystalline structure is retained.
+Velocities are written every $20$~fs.
+
+\paragraph{Molten salt (Experiment~\ref{subsec:molten-salt-ionic-conductivity}).}
+Molten NaCl is modelled with the Tosi--Fumi pair potential~\cite{TODO:tosi-fumi} at $216$ ion pairs (432 atoms) in a cubic $NVT$ box set to the experimental density of $1.54$~g\,cm$^{-3}$.
+Long-range electrostatics are again treated with PPPM.
+The integration timestep is $\delta t = 1$~fs.
+At each temperature in $\{1100, 1200, 1400, 1600, 1800\}$~K we equilibrate for $200$~ps and run for $2$~ns of production; velocities are written every $10$~fs.
+
+\paragraph{Reproducibility.}
+All input decks, analysis scripts, and random seeds used to generate the figures in Section~\ref{sec:experiments} are available in the repository described in Section~\ref{sec:data-and-availability}; each figure is regenerable from a single command and each run records its seed, source commit, and input hash in a provenance file.

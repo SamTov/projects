@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rmt_dynamics"
+version = "0.1.0"
+description = "Random-matrix-theory analysis of atom-wise velocity correlation matrices in molecular dynamics."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Samuel Tovey" },
+    { name = "Marko Zecevic" },
+    { name = "Christian Holm" },
+]
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "matplotlib>=3.8",
+    "pyyaml>=6.0",
+    "tqdm>=4.60",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+io = ["MDAnalysis>=2.7"]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+]
+
+[project.scripts]
+rmt-run = "rmt_dynamics.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["rmt_dynamics*"]
+
+[tool.setuptools.package-data]
+rmt_dynamics = ["../lammps_templates/*.j2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]

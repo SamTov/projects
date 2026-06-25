@@ -1,0 +1,29 @@
+[project]
+name = "ballistic-analysis"
+version = "0.1.0"
+description = "Analysis + visualization tooling for the Sn/Pb ballistic-diamond implantation sweep."
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.24",
+    "h5py>=3.8",
+    "matplotlib>=3.7",
+    "pandas>=2.0",
+    "ipykernel>=6.25",        # for the analyze-sweep.ipynb kernel
+    "jupyter>=1.0",
+]
+
+[project.optional-dependencies]
+# ZnVis pulls in open3d, mitsuba, opencv-python, rich as transitive deps.
+viz = ["znvis"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ballistic_analysis"]
+
+# Source ZnVis from Sam's local working clone (currently feat/cleanup-for-paper)
+# instead of PyPI, so any local changes are picked up live.
+[tool.uv.sources]
+znvis = { path = "/Users/samueltovey/work/repositories/ZnVis", editable = true }

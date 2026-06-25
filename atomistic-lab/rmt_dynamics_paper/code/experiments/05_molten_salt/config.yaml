@@ -1,0 +1,20 @@
+# Experiment 5 — Molten NaCl ionic conductivity (NVT).
+# See experiments.md §5.
+
+template: molten_salt_nacl.in.j2
+
+fixed:
+  n_pairs: 216                 # 432 atoms
+  density: 1.540               # g/cm^3 at 1100 K
+  cutoff: 12.0                 # Å
+  timestep: 1.0                # fs
+  n_equil: 200000              # 200 ps
+  n_prod: 2000000              # 2 ns
+  sample_every: 10             # dump velocities every 10 fs
+  analysis:
+    t_max_fs: 4000.0
+    remove_mean: true
+
+sweep:
+  temperature: [1100.0, 1200.0, 1400.0, 1600.0, 1800.0]
+  seed: [1, 2, 3, 4, 5]

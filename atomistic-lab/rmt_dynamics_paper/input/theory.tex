@@ -1,0 +1,149 @@
+\section{Theory}
+\label{sec:theory}
+
+\subsection{Onsager and Green--Kubo Relations}
+\label{subsec:onsager-relations}
+Consider a system close to thermodynamic equilibrium in which a small set of thermodynamic forces $\{X_{j}\}$ drives conjugate fluxes $\{J_{i}\}$.
+Onsager's linear-response ansatz~\cite{onsager31a,onsager31b} relates the averaged fluxes and forces through a transport-coefficient matrix $\mathbf{L}$,
+\begin{align}
+    \langle J_{i} \rangle = \sum\limits_{j} L_{ij}\, X_{j},
+    \label{eqn:onsager-linear-response}
+\end{align}
+with the reciprocal relations $L_{ij} = L_{ji}$ following from microscopic reversibility~\cite{callen51a}.
+The fluctuation--dissipation theorem, in the form written down by Green~\cite{green54a} and Kubo~\cite{kubo57a,kubo66a}, gives each $L_{ij}$ as the time integral of an equilibrium flux--flux correlation function,
+\begin{align}
+    L_{ij} = \frac{1}{k_{B}T V} \int\limits_{0}^{\infty} dt \, \langle J_{i}(t) \cdot J_{j}(0) \rangle,
+    \label{eqn:green-kubo-general}
+\end{align}
+where $V$ is the system volume and $T$ its temperature.
+Equation~\ref{eqn:green-kubo-general} is the starting point for computing transport coefficients from molecular dynamics trajectories and is the relation we decompose into particle-wise contributions in the remainder of this section.
+
+\subsection{Microscopic Decomposition of Transport Coefficients}
+\label{subsec:microscopic-origins-of-transport-properties}
+The Green--Kubo relations of Section~\ref{subsec:onsager-relations} can be used to compute a wide range of observables, from particle-specific quantities such as self-diffusion to system-wide quantities such as ionic conductivity.
+Nernst--Einstein-type decompositions of such coefficients into a self contribution and a correction from distinct pair correlations are well established for individual transport properties, most prominently for ionic conductivity in electrolytes and molten salts~\cite{kashyap11a,fong20a,fong21a}.
+Those derivations are, however, written down coefficient by coefficient; to our knowledge they have not been cast in a species-generic form that treats on a single footing any dissipative quantity derivable from a single-particle primitive.
+We do so here.
+The resulting formalism makes the \emph{same} distinct-correlation correction $\Delta^{\lambda}$ --- and, as we will show in Section~\ref{subsec:atom-wise-correlation-matrix}, the \emph{same} underlying matrix $C$ --- the common object behind self-diffusion, ionic conductivity, electrophoretic mobility, and the other transport coefficients built from a particle-wise observable with a species-specific scalar.
+The notation used throughout this section is collected in Table~\ref{tab:definitions}.
+
+Consider a dissipative quantity $\lambda$ related by a Green--Kubo expression to a system-wide observable $A$,
+\begin{align}
+    \lambda = \frac{\beta}{3} \int\limits_{0}^{\infty} dt \, \langle A(t)\cdot A(0) \rangle,
+    \label{eqn:genericsystem}
+\end{align}
+where $\beta = 1/k_{B}T$.
+As $A(t)$ and $A(0)$ refer to the same observable evaluated at different times, we call $\langle A(t)\cdot A(0)\rangle$ an autocorrelation function.
+Suppose $A(t)$ decomposes into a sum of particle-wise contributions,
+\begin{align}
+    A(t) = \sum\limits_{i \in \N} a_{i}(t),
+    \label{eqn:localproperties}
+\end{align}
+where $a_{i}(t)$ is a property associated with a single particle (e.g.\ velocity, position, or atomic current) in a system of $|\N|$ particles.
+Equation~\ref{eqn:localproperties} may be further separated into same-species contributions,
+\begin{align}
+    A(t) = \sum\limits_{\alpha \in \Se} \sum\limits_{j \in \N_{\alpha}} a_{j}(t),
+\end{align}
+where $\alpha$ indexes a single species in the system.
+Substituting this expansion into Equation~\ref{eqn:genericsystem} yields
+\begin{align}
+    \lambda = \frac{\beta}{3} \Bigg(
+    &\int\limits_{0}^{\infty} dt \sum\limits_{\alpha \in \Se} \sum\limits_{i \in \N_{\alpha}} \langle a_{i}(t)\cdot a_{i}(0) \rangle + \nonumber \\
+    &\int\limits_{0}^{\infty} dt \sum\limits_{\alpha \in \Se} \sum\limits_{\substack{i,j \in \N_{\alpha} \\ i \neq j}} \langle a_{i}(t)\cdot a_{j}(0) \rangle + \nonumber \\
+    &\int\limits_{0}^{\infty} dt \sum\limits_{\substack{\alpha, \beta \in \Se \\ \alpha \neq \beta}} \sum\limits_{i \in \N_{\alpha}} \sum\limits_{j \in \N_{\beta}} \langle a_{i}(t)\cdot a_{j}(0) \rangle
+    \Bigg),
+    \label{eqn:expansion}
+\end{align}
+where the first term is the self contribution and the remaining two are the so-called distinct contributions, separated into same-species and cross-species parts.
+To write the subsequent expressions compactly, we define
+\begin{align}
+    f_{\alpha}         &= \int\limits_{0}^{\infty} dt \sum\limits_{i \in \N_{\alpha}} \langle a_{i}(t)\cdot a_{i}(0) \rangle, \nonumber \\
+    f_{\alpha \beta}   &= \int\limits_{0}^{\infty} dt \sum\limits_{i \in \N_{\alpha}} \sum\limits_{j \in \N_{\beta}} \langle a_{i}(t)\cdot a_{j}(0) \rangle, \nonumber \\
+    g_{\alpha \beta}   &= f_{\alpha \beta} - \delta_{\alpha \beta}\, f_{\alpha},
+    \label{eqn:fgdefs}
+\end{align}
+consistent with the definitions collected in Table~\ref{tab:definitions}.
+Substituting Equation~\ref{eqn:fgdefs} into Equation~\ref{eqn:expansion} gives
+\begin{align}
+    \lambda = \frac{\beta}{3} \Bigg( \sum\limits_{\alpha \in \Se} f_{\alpha}
+                                   + \sum\limits_{\alpha \in \Se} g_{\alpha \alpha}
+                                   + \sum\limits_{\substack{\alpha, \beta \in \Se \\ \alpha \neq \beta}} g_{\alpha \beta} \Bigg),
+    \label{eqn:simplification}
+\end{align}
+in which the self term and the same-species and cross-species distinct terms appear separately.
+The effect of the distinct contributions can be absorbed into a dimensionless correction,
+\begin{align}
+    \lambda &= \lambda^{\text{NE}} \cdot (1 + \Delta^{\lambda}),
+    \label{eqn:transport-equation}
+\end{align}
+where
+\begin{align}
+    \Delta^{\lambda} &= \frac{\sum\limits_{\beta \in \Se} \sum\limits_{\gamma \in \Se} \eta_{\beta}\, \eta_{\gamma}\, g_{\beta \gamma}}
+                               {\sum\limits_{\alpha \in \Se} \eta_{\alpha}^{2}\, f_{\alpha}}.
+    \label{eqn:full-correction}
+\end{align}
+Here we assume that the microscopic quantity $a_{i}$ can be separated into a dynamical part and a species-specific scalar $\eta_{\alpha}$, as is the case for charge or mass.
+When $\Delta^{\lambda} = 0$ the expression reduces to the corresponding Nernst--Einstein-type estimate $\lambda^{\text{NE}}$, which ignores distinct correlations; $\Delta^{\lambda}$ therefore measures the deviation of the full transport coefficient from its uncorrelated single-particle baseline.
+In some cases, while the transport property of interest is collective, it remains species-resolved --- electrophoretic mobility being one example.
+Equations~\ref{eqn:transport-equation} and~\ref{eqn:full-correction} then specialise to
+\begin{align}
+    \lambda_{\alpha} &= \lambda_{\alpha}^{\text{NE}} \cdot (1 + \Delta_{\alpha}^{\lambda}),
+\end{align}
+with
+\begin{align}
+    \Delta_{\alpha}^{\lambda} &= \frac{\sum\limits_{\beta \in \Se} \eta_{\beta}\, g_{\alpha \beta}}{\eta_{\alpha}\, f_{\alpha}}.
+\end{align}
+This decomposition exposes the microscopic origin of transport coefficients and motivates treating the underlying correlation structure as an object of direct interest.
+
+We note in closing a scope caveat.
+The derivation above presumes that $A$ admits a single-particle expansion of the form of Equation~\ref{eqn:localproperties}, which is immediate for self-diffusion, ionic conductivity, and electrophoretic mobility.
+For transport coefficients whose flux carries an explicit pair-interaction contribution --- shear viscosity and thermal conductivity being the canonical examples --- an Irving--Kirkwood-type atom-wise partition of the interaction term~\cite{TODO:irving-kirkwood} is required to bring the observable into the required form, after which the same decomposition applies.
+We do not develop that partition here and restrict the experiments in Section~\ref{sec:experiments} to transport coefficients that admit the single-particle expansion directly.
+
+\subsection{The Atom-Wise Correlation Matrix}
+\label{subsec:atom-wise-correlation-matrix}
+The quantities $f_{\alpha}$, $f_{\alpha \beta}$, and $g_{\alpha \beta}$ introduced in Equation~\ref{eqn:fgdefs} are scalar sums; the information in the summands is richer.
+We therefore promote the particle indices to matrix indices and define the \emph{atom-wise correlation matrix}
+\begin{align}
+    C_{ij} = \int\limits_{0}^{\infty} dt \, \langle a_{i}(t) \cdot a_{j}(0) \rangle, \qquad i, j \in \N.
+    \label{eqn:Cij}
+\end{align}
+By time-reversal symmetry of equilibrium correlation functions, $C$ is real and symmetric, with diagonal entries set by single-particle autocorrelations and off-diagonals carrying the distinct correlations that drive $\Delta^{\lambda}$.
+
+Ordering the atom indices so that atoms of a given species appear contiguously partitions $C$ into species blocks: the $|\N_{\alpha}| \times |\N_{\beta}|$ block $C^{(\alpha \beta)}$ collects every correlation between an atom of species $\alpha$ and an atom of species $\beta$.
+In this representation, the scalars of Equation~\ref{eqn:fgdefs} are block sums --- $f_{\alpha}$ is the trace of $C^{(\alpha \alpha)}$, $f_{\alpha \beta}$ is the sum of all entries of $C^{(\alpha \beta)}$, and $g_{\alpha \beta}$ is the off-trace sum --- so the decomposition in Equations~\ref{eqn:expansion}--\ref{eqn:simplification} is a statement about how the macroscopic transport coefficient $\lambda$ depends on coarse linear functionals of $C$.
+Moving from those linear functionals to the spectrum of $C$ is the step that takes us beyond what a transport coefficient reports.
+
+$C$ is itself a finite-sample estimator.
+For a trajectory of length $T_{\text{traj}}$, Equation~\ref{eqn:Cij} is evaluated as a time-origin average, so the entries of $C$ carry sampling noise whose magnitude scales with the effective number of independent time samples $T_{\text{eff}} = T_{\text{traj}} / \tau_{\text{int}}$, where $\tau_{\text{int}}$ is the integral relaxation time of the underlying velocity autocorrelation.
+Across an ensemble of independent trajectories, each realisation of $C$ is drawn from a distribution determined by the underlying dynamics, and $C$ is natural to regard as a random matrix.
+In the limiting case of non-interacting particles, the $|\N|$ time series $\{a_{i}(t)\}$ are independent, so the off-diagonal entries of $C$ are inner products of independent signals and have zero mean; the resulting spectrum converges to a Marchenko--Pastur distribution~\cite{TODO:marchenko1967} set by $|\N|$ and $T_{\text{eff}}$.
+This uncorrelated limit provides the null against which we measure deviation: physical signal --- bonded pairs, solvation shells, collective modes associated with phase behaviour --- appears as structure inconsistent with the noise-only reference, most directly as eigenvalue outliers above the bulk edge.
+
+\subsection{Spectral Observables}
+\label{subsec:interpreting-atomic-correlation-matrices}
+We characterise $C$ through two families of observables: its eigenvalue spectrum and scalar summaries of that spectrum.
+Because the integrated autocorrelation $\int_{0}^{\infty} dt\, \langle X(t)\cdot X(0) \rangle$ of any linear combination $X = \sum_{i} x_{i}\, a_{i}$ is non-negative in equilibrium~\cite{hansen90a}, $C$ is positive semi-definite and admits an orthonormal eigendecomposition $C = \sum_{k} \mu_{k}\, \phi_{k}\, \phi_{k}^{\top}$ with $\mu_{k} \ge 0$.
+
+\subsubsection{Spectrum}
+The eigenvalue distribution of $C$ separates naturally into a bulk and a set of outliers.
+The bulk remains close to the Marchenko--Pastur null of Section~\ref{subsec:atom-wise-correlation-matrix} and encodes the sampling noise present even in an uncorrelated system.
+Outliers above the bulk edge correspond to collective modes whose eigenvectors $\phi_{k}$ identify which atoms participate in a given correlated motion.
+The participation ratio
+\begin{align}
+    \mathrm{PR}_{k} = \frac{1}{\sum_{i} \phi_{ik}^{4}}
+    \label{eqn:participation-ratio}
+\end{align}
+counts, in a normalised sense, how many atoms are active in mode $k$: bonded pairs yield $\mathrm{PR} \approx 2$, small clusters yield $\mathrm{PR}$ of order the cluster size, and system-spanning collective modes yield $\mathrm{PR}$ of order $|\N|$.
+This gives a direct route from matrix structure to physical interpretation: a large eigenvalue with small $\mathrm{PR}$ flags a local correlation such as a bond, whereas a large eigenvalue with large $\mathrm{PR}$ flags a long-range collective mode of the kind expected near a phase transition.
+
+\subsubsection{Entropy}
+The \emph{von Neumann entropy} of $C$ is defined as
+\begin{align}
+    S(C) = -\sum\limits_{k} p_{k} \ln p_{k}, \qquad p_{k} = \frac{\mu_{k}}{\sum_{l} \mu_{l}},
+    \label{eqn:vnentropy}
+\end{align}
+where $\{\mu_{k}\}$ are the eigenvalues of $C$.
+$S(C)$ is a scalar summary of how broadly correlation is distributed across the eigenmodes of $C$: it is maximal when eigenvalues are uniform (fully delocalised correlation) and minimal when a single eigenvalue dominates (one collective mode).
+$S(C)$ can also be read as an entropy of the trace-normalised operator $C / \mathrm{Tr}(C)$, which makes explicit the formal parallel with the von Neumann entropy of a density matrix in quantum statistics and with the spectral configurational entropy of Schlitter~\cite{TODO:schlitter1993} applied to positional covariance.
+We use $S(C)$ as the primary spectral observable throughout the experiments that follow.
