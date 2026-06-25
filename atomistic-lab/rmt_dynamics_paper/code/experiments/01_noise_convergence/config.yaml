@@ -1,0 +1,22 @@
+# Experiment 1 — Convergence of the Noise Term (ideal gas)
+# See experiments.md §1 for the full specification.
+
+template: ideal_gas.in.j2
+
+fixed:
+  mass: 39.948           # argon, g/mol
+  temperature: 100.0     # K
+  timestep: 2.0          # fs; LAMMPS units real
+  n_equil: 20000         # 40 ps equilibration
+  sample_every: 10       # dump velocities every 10 steps
+  density: 0.01          # reduced units, rho = 0.01 / sigma^3
+  sigma: 3.405           # argon LJ sigma, Å (sets box_length per N)
+  analysis:
+    t_max_fs: 1000.0     # integration window for C
+    remove_mean: true
+
+# Sweep dimensions. The cartesian product is taken; last key varies fastest.
+sweep:
+  n_atoms: [64, 256, 1024, 4096]
+  n_prod:  [10000, 100000, 1000000]
+  seed:    [1, 2, 3, 4, 5]

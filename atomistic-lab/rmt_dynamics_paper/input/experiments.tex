@@ -1,0 +1,28 @@
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Convergence of the Noise Term}
+\label{subsec:convergence-of-the-noise-term}
+
+\subsection{Bond Addition}
+\label{subsec:bond-addition}
+
+\subsection{Lennard-Jones Phases}
+\label{subsec:lennard-jones-phases}
+As a first test of the spectral observables introduced in Section~\ref{subsec:interpreting-atomic-correlation-matrices}, we study a single-component Lennard-Jones system swept across its solid, liquid and gas regimes.
+Temperatures are reported in Kelvin using argon parameters; the simulation protocol is summarised in Section~\ref{subsec:molecular-dynamics-simulations}.
+Figure~\ref{fig:lj-results} compares the mass density (a) with the von Neumann entropy of the atom-wise velocity correlation matrix (b) across the scanned temperature range.
+A solid-to-liquid change is visible in both observables near $T \approx 20$--$25$~K, but the entropy shows a noticeably sharper step there than the density.
+At $T \gtrsim 85$~K the system leaves the condensed phase, which is reflected as a collapse in both quantities.
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/lj-experiment.pdf}
+    \caption{Lennard-Jones sweep as a function of temperature. (a) Mass density. (b) Von Neumann entropy of the atom-wise velocity correlation matrix $C$ [Equation~\ref{eqn:Cij}]. The solid-to-liquid change near $20$--$25$~K is resolved more sharply by the entropy than by the density, and the loss of the condensed phase above $\sim 85$~K is visible in both.}
+    \label{fig:lj-results}
+\end{figure}
+
+\subsection{Water Phases}
+\label{subsec:water-phases}
+
+\subsection{Molten Salt Ionic Conductivity}
+\label{subsec:molten-salt-ionic-conductivity}

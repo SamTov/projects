@@ -1,0 +1,47 @@
+# Experiment 3 — Lennard-Jones phases (argon, NPT, P = 1 atm).
+# See experiments.md §3.
+
+template: lj_nvt.in.j2
+
+fixed:
+  mass: 39.948
+  sigma: 3.405
+  epsilon: 0.2381
+  cutoff: 10.215
+  n_atoms: 512
+  density_reduced: 0.8        # initial box density; NPT relaxes it
+  ensemble: npt
+  pressure: 1.0               # atm
+  timestep: 2.0
+  n_equil: 100000             # 200 ps
+  n_prod: 500000              # 1 ns
+  sample_every: 10
+  analysis:
+    t_max_fs: 2000.0
+    remove_mean: true
+
+# Coarse 10 K scan 10..150 K; finer 2 K scan across liquid-vapor at 80..94 K.
+sweep:
+  temperature:
+    - 10.0
+    - 20.0
+    - 30.0
+    - 40.0
+    - 50.0
+    - 60.0
+    - 70.0
+    - 80.0
+    - 82.0
+    - 84.0
+    - 86.0
+    - 88.0
+    - 90.0
+    - 92.0
+    - 94.0
+    - 100.0
+    - 110.0
+    - 120.0
+    - 130.0
+    - 140.0
+    - 150.0
+  seed: [1, 2, 3, 4, 5]

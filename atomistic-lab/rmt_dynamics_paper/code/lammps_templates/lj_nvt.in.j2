@@ -1,0 +1,74 @@
+## Lennard-Jones fluid (argon parameters) for Experiments 2 and 3.
+## The same template covers NVT and NPT; pick via the `ensemble` context var.
+##
+## Jinja2 context expected:
+##   seed            integer RNG seed
+##   n_atoms         number of atoms (used when building the box from scratch)
+##   box_length      initial cubic box edge (Angstrom)
+##   density         target number density (atoms / Å^3) (NPT ignores)
+##   temperature     target T (Kelvin)
+##   pressure        target P (atm) — only used when ensemble == 'npt'
+##   timestep        integrator dt (fs)
+##   n_equil         equilibration steps
+##   n_prod          production steps
+##   sample_every    dump velocity every N steps
+##   out_dump        trajectory output path
+##   ensemble        'nvt' or 'npt'
+##   mass            per-atom mass (g/mol; argon default 39.948)
+##   sigma           LJ σ (Å)  — argon: 3.405
+##   epsilon         LJ ε (kcal/mol) — argon: 0.2381
+##   cutoff          LJ cutoff (Å) — argon default 3 * sigma = 10.215
+##   bonds_file      optional path to a `read_data` file containing bonds
+##                   (present only for Exp 2 with k > 0); omit otherwise.
+
+units           real
+{% if bonds_file is defined and bonds_file %}
+atom_style      bond
+{% else %}
+atom_style      atomic
+{% endif %}
+boundary        p p p
+
+{% if bonds_file is defined and bonds_file %}
+read_data       {{ bonds_file }}
+{% else %}
+region          box block 0 {{ box_length }} 0 {{ box_length }} 0 {{ box_length }}
+create_box      1 box
+create_atoms    1 random {{ n_atoms }} {{ seed }} box
+{% endif %}
+mass            1 {{ mass | default(39.948) }}
+
+pair_style      lj/cut {{ cutoff | default(10.215) }}
+pair_coeff      1 1 {{ epsilon | default(0.2381) }} {{ sigma | default(3.405) }}
+
+{% if bonds_file is defined and bonds_file %}
+bond_style      harmonic
+# Actual bond coefficients come from the bonds data file.
+{% endif %}
+
+velocity        all create {{ temperature }} {{ seed }} mom yes rot yes dist gaussian
+
+minimize        1.0e-4 1.0e-6 1000 10000
+
+timestep        {{ timestep }}
+{% if ensemble == 'npt' -%}
+fix             integrate all npt temp {{ temperature }} {{ temperature }} 100.0 iso {{ pressure }} {{ pressure }} 1000.0
+{%- else -%}
+fix             integrate all nvt temp {{ temperature }} {{ temperature }} 100.0
+{%- endif %}
+
+thermo          1000
+thermo_style    custom step temp etotal press vol density
+
+run             {{ n_equil }}
+
+reset_timestep  0
+{% if out_dump is defined and out_dump %}
+dump            d_vel all custom {{ sample_every }} {{ out_dump }} id type vx vy vz
+dump_modify     d_vel sort id
+{% endif %}
+run             {{ n_prod }}
+
+{% if write_data_file is defined and write_data_file %}
+write_data      {{ write_data_file }} nocoeff
+{% endif %}

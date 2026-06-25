@@ -1,0 +1,35 @@
+\begin{table}[H]
+\begin{tabular}{@{}ll@{}}
+\toprule
+Symbol                               & \multicolumn{1}{c}{Description}                                                                                                                                                                               \\ \midrule
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{U}$                        & A finite system of atoms.                                                                                                                                                                                     \\
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{S}$                        & The set of all unique atomic species in $\mathcal{U}$                                                                                                                                                         \\
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{N}$                        & The indexing set of all atoms in $\mathcal{U}$                                                                                                                                                                \\
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{N}_{\alpha}$               & \begin{tabular}[c]{@{}l@{}}The indices of the atoms of species $\alpha \in \mathcal{S}$ such that $|\mathcal{N}_{\alpha}|$ \\ is the total number of atoms of species $\alpha$ in $\mathcal{U}$.\end{tabular} \\
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{M}$                        & The indexing set of all molecules in $\mathcal{U}$                                                                                                                                                            \\
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{B}$                        & The set of all molecular species in $\mathcal{U}$                                                                                                                                                             \\
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{M}_{\alpha}$               & The indices of the molecules of species $\alpha \in \mathcal{B}$                                                                                                                                              \\
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{S}_{\mathcal{M}_{\alpha}}$ & \begin{tabular}[c]{@{}l@{}}Set of all atomic species from which molecule $\alpha \in \mathcal{B}$ is \\ constructed. Therefore, $\mathcal{S}_{\mathcal{M}_{\alpha}} \subset \mathcal{S}$\end{tabular}         \\
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{M}^{i}_{\alpha}$           & \begin{tabular}[c]{@{}l@{}}Indices of the atoms belonging to the $i^{\text{th}}$ molecule of \\ species $\alpha \in \mathcal{B}$.\end{tabular}                                                                \\
+                                     &                                                                                                                                                                                                               \\
+$\mathcal{M}^{i}_{\alpha \beta}$     & \begin{tabular}[c]{@{}l@{}}Indices of the atoms of species $\beta \in \mathcal{S}_{\mathcal{M}_{\alpha}}$ belonging to the $i^{\text{th}}$  \\ molecule of  species $\alpha \in \mathcal{B}$\end{tabular}     \\
+                                     &                                                                                                                                                                                                               \\
+$f_{\alpha}$                         & $f_{\alpha} = \int\limits_{0}^{\infty} dt \sum\limits_{i \in \mathcal{N}_{\alpha}} \langle \mathbf{v}_{i}(t) \cdot \mathbf{v}_{i}(0) \rangle$                                                                 \\
+                                     &                                                                                                                                                                                                               \\
+$f_{\alpha \beta}$                   & $f_{\alpha \beta} = \int\limits_{0}^{\infty} dt \sum\limits_{i \in \mathcal{N}_{\alpha}}\sum\limits_{ j \in \mathcal{N}_{\beta}} \langle \mathbf{v}_{i}(t) \cdot \mathbf{v}_{j}(0) \rangle$                   \\
+                                     &                                                                                                                                                                                                               \\
+$g_{\alpha \beta}$                   & $g_{\alpha \beta} = f_{\alpha\beta} - \delta_{\alpha\beta}\cdot f_{\alpha}$                                                                                                                                   \\
+                                     &                                                                                                                                                                                                               \\ \bottomrule
+\end{tabular}
+\caption{Mathematical definitions used throughout the paper.}
+\label{tab:definitions}
+\end{table}

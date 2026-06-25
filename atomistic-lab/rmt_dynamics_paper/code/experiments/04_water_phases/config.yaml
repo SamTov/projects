@@ -1,0 +1,21 @@
+# Experiment 4 — Water phases (TIP4P/2005, NPT, P = 1 atm).
+# See experiments.md §4.
+
+template: water_tip4p2005.in.j2
+
+fixed:
+  n_water: 512                 # 1536 atoms total
+  pressure: 1.0                # atm
+  timestep: 1.0                # fs (SHAKE allows 1 fs)
+  n_equil: 1000000             # 1 ns
+  n_prod: 5000000              # 5 ns
+  sample_every: 20             # dump every 20 fs
+  initial_density: 0.997       # g/cm^3 liquid at 298 K
+  analysis:
+    t_max_fs: 4000.0
+    remove_mean: true
+
+# Ice Ih endpoint is separate; run with --ice-data path-to-ice.data.
+sweep:
+  temperature: [240.0, 260.0, 280.0, 300.0, 320.0, 350.0, 400.0, 450.0, 500.0]
+  seed: [1, 2, 3]

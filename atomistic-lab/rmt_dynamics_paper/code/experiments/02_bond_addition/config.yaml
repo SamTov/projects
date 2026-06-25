@@ -1,0 +1,32 @@
+# Experiment 2 — Bond Addition
+# See experiments.md §2. LAMMPS-only route: each k gets its own data file
+# with hand-placed harmonic bonds.
+
+template: lj_nvt.in.j2
+
+fixed:
+  mass: 39.948
+  sigma: 3.405            # Å
+  epsilon: 0.2381         # kcal/mol
+  cutoff: 10.215          # Å (3·sigma)
+  n_atoms: 512
+  density_reduced: 0.8    # rho * sigma^3
+  temperature: 80.0       # K
+  pressure: 0.0           # NVT — pressure ignored; kept for template
+  ensemble: nvt
+  timestep: 2.0           # fs
+  n_equil: 50000          # 100 ps equilibration
+  n_prod: 500000          # 1 ns production
+  sample_every: 10
+
+  # Bond generation
+  bond_stiffness_reduced: 100.0   # k_b in units of epsilon / sigma^2
+  bond_max_distance_sigma: 2.0    # only pair if r < 2·sigma at insertion time
+
+  analysis:
+    t_max_fs: 2000.0
+    remove_mean: true
+
+sweep:
+  k_bonds: [0, 16, 64, 256, 1024]
+  seed:    [1, 2, 3]
