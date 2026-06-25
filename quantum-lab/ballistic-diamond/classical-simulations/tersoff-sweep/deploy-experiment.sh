@@ -12,9 +12,10 @@
 set -euo pipefail
 
 energies=(20 35 60)
-angles=(0 0.5 2)
-temperatures=(0 300 900)
-ensembles=100
+angles=(0)
+# temperatures=(0 300 900)
+temperatures=(300)
+ensembles=50
 
 scratch_root=/work/stovey/ballistic-diamond/tersoff-sweep
 mkdir -p logs

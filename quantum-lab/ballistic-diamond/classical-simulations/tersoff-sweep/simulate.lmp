@@ -28,7 +28,7 @@ variable    ensemble    equal ENSEMBLE
 # them for test runs; production deploy leaves them at these values).
 variable    warmup_steps    index 25000      # 50 ps at dt=0.002
 variable    collision_steps index 100000     # adaptive dt, ~5-10 ps
-variable    anneal_steps    index 1000000    # 1 ns at dt=0.001
+variable    anneal_steps    index 1000    # 1 ns at dt=0.001
 
 # ---------- Species constants (Sn) ----------
 variable    species     string sn

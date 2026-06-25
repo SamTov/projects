@@ -68,7 +68,7 @@ for species_src in "sn:tersoff-sweep" "pb:tersoff-sweep-pb"; do
 #SBATCH --error=error.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=32
-#SBATCH --time=01:00:00
+#SBATCH --time=12:00:00
 
 source /etc/profile 2>/dev/null || source /etc/profile.d/modules.sh 2>/dev/null || true
 source ~/.bashrc 2>/dev/null || true

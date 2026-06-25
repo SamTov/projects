@@ -9,7 +9,7 @@
 #SBATCH --error=error.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=64
-#SBATCH --time=04:00:00
+#SBATCH --time=30:00:00
 
 # Make `module` available in non-interactive batch shells, then source the
 # user profile.  Conda activation is intentionally omitted: LAMMPS is a
