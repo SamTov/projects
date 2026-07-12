@@ -61,7 +61,7 @@ _R_MAP = {
     111: _normalise([[1, -1, 0], [1, 1, -2], [1, 1, 1]]),
 }
 
-A_DIAMOND = 3.5656   # Tersoff-1989 C equilibrium (matches simulate.lmp alat)
+A_DIAMOND = 3.5678   # measured a0 of potentials/C.tersoff.zbl (matches simulate.lmp alat)
 HALF_NN = 0.77          # half the C-C nearest-neighbour distance (1.545/2)
 SP3_CUT = 1.85          # bond-count cutoff for coordination analysis
 

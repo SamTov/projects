@@ -56,9 +56,9 @@ def process_one(args):
     import json
     try:
         with open(ens_dir / "params.json") as fh:
-            a_lat = float(json.load(fh).get("a_lattice", 3.5656))
+            a_lat = float(json.load(fh).get("a_lattice", 3.5678))
     except (OSError, ValueError, json.JSONDecodeError):
-        a_lat = 3.5656
+        a_lat = 3.5678
     result = analyse_damage(state, positions, types, coordination=coordination,
                             orientation=params["orientation"], a=a_lat)
     rec = DamageRecord(
