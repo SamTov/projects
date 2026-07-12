@@ -129,13 +129,32 @@ def generate_reference_sites(
     sites_cubic = (cells[:, None, :] + _DIAMOND_BASIS[None, :, :]).reshape(-1, 3) * a
     sites = sites_cubic @ R.T
 
+    # z-range padded so the outermost real atom planes always have home
+    # sites even when the measured surface/bottom is a hair off; the face
+    # margins in analyse_damage keep these out of the statistics.
     eps = 1e-6
     keep = (
         (sites[:, 0] >= box["xlo"] - eps) & (sites[:, 0] < box["xhi"] - eps)
         & (sites[:, 1] >= box["ylo"] - eps) & (sites[:, 1] < box["yhi"] - eps)
-        & (sites[:, 2] >= z_bottom - eps) & (sites[:, 2] <= z_top + eps)
+        & (sites[:, 2] >= z_bottom - 2.0) & (sites[:, 2] <= z_top + 2.0)
     )
-    return sites[keep]
+    sites = sites[keep]
+
+    # Dedupe: with irrational rotation components, float jitter at the
+    # wrapped lateral faces can keep BOTH periodic images of a boundary
+    # plane (phantom duplicate sites -> phantom "vacancies" spanning all z).
+    # Distinct sites are >= 1.54 A apart, so a 0.5 A grid key cannot merge
+    # real neighbours but collapses duplicates.
+    lx = box["xhi"] - box["xlo"]
+    ly = box["yhi"] - box["ylo"]
+    wrapped = sites.copy()
+    wrapped[:, 0] = (wrapped[:, 0] - box["xlo"]) % lx
+    wrapped[:, 1] = (wrapped[:, 1] - box["ylo"]) % ly
+    key = np.round(wrapped / 0.5).astype(np.int64)
+    key[:, 0] %= max(1, int(round(lx / 0.5)))   # 0 and L round to same cell
+    key[:, 1] %= max(1, int(round(ly / 0.5)))
+    _, uniq = np.unique(key, axis=0, return_index=True)
+    return sites[np.sort(uniq)]
 
 
 @dataclass
@@ -227,18 +246,22 @@ def analyse_damage(
     dist, nearest = tree.query(carbon_w, workers=-1)
 
     n_sites = len(sites)
-    occupancy = np.bincount(nearest[dist <= HALF_NN], minlength=n_sites)
-    # Exclude ~3 A at both faces from defect statistics: face-inclusion
-    # mismatches between the generated sites and create_atoms, plus surface
-    # reconstruction (Tersoff (111) Pandey-like chains especially), make
-    # occupancy ambiguous there.  Sputter-crater vacancies deeper than the
-    # margin still count.
+    # TRUE Wigner-Seitz occupancy: every atom claims its nearest site, with
+    # NO distance cutoff.  Elastic strain fields (thermal expansion against
+    # the pinned anchor, surface relaxation) displace whole regions
+    # coherently by up to ~1 A; a capture-radius variant misreads those as
+    # vacancy+interstitial carpets, while nearest-site assignment keeps the
+    # atom<->site bijection intact.  A site is vacant only if NO atom maps
+    # to it; interstitials are excess occupants of multiply-claimed sites.
+    occupancy = np.bincount(nearest, minlength=n_sites)
+    # Exclude ~3 A at both faces from the statistics: face bookkeeping and
+    # surface reconstruction (Tersoff (111) Pandey-like chains especially)
+    # make occupancy ambiguous there.  Sputter-crater vacancies deeper than
+    # the margin still count.
     site_interior = (sites[:, 2] > zb + 3.0) & (sites[:, 2] < zs - 3.0)
-    atom_interior = (carbon[:, 2] > zb + 3.0) & (carbon[:, 2] < zs - 3.0)
     vac_mask = (occupancy == 0) & site_interior
     n_vac = int(vac_mask.sum())
-    n_int = int(((dist > HALF_NN) & atom_interior).sum()
-                + (occupancy[occupancy > 1] - 1).sum())
+    n_int = int((occupancy[(occupancy > 1) & site_interior] - 1).sum())
     n_lost = n_sites - len(carbon)
 
     vac_depths = state["z_surface"] - sites[vac_mask][:, 2]
