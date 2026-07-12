@@ -185,23 +185,40 @@ def analyse_damage(
         )
     sites = np.array(sites, dtype=float, copy=True)
 
-    # --- Rigid registration on a mid-slab probe slice, iterated twice ---
+    # --- Registration: rigid shift + uniaxial z-strain, iterated ---
+    # The reference is generated at a = 3.567 exactly, but the real slab is
+    # laterally clamped by the periodic box and FREE along z, so it carries
+    # a z-strain (Tersoff a0 != 3.567, plus thermal expansion) of order 1e-4.
+    # A rigid shift alone leaves a displacement that grows linearly with
+    # distance from the anchor and crosses the 0.77 A capture radius roughly
+    # 1.5-2 kA out, mass-misassigning the slab ends.  Fit and remove
+    # disp_z = c + eps*(z - zmid) alongside the lateral median shift.
     zb, zs = state["z_bottom"], state["z_surface"]
-    probe_sel = (carbon[:, 2] > zb + 0.30 * (zs - zb)) \
-              & (carbon[:, 2] < zb + 0.45 * (zs - zb))
-    probe_w = carbon_w[probe_sel][:50000]
     lx = box["xhi"] - box["xlo"]
     ly = box["yhi"] - box["ylo"]
-    for _ in range(2):
+    stride = max(1, len(carbon_w) // 100000)
+    probe = carbon_w[::stride]                      # spread over full depth
+    zmid = 0.5 * (zb + zs) - box["zlo"]
+    for _ in range(4):
         sites_w = _wrap(sites, box)
         tree = _tree(sites_w, box)
-        _, idx = tree.query(probe_w, workers=-1)
-        disp = probe_w - sites_w[idx]
+        d, idx = tree.query(probe, workers=-1)
+        ok = d < 1.2          # exclude cascade-displaced / not-yet-captured
+        if ok.sum() < 1000:
+            ok = d < np.percentile(d, 80)
+        disp = probe[ok] - sites_w[idx[ok]]
         disp[:, 0] -= np.round(disp[:, 0] / lx) * lx
         disp[:, 1] -= np.round(disp[:, 1] / ly) * ly
-        shift = np.median(disp, axis=0)
-        sites += shift
-        if float(np.linalg.norm(shift)) < 0.02:
+        shift_xy = np.median(disp[:, :2], axis=0)
+        z = probe[ok][:, 2] - zmid
+        A = np.column_stack([np.ones_like(z), z])
+        (c_z, eps), *_ = np.linalg.lstsq(A, disp[:, 2], rcond=None)
+        sites[:, 0] += shift_xy[0]
+        sites[:, 1] += shift_xy[1]
+        sz = sites[:, 2] - box["zlo"] - zmid
+        sites[:, 2] += c_z + eps * sz
+        if abs(c_z) < 0.01 and np.hypot(*shift_xy) < 0.01 \
+                and abs(eps) * max(abs(sz.max()), abs(sz.min())) < 0.02:
             break
 
     # --- Occupancy assignment (Wigner-Seitz) ---
@@ -211,9 +228,17 @@ def analyse_damage(
 
     n_sites = len(sites)
     occupancy = np.bincount(nearest[dist <= HALF_NN], minlength=n_sites)
-    vac_mask = occupancy == 0
+    # Exclude ~3 A at both faces from defect statistics: face-inclusion
+    # mismatches between the generated sites and create_atoms, plus surface
+    # reconstruction (Tersoff (111) Pandey-like chains especially), make
+    # occupancy ambiguous there.  Sputter-crater vacancies deeper than the
+    # margin still count.
+    site_interior = (sites[:, 2] > zb + 3.0) & (sites[:, 2] < zs - 3.0)
+    atom_interior = (carbon[:, 2] > zb + 3.0) & (carbon[:, 2] < zs - 3.0)
+    vac_mask = (occupancy == 0) & site_interior
     n_vac = int(vac_mask.sum())
-    n_int = int((dist > HALF_NN).sum() + (occupancy[occupancy > 1] - 1).sum())
+    n_int = int(((dist > HALF_NN) & atom_interior).sum()
+                + (occupancy[occupancy > 1] - 1).sum())
     n_lost = n_sites - len(carbon)
 
     vac_depths = state["z_surface"] - sites[vac_mask][:, 2]
