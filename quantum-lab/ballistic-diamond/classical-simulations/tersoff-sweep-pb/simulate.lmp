@@ -54,7 +54,7 @@ variable    z_ion       equal 82
 
 # ---------- Paths (cluster) ----------
 variable    pot_root    string /home/stovey/work/projects/quantum-lab/ballistic-diamond
-variable    tersoff_pot string ${pot_root}/lammps/potentials/SiC.tersoff.zbl
+variable    tersoff_pot string ${pot_root}/classical-simulations/potentials/C.tersoff.zbl
 variable    stop_file   string ${pot_root}/classical-simulations/potentials/electron-stopping-${species}.dat
 variable    scratch     string /work/stovey/ballistic-diamond/tersoff-sweep-pb/orient-${orientation}/energy-${energy_keV}/temperature-${temperature}/angle-${angle_deg}-${ensemble}
 
@@ -66,6 +66,13 @@ variable    seed_eq      equal v_rseed+4
 variable    seed_coll    equal v_rseed+5
 variable    seed_anneal  equal v_rseed+6
 variable    seed_azi     equal v_rseed+7
+
+# ---------- Lattice constant ----------
+# MUST match the potential's own equilibrium (Tersoff-1989 C), not the
+# experimental 3.567: a mismatched box pre-strains the crystal (the
+# Gao-Weber file at 3.567 put slabs under ~GPa lateral stress and
+# 1.6-3.6% bond compression before any ion arrived).
+variable    alat        equal 3.5656
 
 # ---------- Strike kinematics ----------
 # v[A/ps] = 138.91*sqrt(E[eV]/M[amu]) in metal units.
@@ -93,15 +100,15 @@ variable    vionz       equal -${speed}*cos(${theta})
 #   110     5.044 A    20       670      3329 A    ~4.2M
 #   111     6.178 A    12       550      3336 A    ~4.1M
 if "${orientation} == 100" then &
-    "lattice diamond 3.567 orient x 1 0 0 orient y 0 1 0 orient z 0 0 1" &
+    "lattice diamond ${alat} orient x 1 0 0 orient y 0 1 0 orient z 0 0 1" &
     "variable ylat_hi equal 20" &
     "variable slab_hi equal 940"
 if "${orientation} == 110" then &
-    "lattice diamond 3.567 orient x 1 1 0 orient y 0 0 -1 orient z -1 1 0" &
+    "lattice diamond ${alat} orient x 1 1 0 orient y 0 0 -1 orient z -1 1 0" &
     "variable ylat_hi equal 20" &
     "variable slab_hi equal 670"
 if "${orientation} == 111" then &
-    "lattice diamond 3.567 orient x 1 -1 0 orient y 1 1 -2 orient z 1 1 1" &
+    "lattice diamond ${alat} orient x 1 -1 0 orient y 1 1 -2 orient z 1 1 1" &
     "variable ylat_hi equal 12" &
     "variable slab_hi equal 550"
 
@@ -174,6 +181,7 @@ print """{
   "temperature_K": ${temperature},
   "ensemble": ${ensemble},
   "rseed": ${rseed},
+  "a_lattice": ${alat},
   "speed_A_ps": ${speed}
 }""" file ${scratch}/params.json screen no
 

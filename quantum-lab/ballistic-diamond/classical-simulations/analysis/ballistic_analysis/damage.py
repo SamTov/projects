@@ -61,7 +61,7 @@ _R_MAP = {
     111: _normalise([[1, -1, 0], [1, 1, -2], [1, 1, 1]]),
 }
 
-A_DIAMOND = 3.567
+A_DIAMOND = 3.5656   # Tersoff-1989 C equilibrium (matches simulate.lmp alat)
 HALF_NN = 0.77          # half the C-C nearest-neighbour distance (1.545/2)
 SP3_CUT = 1.85          # bond-count cutoff for coordination analysis
 
@@ -181,6 +181,7 @@ def analyse_damage(
     coordination: bool = True,
     sites: Optional[np.ndarray] = None,
     orientation: int = 110,
+    a: float = A_DIAMOND,
 ) -> dict:
     """Wigner-Seitz analysis of one parsed final.data.
 
@@ -200,7 +201,8 @@ def analyse_damage(
 
     if sites is None:
         sites = generate_reference_sites(
-            box, state["z_bottom"], state["z_surface"], orientation=orientation
+            box, state["z_bottom"], state["z_surface"], a=a,
+            orientation=orientation,
         )
     sites = np.array(sites, dtype=float, copy=True)
 
@@ -258,7 +260,10 @@ def analyse_damage(
     # surface reconstruction (Tersoff (111) Pandey-like chains especially)
     # make occupancy ambiguous there.  Sputter-crater vacancies deeper than
     # the margin still count.
-    site_interior = (sites[:, 2] > zb + 3.0) & (sites[:, 2] < zs - 3.0)
+    # Bottom margin 25 A: covers the pinned anchor + Langevin scaffold layers,
+    # whose frozen/step displacement field is simulation plumbing, not damage.
+    # Top margin 8 A: covers surface reconstruction (Tersoff (111) especially).
+    site_interior = (sites[:, 2] > zb + 25.0) & (sites[:, 2] < zs - 8.0)
     vac_mask = (occupancy == 0) & site_interior
     n_vac = int(vac_mask.sum())
     n_int = int((occupancy[(occupancy > 1) & site_interior] - 1).sum())

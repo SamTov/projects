@@ -53,8 +53,14 @@ def process_one(args):
         return rec, __import__("numpy").zeros(0)
 
     types, positions = atoms
+    import json
+    try:
+        with open(ens_dir / "params.json") as fh:
+            a_lat = float(json.load(fh).get("a_lattice", 3.5656))
+    except (OSError, ValueError, json.JSONDecodeError):
+        a_lat = 3.5656
     result = analyse_damage(state, positions, types, coordination=coordination,
-                            orientation=params["orientation"])
+                            orientation=params["orientation"], a=a_lat)
     rec = DamageRecord(
         **base,
         n_sites=result["n_sites"], n_carbon=result["n_carbon"],

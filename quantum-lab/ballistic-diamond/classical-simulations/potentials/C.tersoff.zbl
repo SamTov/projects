@@ -1,0 +1,21 @@
+# Carbon Tersoff + ZBL for diamond cascade simulations (pair_style tersoff/zbl).
+#
+# Tersoff core: J. Tersoff, PRB 39, 5566 (1989) carbon parameters -- taken
+# verbatim from the C-C-C entry of LAMMPS's SiC.tersoff.  Diamond a0 = 3.5656 A,
+# NN bond = 1.5440 A (vs 3.567 experimental; near-commensurate, unlike the
+# Gao-Weber carbon in SiC.tersoff.zbl whose a0 is ~1.5% smaller and put our
+# slabs under ~GPa artificial lateral stress).
+#
+# ZBL splice: Z_i=Z_j=6, ZBLcut=0.95 A, ZBLexpscale=14 -- the same smooth
+# short-range universal-repulsion junction used by the shipped SiC.tersoff.zbl
+# carbon entry (Devanathan, Weber, Gao, J. Nucl. Mater. 253, 47 (1998) scheme).
+# The junction is complete well below the equilibrium bond length, so
+# near-equilibrium properties are pure Tersoff-1989.
+#
+# Format (pair_style tersoff/zbl):
+# e1 e2 e3 m gamma lambda3 c d costheta0 n beta lambda2 B R D lambda1 A
+#          Z_i Z_j ZBLcut ZBLexpscale
+
+C   C   C   3.0  1.0  0.0  38049  4.3484  -0.57058  0.72751
+            1.5724e-7  2.2119  346.7  1.95  0.15  3.4879  1393.6
+            6.0  6.0  0.95  14.0
