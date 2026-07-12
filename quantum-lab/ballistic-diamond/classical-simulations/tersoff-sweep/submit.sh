@@ -41,8 +41,24 @@ ens=${SLURM_ARRAY_TASK_ID}
 rseed=$(( (SLURM_JOB_ID * 2654435761) % 2147483647 ))
 [ "${rseed}" -lt 1 ] && rseed=1
 
-srun --export=ALL "${lmp}" \
-    -var rseed ${rseed} \
-    -var ensemble ${ens} \
-    -log log-${ens}.lammps \
-    -in simulate.lmp
+# Startup-class failures (LAMMPS dying within seconds, stochastic, node/
+# fabric transients) are retried; anything that ran >10 min before dying is
+# a real failure and is NOT retried.
+rc=1
+for attempt in 1 2 3; do
+    start=${SECONDS}
+    srun --export=ALL "${lmp}" \
+        -var rseed ${rseed} \
+        -var ensemble ${ens} \
+        -log log-${ens}.lammps \
+        -in simulate.lmp
+    rc=$?
+    [ "${rc}" -eq 0 ] && break
+    if [ $((SECONDS - start)) -gt 600 ]; then
+        echo "srun failed rc=${rc} after >10 min -- real failure, not retrying" >&2
+        break
+    fi
+    echo "srun attempt ${attempt} died in $((SECONDS - start))s (rc=${rc}) -- startup flake, retrying in 30s" >&2
+    sleep 30
+done
+exit ${rc}
