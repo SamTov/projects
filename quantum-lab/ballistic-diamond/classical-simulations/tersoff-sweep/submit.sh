@@ -1,20 +1,20 @@
 #!/bin/bash
 
-# Single-job SLURM submission for one (energy, angle, temperature, ensemble)
-# combination of the Sn implantation sweep.  deploy-experiment.sh copies this
-# file into each per-job working directory and sbatches it there.
+# SLURM ARRAY submission for one (energy, angle, temperature) cell of the
+# Sn implantation sweep: 100 array tasks = 100 ensemble members.
+# deploy-experiment.sh copies this into each cell directory and sbatches it.
 
 #SBATCH --job-name=bd-sn
-#SBATCH --output=result.out
-#SBATCH --error=error.err
+#SBATCH --output=result-%a.out
+#SBATCH --error=error-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=64
-#SBATCH --time=30:00:00
+#SBATCH --time=24:00:00
+#SBATCH --array=0-99
 
 # Make `module` available in non-interactive batch shells, then source the
-# user profile.  Conda activation is intentionally omitted: LAMMPS is a
-# standalone binary, and activating conda AFTER module load clobbered
-# LD_LIBRARY_PATH so that libmpi.so.40 could not be found.
+# user profile.  No conda: LAMMPS is standalone, and conda activation after
+# module load shadows libmpi.so.40.
 source /etc/profile 2>/dev/null || source /etc/profile.d/modules.sh 2>/dev/null || true
 source ~/.bashrc 2>/dev/null || true
 
@@ -25,7 +25,6 @@ module load gcc/12.5.0
 module load openmpi/4.1.6
 module load fftw/3.3.10
 
-# Fail fast if openmpi didn't actually load.
 if ! command -v mpirun >/dev/null 2>&1; then
     echo "ERROR: openmpi module failed to load; current modules:" >&2
     module list 2>&1 >&2
@@ -37,5 +36,13 @@ cd "${SLURM_SUBMIT_DIR}"
 lmp=/home/stovey/work/projects/quantum-lab/ballistic-diamond/lammps/build/lmp
 export OMP_NUM_THREADS=1
 
+ens=${SLURM_ARRAY_TASK_ID}
+# SLURM_JOB_ID is unique per array task; Knuth-hash it into a seed.
 rseed=$(( (SLURM_JOB_ID * 2654435761) % 2147483647 ))
-srun --export=ALL "${lmp}" -var rseed ${rseed} -in simulate.lmp
+[ "${rseed}" -lt 1 ] && rseed=1
+
+srun --export=ALL "${lmp}" \
+    -var rseed ${rseed} \
+    -var ensemble ${ens} \
+    -log log-${ens}.lammps \
+    -in simulate.lmp

@@ -103,8 +103,12 @@ def main() -> int:
         print("ERROR: no type-2 (ion) atom in this data file.", file=sys.stderr)
         return 1
     ion_pos = positions[ion_mask][0]
+    # Surface measured from the carbon distribution (never assume the vacuum
+    # gap -- it is 30 lattice units ~ 151 A, not 30 A).
+    z_surface = float(np.percentile(positions[types == 1][:, 2], 99.9))
     print(f"  ion at  : ({ion_pos[0]:.2f}, {ion_pos[1]:.2f}, {ion_pos[2]:.2f}) Å")
-    print(f"  depth   : {box['zhi'] - 30.0 - ion_pos[2]:.1f} Å below top surface")
+    print(f"  surface : z = {z_surface:.1f} Å (99.9th pct of carbon z)")
+    print(f"  depth   : {z_surface - ion_pos[2]:.1f} Å below top surface")
 
     # ---- Carbons (subset by default) ----
     carbon_pos = positions[types == 1]

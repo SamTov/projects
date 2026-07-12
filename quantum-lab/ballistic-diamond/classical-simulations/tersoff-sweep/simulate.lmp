@@ -1,34 +1,51 @@
 # ============================================================
-# Sn implantation in diamond -- ballistic + cascade + anneal
+# Sn implantation in diamond -- warmup + cascade + quench
 #
-#   Phase 1: warmup      -- Langevin equilibration of the slab (ion frozen)
-#   Phase 2: collision   -- ion strike with adaptive dt, boundary-only
-#                           thermostat, electronic stopping
-#   Phase 3: annealing   -- longer run at target T, boundary-only thermostat
+#   Phase 1: warmup    -- Langevin equilibration (T>0) or energy
+#                         minimisation (T=0); ion held fixed
+#   Phase 2: collision -- ion strike at tilt theta / random azimuth,
+#                         adaptive dt, boundary-only thermostat,
+#                         electronic stopping, auto-halt when the
+#                         ballistic phase is over (max KE < 100 eV)
+#   Phase 3: quench    -- 500 ps at target T, boundary-only thermostat,
+#                         safety dt/reset
 #
-# Placeholders ENERGY_KEV / ANGLE_DEG / TEMPERATURE / ENSEMBLE are replaced
-# by deploy-experiment.sh via sed.  The per-job rseed is passed on the
-# command line via `-var rseed ${RANDOM}` in submit.sh.
+# Tilt design: the LATTICE is fixed with the chosen channel axis along z
+# (the surface normal); the tilt angle is applied to the ION VELOCITY,
+# with the azimuth randomised per ensemble.  This matches the experiment
+# (fixed wafer, steered beam) and averages over planar-channel azimuths
+# instead of locking the tilt into one crystal plane.
+#
+# Crystal orientation is a sweep axis: ORIENTATION = 100 / 110 / 111 picks
+# the surface normal / channel axis, with per-orientation box dimensions
+# tuned to near-constant PHYSICAL geometry (see the lattice section).
+#
+# Placeholders ENERGY_KEV / ANGLE_DEG / TEMPERATURE / ORIENTATION are
+# replaced by deploy-experiment.sh via sed.  `ensemble` and `rseed` arrive
+# on the command line from the SLURM array task (-var ensemble N -var rseed S).
 # ============================================================
 
 # ---------- Initialisation ----------
 units       metal
 dimension   3
-boundary    p p p               # fully periodic; sputtered atoms wrap harmlessly
-                                # (ion can't traverse the 2500 A slab at these E)
+boundary    p p f               # periodic laterally; open in z -- sputtered
+                                # ejecta and transmitted ions leave cleanly
+                                # (thermo_modify lost warn logs them)
 atom_style  atomic
 
-# ---------- Sweep parameters ----------
+# ---------- Sweep parameters (sed by deploy-experiment.sh) ----------
 variable    energy_keV  equal ENERGY_KEV
 variable    angle_deg   equal ANGLE_DEG
 variable    temperature equal TEMPERATURE
-variable    ensemble    equal ENSEMBLE
+variable    orientation equal ORIENTATION
 
-# Run-length defaults (index style so -var on the LAMMPS command line can shorten
-# them for test runs; production deploy leaves them at these values).
-variable    warmup_steps    index 25000      # 50 ps at dt=0.002
-variable    collision_steps index 100000     # adaptive dt, ~5-10 ps
-variable    anneal_steps    index 1000    # 1 ns at dt=0.001
+# ---------- Runtime parameters (command line -var; safe defaults) ----------
+variable    ensemble        index 0
+variable    rseed           index 12345
+variable    warmup_steps    index 25000     # 25 ps @ 1 fs
+variable    collision_steps index 500000    # ceiling only -- fix halt exits
+                                            # as soon as max KE < 100 eV
+variable    anneal_steps    index 500000    # 500 ps @ 1 fs
 
 # ---------- Species constants (Sn) ----------
 variable    species     string sn
@@ -37,54 +54,88 @@ variable    z_ion       equal 50
 
 # ---------- Paths (cluster) ----------
 variable    pot_root    string /home/stovey/work/projects/quantum-lab/ballistic-diamond
-variable    tersoff_pot string ${pot_root}/lammps/potentials/SiC.tersoff
+variable    tersoff_pot string ${pot_root}/lammps/potentials/SiC.tersoff.zbl
 variable    stop_file   string ${pot_root}/classical-simulations/potentials/electron-stopping-${species}.dat
-variable    scratch     string /work/stovey/ballistic-diamond/tersoff-sweep/energy-${energy_keV}/temperature-${temperature}/angle-${angle_deg}-${ensemble}
-
-# ---------- Derived quantities ----------
-# v[A/ps] = 138.91 * sqrt(E[eV] / M[amu])  for LAMMPS "metal" units
-variable    speed equal 138.91*sqrt(${energy_keV}*1000/${mass_ion})
+variable    scratch     string /work/stovey/ballistic-diamond/tersoff-sweep/orient-${orientation}/energy-${energy_keV}/temperature-${temperature}/angle-${angle_deg}-${ensemble}
 
 # ---------- Independent seeds ----------
-# rseed varies per job (passed by submit.sh); small offsets give independent streams
 variable    seed_diamond equal v_rseed+1
 variable    seed_posx    equal v_rseed+2
 variable    seed_posy    equal v_rseed+3
 variable    seed_eq      equal v_rseed+4
 variable    seed_coll    equal v_rseed+5
 variable    seed_anneal  equal v_rseed+6
+variable    seed_azi     equal v_rseed+7
 
-# ---------- Lattice orientation ----------
-# x = [110]; z = channel axis [-110]; y completes a right-handed frame.
-# Off-axis tilts achieved by small rotation of (y,z) about x.
-if "${angle_deg} == 0" then &
-    "lattice diamond 3.567 orient x 1 1 0 orient y 0 0 -1 orient z -1 1 0"
-if "${angle_deg} == 0.5" then &
-    "lattice diamond 3.567 orient x 1 1 0 orient y -1 1 -162 orient z -81 81 1"
-if "${angle_deg} == 2" then &
-    "lattice diamond 3.567 orient x 1 1 0 orient y -2 2 -81 orient z -81 81 4"
+# ---------- Strike kinematics ----------
+# v[A/ps] = 138.91*sqrt(E[eV]/M[amu]) in metal units.
+# theta = polar tilt off the surface normal / channel axis.
+# phi   = azimuth, drawn uniformly per ensemble (frozen at read time --
+#         equal-style random() would otherwise re-roll on every reference).
+variable    speed       equal 138.91*sqrt(${energy_keV}*1000/${mass_ion})
+variable    theta       equal ${angle_deg}*PI/180
+variable    razi        equal random(0,360,${seed_azi})
+variable    azimuth_deg equal ${razi}
+variable    phi         equal ${azimuth_deg}*PI/180
+variable    vionx       equal ${speed}*sin(${theta})*cos(${phi})
+variable    viony       equal ${speed}*sin(${theta})*sin(${phi})
+variable    vionz       equal -${speed}*cos(${theta})
 
-# ---------- Box and slab ----------
-region      box  block 0 20 0 20 0 500 units lattice
+# ---------- Lattice & geometry: beam axis z = channel axis ----------
+# LAMMPS lattice spacings are the bounding-box extents of the rotated
+# conventional cell, so they differ per orientation.  Lattice-unit dims are
+# chosen per orientation for near-constant PHYSICAL geometry: ~70-100 A
+# lateral, ~3320 A of material (contains the channeled tail; the corrected
+# electronic stopping lets well-channeled 35-60 keV ions run 1000-3000 A),
+# slab_lo fixed at 10 units, 30 units of vacuum above, ion 20 above surface.
+#   orient  z-spacing  ylat_hi  slab_hi  material  atoms
+#   100     3.567 A    20       940      3317 A    ~3.0M
+#   110     5.044 A    20       670      3329 A    ~4.2M
+#   111     6.178 A    12       550      3336 A    ~4.1M
+if "${orientation} == 100" then &
+    "lattice diamond 3.567 orient x 1 0 0 orient y 0 1 0 orient z 0 0 1" &
+    "variable ylat_hi equal 20" &
+    "variable slab_hi equal 940"
+if "${orientation} == 110" then &
+    "lattice diamond 3.567 orient x 1 1 0 orient y 0 0 -1 orient z -1 1 0" &
+    "variable ylat_hi equal 20" &
+    "variable slab_hi equal 670"
+if "${orientation} == 111" then &
+    "lattice diamond 3.567 orient x 1 -1 0 orient y 1 1 -2 orient z 1 1 1" &
+    "variable ylat_hi equal 12" &
+    "variable slab_hi equal 550"
+
+variable    boxz_hi  equal ${slab_hi}+30
+variable    ionz_lat equal ${slab_hi}+20
+variable    ybath_lo equal ${ylat_hi}-1
+
+region      box  block 0 20 0 ${ylat_hi} 0 ${boxz_hi} units lattice
 create_box  2 box
-region      slab block 0 20 0 20 10 470 units lattice
+region      slab block 0 20 0 ${ylat_hi} 10 ${slab_hi} units lattice
 create_atoms 1 region slab
 
 mass        1 12.011
 mass        2 ${mass_ion}
 
 # ---------- Place projectile ----------
-# Randomise (x,y) within the central 4x4-lattice-unit patch to sample different
-# channel-entry geometries across ensemble members.
+# Random (x,y) over a 4x4-lattice-unit patch centred laterally samples
+# channel-entry geometry; z = slab_hi+20 units of clearance above surface.
+variable    posy_lo  equal ${ylat_hi}/2-2
+variable    posy_hi  equal ${ylat_hi}/2+2
 variable    posx_lat equal random(8,12,${seed_posx})
-variable    posy_lat equal random(8,12,${seed_posy})
-variable    posz_lat equal 490
-create_atoms 2 single ${posx_lat} ${posy_lat} ${posz_lat} units lattice
+variable    posy_lat equal random(${posy_lo},${posy_hi},${seed_posy})
+create_atoms 2 single ${posx_lat} ${posy_lat} ${ionz_lat} units lattice
 
 # ---------- Potentials ----------
-# Tersoff for C-C; ZBL for all short-range repulsion involving the heavy ion.
-pair_style  hybrid tersoff zbl 0.8 1.5
-pair_coeff  * * tersoff ${tersoff_pot} C NULL
+# tersoff/zbl : Tersoff C-C smoothly joined to ZBL at short range, so keV
+#               carbon recoils see the universal repulsive core instead of
+#               Tersoff's undefined-at-short-range well.
+# zbl 3.5 4.5 : screened Coulomb for ion-C / ion-ion.  The outer cutoff
+#               matters for channeling: V_ZBL(Sn-C) is still 11 eV at 1.5 A
+#               and 0.26 eV at 3 A -- the continuum steering potential lives
+#               at 1.3-3 A.  At 4.5 A the truncation is 12 meV (clean).
+pair_style  hybrid tersoff/zbl zbl 3.5 4.5
+pair_coeff  * * tersoff/zbl ${tersoff_pot} C NULL
 pair_coeff  1 2 zbl 6.0 ${z_ion}
 pair_coeff  2 2 zbl ${z_ion} ${z_ion}
 
@@ -92,80 +143,91 @@ pair_coeff  2 2 zbl ${z_ion} ${z_ion}
 group       diamond type 1
 group       ion     type 2
 
-# Boundary "heat bath": 1 lattice unit (~5 A) skin on the four lateral faces
-# and just above the anchor layer.  Langevin acts only here; the interior
-# runs NVE so cascade energetics are not damped.  The ion comes from the +z
-# vacuum so no top bath is needed.
+# Boundary heat bath: ~1-lattice-unit skin on the four lateral faces plus a
+# layer just above the anchor.  Langevin acts only there; the interior runs
+# NVE so cascade energetics are undamped.  Restricted to carbons so a
+# deep-channeling ion is never Langevin-damped.
 region      bath_xlo block INF 1 INF INF INF INF units lattice
 region      bath_xhi block 19 20 INF INF INF INF units lattice
 region      bath_ylo block INF INF INF 1 INF INF units lattice
-region      bath_yhi block INF INF 19 20 INF INF units lattice
+region      bath_yhi block INF INF ${ybath_lo} ${ylat_hi} INF INF units lattice
 region      bath_zlo block INF INF INF INF 11 13 units lattice
 group       bath_geom region bath_xlo
 group       bath_geom region bath_xhi
 group       bath_geom region bath_ylo
 group       bath_geom region bath_yhi
 group       bath_geom region bath_zlo
-# Restrict thermostat to carbons so a deep-channeling ion doesn't get Langevin-damped.
 group       bath intersect diamond bath_geom
 
-# Pin the bottom lattice unit of the slab (z in [10,11] lattice units, which
-# is the very bottom layer of atoms) to anchor it against recoil pressure.
+# Pin the bottom material layer against recoil pressure (during strike+quench).
 region      anchor block INF INF INF INF 10 11 units lattice
 group       anchor region anchor
 
-# ---------- Output directory ----------
+# ---------- Output directory + provenance ----------
 shell       mkdir -p ${scratch}
+print """{
+  "species": "${species}",
+  "orientation": ${orientation},
+  "energy_keV": ${energy_keV},
+  "angle_deg": ${angle_deg},
+  "azimuth_deg": ${azimuth_deg},
+  "temperature_K": ${temperature},
+  "ensemble": ${ensemble},
+  "rseed": ${rseed},
+  "speed_A_ps": ${speed}
+}""" file ${scratch}/params.json screen no
 
 # ---------- Thermo ----------
 thermo      1000
 thermo_style custom step time dt temp ke pe etotal press
-# With p p p and possible high-KE cascade tails, occasionally an atom NaNs
-# out (especially during the anneal when a sputtered carbon re-enters the
-# slab through the periodic wrap).  Warn but don't abort -- losing 1 of
-# 1.5M atoms doesn't move the physics, but we DO need to check post-hoc
-# that the ion itself wasn't the one lost.  The analysis package handles
-# that via the `ok` column.
+# Sputtered ejecta exiting the open z faces are expected -- log, don't abort.
+# The analysis flags the (rare) case where the ION itself is the lost atom.
 thermo_modify lost warn flush yes
 
 # ============================================================
-# Phase 1: Warmup -- full-slab Langevin, ion held fixed
+# Phase 1: Warmup -- ion frozen
+#   T > 0 : Langevin MD at target temperature
+#   T = 0 : energy minimisation (Langevin at 0 K integrates nothing and the
+#           cleaved surface still needs to relax)
 # ============================================================
 fix         freezeion ion setforce 0.0 0.0 0.0
+timestep    0.001
+
 if "${temperature} > 0" then &
     "velocity diamond create ${temperature} ${seed_diamond} rot yes dist gaussian" &
+    "fix eqbath diamond langevin ${temperature} ${temperature} 0.1 ${seed_eq} zero yes" &
+    "fix eqdyn diamond nve" &
+    "run ${warmup_steps}" &
+    "unfix eqdyn" &
+    "unfix eqbath" &
 else &
-    "velocity diamond set 0.0 0.0 0.0"
-fix         eqbath diamond langevin ${temperature} ${temperature} 0.1 ${seed_eq} zero yes
-fix         eqdyn  diamond nve
+    "minimize 1.0e-6 1.0e-8 2000 20000"
 
-# No dump during warmup: the ion is frozen and the slab is just thermalising,
-# nothing to track frame-by-frame.  If we ever want a "before strike" snapshot
-# for defect analysis, uncomment the next line.
-# write_data  ${scratch}/before-strike.data
-
-timestep    0.002
-run         ${warmup_steps}
-
-unfix       eqdyn
-unfix       eqbath
 unfix       freezeion
 
 # ============================================================
-# Phase 2: Collision -- ion released, adaptive dt, bath thermostat
+# Phase 2: Collision -- tilted strike, adaptive dt, e-stopping
 # ============================================================
-velocity    ion set 0.0 0.0 -${speed} units box
+velocity    ion set ${vionx} ${viony} ${vionz} units box
 
-fix         pin    anchor setforce 0.0 0.0 0.0
+fix         pin     anchor setforce 0.0 0.0 0.0
 fix         colbath bath langevin ${temperature} ${temperature} 0.1 ${seed_coll} zero yes
-fix         coldyn all nve
-# Adaptive timestep: at most 0.05 A displacement per step, dt in [1e-7, 1e-4] ps.
-fix         coldt  all dt/reset 1 1.0e-7 1.0e-4 0.05 units box
-# Lindhard-Scharff electronic stopping; minneigh=1 keeps it off the ion while in vacuum.
-fix         elstop all electron/stopping 10.0 ${stop_file} minneigh 1
+fix         coldyn  all nve
+# Adaptive dt: max 0.05 A displacement/step, dt in [1e-7, 1e-4] ps.
+fix         coldt   all dt/reset 1 1.0e-7 1.0e-4 0.05 units box
+# LSS electronic stopping (corrected tables) on every atom above 10 eV;
+# minneigh 1 keeps it off the ion during the vacuum flight.
+fix         elstop  all electron/stopping 10.0 ${stop_file} minneigh 1
 
-# Ion-only trajectory: tiny (one atom per frame), so we dump frequently to
-# resolve the cascade trajectory cleanly.  ~1000 frames at adaptive dt.
+# End the ballistic phase as soon as nothing exceeds 100 eV: the ceiling
+# collision_steps is sized so this ALWAYS triggers first in production
+# (500k steps x 0.05 A = 25000 A of fast-atom travel budget, ~2.6x the
+# 60 keV electronic-only CSDA path).
+compute     keat  all ke/atom
+compute     maxke all reduce max c_keat
+variable    maxke equal c_maxke
+fix         ballistic_done all halt 500 v_maxke < 100.0 error continue
+
 dump        collision ion custom 100 ${scratch}/collision-ion.lammpstraj id type x y z vx vy vz
 dump_modify collision sort id
 
@@ -173,19 +235,25 @@ timestep    1.0e-4
 run         ${collision_steps}
 
 undump      collision
+unfix       ballistic_done
+variable    maxke delete
+uncompute   maxke
+uncompute   keat
 unfix       elstop
 unfix       coldt
 unfix       coldyn
 unfix       colbath
 
 # ============================================================
-# Phase 3: Annealing -- fixed dt, bath thermostat, 1 ns
+# Phase 3: Quench -- 500 ps at target T
+#   (True defect annealing in diamond needs seconds at >1100 K -- barriers
+#    are ~2.3 eV -- so beyond cascade quench + ion settling, more MD time
+#    buys nothing.  dt/reset is insurance against any residual fast atom.)
 # ============================================================
 fix         annbath bath langevin ${temperature} ${temperature} 0.1 ${seed_anneal} zero yes
 fix         anndyn  all nve
+fix         anndt   all dt/reset 10 1.0e-6 1.0e-3 0.1 units box
 
-# Ion-only trajectory through the anneal: ion is mostly stopped, so coarser
-# sampling is fine.  ~1000 frames over 1 ns.
 dump        anneal ion custom 1000 ${scratch}/anneal-ion.lammpstraj id type x y z vx vy vz
 dump_modify anneal sort id
 
@@ -193,6 +261,7 @@ timestep    0.001
 run         ${anneal_steps}
 
 undump      anneal
+unfix       anndt
 unfix       anndyn
 unfix       annbath
 unfix       pin

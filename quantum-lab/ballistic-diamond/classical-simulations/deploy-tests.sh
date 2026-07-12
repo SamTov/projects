@@ -1,69 +1,68 @@
 #!/bin/bash
-# Validation sweep: fires off 6 short jobs (2 species x 3 angles) to verify that
-# lattice-orient branches, electronic-stopping file I/O, and all three phases
-# (warmup/collision/anneal) run end-to-end before launching the ~5400-job
-# production sweep.
+# Validation sweep: 6 short jobs (2 species x 3 angles) verifying the full
+# pipeline end-to-end before launching the 5400-task production sweep:
+#   - velocity-tilt strike kinematics (theta + random azimuth)
+#   - tersoff/zbl + zbl potentials load (SiC.tersoff.zbl must exist!)
+#   - corrected electronic-stopping tables read OK
+#   - fix halt / dt-reset / all three phases run through
+#   - outputs land: params.json, collision-ion & anneal-ion trajectories,
+#     final.data
 #
-# Each job runs with aggressively shortened phases (~5 ps warmup, ~1 ps
-# collision, 20 ps anneal) and a 30-minute SLURM wall time.  Output lands in
-# `tests/<species>-angle-<deg>/` locally and
-# `/work/stovey/ballistic-diamond/tests/<species>-angle-<deg>/` on the cluster.
+# Branch coverage: Sn jobs run at 300 K (Langevin warmup path), Pb jobs at
+# 0 K (minimisation warmup path).  Angle:orientation pairs are arranged so
+# all three lattice branches (100/110/111) AND all three angles are hit
+# across the 6 jobs.
 #
-# Coverage:
-#   species      : sn, pb         (different mass / Z / stopping file)
-#   angles (deg) : 0, 0.5, 2      (exercises all if/then lattice branches)
-#   energy (keV) : 35             (representative mid-sweep value)
-#   temperature  : 300 K          (exercises velocity-create + Langevin)
-#
-# If the T=0 branch matters, re-run one of the working jobs with
-# `-var TEMPERATURE 0` hand-edited in its copied simulate.lmp.
+# Run lengths are aggressively shortened via -var, so the collision phase
+# will NOT reach the max-KE halt condition -- that's fine for a smoke test;
+# the anneal-phase dt/reset keeps the still-moving ion stable.
 
 set -euo pipefail
 
 test_energy=35
-test_temp=300
-test_ensemble=0
-angles=(0 0.5 2)
+sn_cases=("0:110" "0.5:111" "2:100")
+pb_cases=("0:100" "0.5:110" "2:111")
 
 # Short run lengths (override the index defaults in simulate.lmp via -var).
-# Anneal is the slowest phase per step -- 5 ps is enough to confirm the
-# phase runs end-to-end and produces final.data.
-warmup_steps=2500       # 5 ps
-collision_steps=10000   # adaptive, bounded to <~1 ps
+warmup_steps=2500       # 2.5 ps (or minimize at T=0, unaffected)
+collision_steps=10000   # ~0.5-1 ps of cascade
 anneal_steps=5000       # 5 ps
 
 scratch_root=/work/stovey/ballistic-diamond/tests
 mkdir -p tests
 
-for species_src in "sn:tersoff-sweep" "pb:tersoff-sweep-pb"; do
-    species=${species_src%%:*}
-    src_dir=${species_src#*:}
+for species_src in "sn:tersoff-sweep:300" "pb:tersoff-sweep-pb:0"; do
+    species=$(echo "${species_src}" | cut -d: -f1)
+    src_dir=$(echo "${species_src}" | cut -d: -f2)
+    test_temp=$(echo "${species_src}" | cut -d: -f3)
 
-    for angle in "${angles[@]}"; do
-        workdir=tests/${species}-angle-${angle}
+    cases_var=${species}_cases[@]
+    for case in "${!cases_var}"; do
+        angle=${case%%:*}
+        orientation=${case#*:}
+        tag=${species}-o${orientation}-a${angle}
+        workdir=tests/${tag}
         rm -rf "${workdir}"
         mkdir -p "${workdir}"
-        # Wipe scratch too, so stale outputs from earlier dump strategies
-        # (warmup.lammpstraj, full-atom collision/anneal dumps, etc.) don't
-        # mix with the new ion-only outputs.
-        rm -rf "${scratch_root}/${species}-angle-${angle}"
-        mkdir -p "${scratch_root}/${species}-angle-${angle}"
+        # Wipe scratch so stale outputs from earlier revisions never mix in.
+        rm -rf "${scratch_root}/${tag}"
+        mkdir -p "${scratch_root}/${tag}"
 
         # --- Copy + substitute simulate.lmp ---
         cp "${src_dir}/simulate.lmp" "${workdir}/simulate.lmp"
+        sed -i "s/ORIENTATION/${orientation}/g"   "${workdir}/simulate.lmp"
         sed -i "s/ENERGY_KEV/${test_energy}/g"    "${workdir}/simulate.lmp"
         sed -i "s/ANGLE_DEG/${angle}/g"           "${workdir}/simulate.lmp"
         sed -i "s/TEMPERATURE/${test_temp}/g"     "${workdir}/simulate.lmp"
-        sed -i "s/ENSEMBLE/${test_ensemble}/g"    "${workdir}/simulate.lmp"
         # Redirect scratch output into the tests tree so test trajectories
         # never mingle with production data.
-        sed -i "s|/work/stovey/ballistic-diamond/${src_dir}|${scratch_root}/${species}-angle-${angle}|g" \
+        sed -i "s|/work/stovey/ballistic-diamond/${src_dir}|${scratch_root}/${tag}|g" \
             "${workdir}/simulate.lmp"
 
         # --- Emit a tailored submit script (short walltime, run overrides) ---
         cat > "${workdir}/submit.sh" <<EOF
 #!/bin/bash
-#SBATCH --job-name=bd-test-${species}-a${angle}
+#SBATCH --job-name=bd-test-${tag}
 #SBATCH --output=result.out
 #SBATCH --error=error.err
 #SBATCH --nodes=1
@@ -91,8 +90,10 @@ lmp=/home/stovey/work/projects/quantum-lab/ballistic-diamond/lammps/build/lmp
 export OMP_NUM_THREADS=1
 
 rseed=\$(( (SLURM_JOB_ID * 2654435761) % 2147483647 ))
+[ "\${rseed}" -lt 1 ] && rseed=1
 srun --export=ALL "\${lmp}" \\
     -var rseed \${rseed} \\
+    -var ensemble 0 \\
     -var warmup_steps ${warmup_steps} \\
     -var collision_steps ${collision_steps} \\
     -var anneal_steps ${anneal_steps} \\
@@ -105,6 +106,9 @@ EOF
 done
 
 echo ""
-echo "Submitted 6 validation jobs.  Monitor with:"
-echo "  squeue -u \$USER -n bd-test-sn-a0,bd-test-sn-a0.5,..."
-echo "Or just: squeue -u \$USER | grep bd-test"
+echo "Submitted 6 validation jobs (sn @ 300 K, pb @ 0 K; orientations"
+echo "100/110/111 each covered).  Monitor with:"
+echo "  squeue -u \$USER | grep bd-test"
+echo ""
+echo "When done, each scratch dir should hold: params.json,"
+echo "collision-ion.lammpstraj, anneal-ion.lammpstraj, final.data (~180-250 MB)."

@@ -1,41 +1,55 @@
 #!/bin/bash
-# Deploy the formal Pb-implantation sweep:
+# Deploy the formal Pb-implantation sweep as SLURM job arrays:
+#   orientations        : 100 110 111  (surface normal / channel axis)
 #   energies      (keV) : 20 35 60
-#   tilt angles   (deg) : 0 0.5 2
+#   tilt angles   (deg) : 0 0.5 2      (applied to the ion velocity;
+#                                       azimuth randomised per ensemble)
 #   temperatures  (K)   : 0 300 900
-#   ensembles per cond  : 100
-# Total = 3 x 3 x 3 x 100 = 2700 jobs.
+#   ensembles per cell  : 100          (one array task each)
 #
-# Each (energy, angle, temperature, ensemble) gets its own working directory
-# under runs/ and its own SLURM job (with an independent rseed).
+# 81 cells x 1 sbatch each = 81 array submissions, 8100 tasks total.
+# Ensemble index + rseed are injected per task by submit.sh via -var;
+# ORIENTATION / ENERGY_KEV / ANGLE_DEG / TEMPERATURE are sed-substituted.
+#
+# SCOPING: every axis can be overridden via environment variables, so small
+# studies use the same machinery as the full sweep.  Scoped example:
+#
+#   ORIENTATIONS="110" ENERGIES="35" TEMPERATURES="300" ENSEMBLES=15 \
+#       ./deploy-experiment.sh
+#
+# Re-running a cell that already exists just re-submits it (dirs are reused);
+# resubmitting individual failed tasks:
+#   cd runs/orient-O/energy-E/temperature-T/angle-A && sbatch --array=17,42 submit.sh
 
 set -euo pipefail
 
-energies=(20 35 60)
-angles=(0 0.5 2)
-temperatures=(0 300 900)
-ensembles=100
+orientations=(${ORIENTATIONS:-100 110 111})
+energies=(${ENERGIES:-20 35 60})
+angles=(${ANGLES:-0 0.5 2})
+temperatures=(${TEMPERATURES:-0 300 900})
+ensembles=${ENSEMBLES:-100}
 
-scratch_root=/work/stovey/ballistic-diamond/tersoff-sweep-pb
-mkdir -p logs
+for orientation in "${orientations[@]}"; do
+  for energy in "${energies[@]}"; do
+    for temperature in "${temperatures[@]}"; do
+      for angle in "${angles[@]}"; do
+        cell=runs/orient-${orientation}/energy-${energy}/temperature-${temperature}/angle-${angle}
+        mkdir -p "${cell}"
 
-for energy in "${energies[@]}"; do
-  for temperature in "${temperatures[@]}"; do
-    for angle in "${angles[@]}"; do
-      for i in $(seq 0 $((ensembles - 1))); do
-        workdir=runs/energy-${energy}/temperature-${temperature}/angle-${angle}-${i}
-        mkdir -p "${workdir}"
-        mkdir -p "${scratch_root}/energy-${energy}/temperature-${temperature}/angle-${angle}-${i}"
+        cp simulate.lmp submit.sh "${cell}/"
 
-        cp simulate.lmp submit.sh "${workdir}/"
+        sed -i "s/ORIENTATION/${orientation}/g"     "${cell}/simulate.lmp"
+        sed -i "s/ENERGY_KEV/${energy}/g"           "${cell}/simulate.lmp"
+        sed -i "s/ANGLE_DEG/${angle}/g"             "${cell}/simulate.lmp"
+        sed -i "s/TEMPERATURE/${temperature}/g"     "${cell}/simulate.lmp"
 
-        sed -i "s/ENERGY_KEV/${energy}/g"  "${workdir}/simulate.lmp"
-        sed -i "s/ANGLE_DEG/${angle}/g"    "${workdir}/simulate.lmp"
-        sed -i "s/TEMPERATURE/${temperature}/g" "${workdir}/simulate.lmp"
-        sed -i "s/ENSEMBLE/${i}/g"          "${workdir}/simulate.lmp"
-
-        ( cd "${workdir}" && sbatch submit.sh )
+        ( cd "${cell}" && sbatch --array=0-$((ensembles - 1)) submit.sh )
       done
     done
   done
 done
+
+n_cells=$(( ${#orientations[@]} * ${#energies[@]} * ${#angles[@]} * ${#temperatures[@]} ))
+echo ""
+echo "Submitted ${n_cells} array jobs ($((n_cells * ensembles)) tasks).  Monitor with:"
+echo "  squeue -u \$USER -n bd-pb"
