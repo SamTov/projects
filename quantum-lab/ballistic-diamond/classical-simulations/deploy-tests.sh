@@ -89,15 +89,36 @@ cd "\${SLURM_SUBMIT_DIR}"
 lmp=/home/stovey/work/projects/quantum-lab/ballistic-diamond/lammps/build/lmp
 export OMP_NUM_THREADS=1
 
+# Node-local binary copy + startup-flake retry (see production submit.sh).
+lmp_local=\${SLURM_TMPDIR:-/tmp}/lmp_\${SLURM_JOB_ID}
+if cp "\${lmp}" "\${lmp_local}" 2>/dev/null; then
+    chmod +x "\${lmp_local}"
+    lmp="\${lmp_local}"
+fi
+
 rseed=\$(( (SLURM_JOB_ID * 2654435761) % 2147483647 ))
 [ "\${rseed}" -lt 1 ] && rseed=1
-srun --export=ALL "\${lmp}" \\
-    -var rseed \${rseed} \\
-    -var ensemble 0 \\
-    -var warmup_steps ${warmup_steps} \\
-    -var collision_steps ${collision_steps} \\
-    -var anneal_steps ${anneal_steps} \\
-    -in simulate.lmp
+rc=1
+for attempt in 1 2 3; do
+    start=\${SECONDS}
+    srun --export=ALL "\${lmp}" \\
+        -var rseed \${rseed} \\
+        -var ensemble 0 \\
+        -var warmup_steps ${warmup_steps} \\
+        -var collision_steps ${collision_steps} \\
+        -var anneal_steps ${anneal_steps} \\
+        -in simulate.lmp
+    rc=\$?
+    [ "\${rc}" -eq 0 ] && break
+    if [ \$((SECONDS - start)) -gt 600 ]; then
+        echo "srun failed rc=\${rc} after >10 min -- real failure" >&2
+        break
+    fi
+    echo "attempt \${attempt} died in \$((SECONDS - start))s -- flake, retrying" >&2
+    sleep 20
+done
+rm -f "\${lmp_local}" 2>/dev/null
+exit \${rc}
 EOF
         chmod +x "${workdir}/submit.sh"
 

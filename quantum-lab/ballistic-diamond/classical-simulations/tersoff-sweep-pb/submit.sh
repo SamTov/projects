@@ -36,6 +36,15 @@ cd "${SLURM_SUBMIT_DIR}"
 lmp=/home/stovey/work/projects/quantum-lab/ballistic-diamond/lammps/build/lmp
 export OMP_NUM_THREADS=1
 
+# Exec from node-local storage: ~50% of launches died 2-3s in with
+# banner-only output and no LAMMPS error -- consistent with NFS exec
+# hiccups when 32-64 ranks map the same home-dir binary at once.
+lmp_local=${SLURM_TMPDIR:-/tmp}/lmp_${SLURM_JOB_ID}
+if cp "${lmp}" "${lmp_local}" 2>/dev/null; then
+    chmod +x "${lmp_local}"
+    lmp="${lmp_local}"
+fi
+
 ens=${SLURM_ARRAY_TASK_ID}
 # SLURM_JOB_ID is unique per array task; Knuth-hash it into a seed.
 rseed=$(( (SLURM_JOB_ID * 2654435761) % 2147483647 ))
@@ -61,4 +70,5 @@ for attempt in 1 2 3; do
     echo "srun attempt ${attempt} died in $((SECONDS - start))s (rc=${rc}) -- startup flake, retrying in 30s" >&2
     sleep 30
 done
+rm -f "${lmp_local}" 2>/dev/null
 exit ${rc}
