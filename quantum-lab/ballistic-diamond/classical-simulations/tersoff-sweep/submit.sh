@@ -47,7 +47,9 @@ fi
 
 ens=${SLURM_ARRAY_TASK_ID}
 # SLURM_JOB_ID is unique per array task; Knuth-hash it into a seed.
-rseed=$(( (SLURM_JOB_ID * 2654435761) % 2147483647 ))
+# LAMMPS RanMars (equal-style random(), fix langevin) requires
+# seed < 900,000,000; clamp so rseed+7 stays below the limit.
+rseed=$(( (SLURM_JOB_ID * 2654435761) % 899999990 + 1 ))
 [ "${rseed}" -lt 1 ] && rseed=1
 
 # Startup-class failures (LAMMPS dying within seconds, stochastic, node/

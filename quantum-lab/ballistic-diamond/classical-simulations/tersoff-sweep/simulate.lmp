@@ -59,13 +59,16 @@ variable    stop_file   string ${pot_root}/classical-simulations/potentials/elec
 variable    scratch     string /work/stovey/ballistic-diamond/tersoff-sweep/orient-${orientation}/energy-${energy_keV}/temperature-${temperature}/angle-${angle_deg}-${ensemble}
 
 # ---------- Independent seeds ----------
-variable    seed_diamond equal v_rseed+1
-variable    seed_posx    equal v_rseed+2
-variable    seed_posy    equal v_rseed+3
-variable    seed_eq      equal v_rseed+4
-variable    seed_coll    equal v_rseed+5
-variable    seed_anneal  equal v_rseed+6
-variable    seed_azi     equal v_rseed+7
+# LAMMPS RanMars (equal-style random(), fix langevin) aborts on seeds
+# >= 900,000,000 -- clamp whatever arrives via -var rseed, then offset.
+variable    rseed_c      equal (v_rseed%899999990)+1
+variable    seed_diamond equal v_rseed_c+1
+variable    seed_posx    equal v_rseed_c+2
+variable    seed_posy    equal v_rseed_c+3
+variable    seed_eq      equal v_rseed_c+4
+variable    seed_coll    equal v_rseed_c+5
+variable    seed_anneal  equal v_rseed_c+6
+variable    seed_azi     equal v_rseed_c+7
 
 # ---------- Lattice constant ----------
 # MUST match the potential's own equilibrium (Tersoff-1989 C), not the

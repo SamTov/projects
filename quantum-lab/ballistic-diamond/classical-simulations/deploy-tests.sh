@@ -96,7 +96,7 @@ if cp "\${lmp}" "\${lmp_local}" 2>/dev/null; then
     lmp="\${lmp_local}"
 fi
 
-rseed=\$(( (SLURM_JOB_ID * 2654435761) % 2147483647 ))
+rseed=\$(( (SLURM_JOB_ID * 2654435761) % 899999990 + 1 ))
 [ "\${rseed}" -lt 1 ] && rseed=1
 rc=1
 for attempt in 1 2 3; do
