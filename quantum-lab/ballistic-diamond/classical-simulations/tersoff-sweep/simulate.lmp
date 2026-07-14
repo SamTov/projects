@@ -45,7 +45,10 @@ variable    rseed           index 12345
 variable    warmup_steps    index 25000     # 25 ps @ 1 fs
 variable    collision_steps index 500000    # ceiling only -- fix halt exits
                                             # as soon as max KE < 100 eV
-variable    anneal_steps    index 500000    # 500 ps @ 1 fs
+variable    anneal_steps    index 200000    # 200 ps @ 1 fs -- quench is
+                                            # complete by ~100 ps; diamond
+                                            # defect barriers (~2.3 eV) mean
+                                            # nothing more anneals on ns scales
 
 # ---------- Species constants (Sn) ----------
 variable    species     string sn
