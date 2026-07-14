@@ -143,18 +143,19 @@ def generate_reference_sites(
     # Dedupe: with irrational rotation components, float jitter at the
     # wrapped lateral faces can keep BOTH periodic images of a boundary
     # plane (phantom duplicate sites -> phantom "vacancies" spanning all z).
-    # Distinct sites are >= 1.54 A apart, so a 0.5 A grid key cannot merge
-    # real neighbours but collapses duplicates.
-    lx = box["xhi"] - box["xlo"]
-    ly = box["yhi"] - box["ylo"]
-    wrapped = sites.copy()
-    wrapped[:, 0] = (wrapped[:, 0] - box["xlo"]) % lx
-    wrapped[:, 1] = (wrapped[:, 1] - box["ylo"]) % ly
-    key = np.round(wrapped / 0.5).astype(np.int64)
-    key[:, 0] %= max(1, int(round(lx / 0.5)))   # 0 and L round to same cell
-    key[:, 1] %= max(1, int(round(ly / 0.5)))
-    _, uniq = np.unique(key, axis=0, return_index=True)
-    return sites[np.sort(uniq)]
+    # Tolerance-based pair matching on the wrapped torus: distinct sites are
+    # >= 1.54 A apart, so any pair within 0.5 A is a duplicate.  (A rounding
+    # -grid key leaks when jitter straddles a cell boundary -- observed as
+    # +0.4% phantom sites on production-size 111 boxes.)
+    from scipy.spatial import cKDTree
+
+    wrapped = _wrap(sites, box)
+    tree = cKDTree(wrapped, boxsize=[box["xhi"] - box["xlo"],
+                                     box["yhi"] - box["ylo"], 1.0e9])
+    drop = np.zeros(len(sites), dtype=bool)
+    for i, j in tree.query_pairs(0.5):
+        drop[max(i, j)] = True
+    return sites[~drop]
 
 
 @dataclass
