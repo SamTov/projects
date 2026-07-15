@@ -225,6 +225,11 @@ unfix       freezeion
 velocity    ion set ${vionx} ${viony} ${vionz} units box
 
 fix         pin     anchor setforce 0.0 0.0 0.0
+# setforce zeroes FORCES only -- at T>0 anchor atoms keep their thermal
+# velocities and, with zero force, drift ballistically through the slab
+# forever (~8 A/ps x 225 ps = a bottom-up amorphisation front).  Zero the
+# velocities too: F=0 and v=0 makes the layer truly static.
+velocity    anchor set 0.0 0.0 0.0
 fix         colbath bath langevin ${temperature} ${temperature} 0.1 ${seed_coll} zero yes
 fix         coldyn  all nve
 # Adaptive dt: max 0.05 A displacement/step, dt in [1e-7, 1e-4] ps.
