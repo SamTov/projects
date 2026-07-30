@@ -45,10 +45,15 @@ variable    rseed           index 12345
 variable    warmup_steps    index 25000     # 25 ps @ 1 fs
 variable    collision_steps index 500000    # ceiling only -- fix halt exits
                                             # as soon as max KE < 100 eV
-variable    anneal_steps    index 200000    # 200 ps @ 1 fs -- quench is
-                                            # complete by ~100 ps; diamond
-                                            # defect barriers (~2.3 eV) mean
-                                            # nothing more anneals on ns scales
+variable    anneal_steps    index 50000     # 50 ps @ 1 fs.  The cascade
+                                            # thermal spike dies in 1-5 ps and
+                                            # dissipates in 10-30 ps; past that
+                                            # diamond's 1.7-2.3 eV defect
+                                            # barriers give ~1e-16/s hop rates
+                                            # at 300 K, so the count is frozen.
+                                            # The ion moves <1 nm after the
+                                            # collision halt, so depth is
+                                            # unaffected.
 
 # ---------- Species constants (Sn) ----------
 variable    species     string sn
@@ -108,15 +113,24 @@ variable    vionz       equal -${speed}*cos(${theta})
 if "${orientation} == 100" then &
     "lattice diamond ${alat} orient x 1 0 0 orient y 0 1 0 orient z 0 0 1" &
     "variable ylat_hi equal 20" &
-    "variable slab_hi equal 940"
+    "variable slab_hi equal 940" &
+    "variable xspac equal ${alat}" &
+    "variable yspac equal ${alat}" &
+    "variable zspac equal ${alat}"
 if "${orientation} == 110" then &
     "lattice diamond ${alat} orient x 1 1 0 orient y 0 0 -1 orient z -1 1 0" &
     "variable ylat_hi equal 20" &
-    "variable slab_hi equal 670"
+    "variable slab_hi equal 670" &
+    "variable xspac equal ${alat}*sqrt(2.0)" &
+    "variable yspac equal ${alat}" &
+    "variable zspac equal ${alat}*sqrt(2.0)"
 if "${orientation} == 111" then &
     "lattice diamond ${alat} orient x 1 -1 0 orient y 1 1 -2 orient z 1 1 1" &
     "variable ylat_hi equal 12" &
-    "variable slab_hi equal 550"
+    "variable slab_hi equal 550" &
+    "variable xspac equal ${alat}*sqrt(2.0)" &
+    "variable yspac equal 4.0*${alat}/sqrt(6.0)" &
+    "variable zspac equal ${alat}*sqrt(3.0)"
 
 variable    boxz_hi  equal ${slab_hi}+30
 variable    ionz_lat equal ${slab_hi}+20
@@ -141,12 +155,19 @@ variable    x0_lat   index -1
 variable    y0_lat   index -1
 variable    posy_lo  equal ${ylat_hi}/2-2
 variable    posy_hi  equal ${ylat_hi}/2+2
+# With an explicit entry point, x0_lat/y0_lat are where the ion should CROSS
+# THE SURFACE.  It is launched 20 lattice units above that, so at tilt theta
+# it drifts sideways by gap*tan(theta) along the azimuth on the way down --
+# ~17 A at 10 deg, i.e. several channel cells.  Back the launch point off by
+# that drift so the ion arrives where intended.
+variable    gap_lat  equal 20
+variable    drift_A  equal ${gap_lat}*${zspac}*tan(${theta})
 if "${x0_lat} < 0" then &
     "variable entry_x equal random(8,12,${seed_posx})" &
     "variable entry_y equal random(${posy_lo},${posy_hi},${seed_posy})" &
 else &
-    "variable entry_x equal ${x0_lat}" &
-    "variable entry_y equal ${y0_lat}"
+    "variable entry_x equal ${x0_lat}-${drift_A}*cos(${phi})/${xspac}" &
+    "variable entry_y equal ${y0_lat}-${drift_A}*sin(${phi})/${yspac}"
 create_atoms 2 single ${entry_x} ${entry_y} ${ionz_lat} units lattice
 
 # ---------- Potentials ----------
