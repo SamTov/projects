@@ -9,7 +9,7 @@
 #SBATCH --error=error-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=64
-#SBATCH --time=24:00:00
+#SBATCH --time=14:00:00
 #SBATCH --array=0-99
 
 # Make `module` available in non-interactive batch shells, then source the
