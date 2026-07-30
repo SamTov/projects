@@ -14,9 +14,13 @@
 #SBATCH --job-name=bd-sn-map
 #SBATCH --output=result-%a.out
 #SBATCH --error=error-%a.err
-#SBATCH --nodes=1
-#SBATCH --ntasks=64
-#SBATCH --time=08:00:00
+# 32 ranks, NOT a whole node: the cluster runs many small jobs, so idle
+# capacity is fragmented (172 cores idle but zero nodes with 64 free).
+# A 64-task request needs an entirely empty node and can wait days at
+# our fairshare; 32 tasks fit existing gaps and backfill readily.
+# ~131k atoms/rank, ~110 MB/rank -- comfortable for LAMMPS.
+#SBATCH --ntasks=32
+#SBATCH --time=10:00:00
 
 source /etc/profile 2>/dev/null || source /etc/profile.d/modules.sh 2>/dev/null || true
 source ~/.bashrc 2>/dev/null || true
