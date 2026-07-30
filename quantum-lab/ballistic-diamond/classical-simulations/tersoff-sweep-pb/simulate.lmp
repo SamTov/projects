@@ -131,13 +131,23 @@ mass        1 12.011
 mass        2 ${mass_ion}
 
 # ---------- Place projectile ----------
-# Random (x,y) over a 4x4-lattice-unit patch centred laterally samples
-# channel-entry geometry; z = slab_hi+20 units of clearance above surface.
+# Entry point, in lattice units, z = slab_hi+20 units above the surface.
+#   x0_lat/y0_lat < 0 (default) -> RANDOM over a 4x4-lattice-unit patch:
+#       samples channel geometry statistically, gives depth histograms.
+#   x0_lat/y0_lat >= 0          -> EXPLICIT placement from the deploy loop:
+#       a grid over the projected channel cell, which yields a channel MAP
+#       and (being area-stratified) an unbiased depth histogram as well.
+variable    x0_lat   index -1
+variable    y0_lat   index -1
 variable    posy_lo  equal ${ylat_hi}/2-2
 variable    posy_hi  equal ${ylat_hi}/2+2
-variable    posx_lat equal random(8,12,${seed_posx})
-variable    posy_lat equal random(${posy_lo},${posy_hi},${seed_posy})
-create_atoms 2 single ${posx_lat} ${posy_lat} ${ionz_lat} units lattice
+if "${x0_lat} < 0" then &
+    "variable entry_x equal random(8,12,${seed_posx})" &
+    "variable entry_y equal random(${posy_lo},${posy_hi},${seed_posy})" &
+else &
+    "variable entry_x equal ${x0_lat}" &
+    "variable entry_y equal ${y0_lat}"
+create_atoms 2 single ${entry_x} ${entry_y} ${ionz_lat} units lattice
 
 # ---------- Potentials ----------
 # tersoff/zbl : Tersoff C-C smoothly joined to ZBL at short range, so keV
@@ -188,6 +198,8 @@ print """{
   "ensemble": ${ensemble},
   "rseed": ${rseed},
   "a_lattice": ${alat},
+  "entry_x_lat": ${entry_x},
+  "entry_y_lat": ${entry_y},
   "speed_A_ps": ${speed}
 }""" file ${scratch}/params.json screen no
 
