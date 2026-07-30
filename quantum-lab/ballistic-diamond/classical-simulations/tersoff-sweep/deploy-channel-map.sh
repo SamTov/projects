@@ -21,7 +21,8 @@
 #   ANGLES="0.5" TEMPERATURES="300" REPEATS=1 ./deploy-channel-map.sh
 #   PILOT=3 ./deploy-channel-map.sh          # submit only 3 tasks per cell
 
-set -euo pipefail
+set -uo pipefail
+set -e
 
 ENERGY=${ENERGY:-35}
 ORIENT=${ORIENT:-110}
@@ -29,9 +30,9 @@ GRID=${GRID:-7}
 REPEATS=${REPEATS:-3}
 PILOT=${PILOT:-0}
 
-angle_arm_angles=(${ANGLES:-0 0.5 2 5 10})
+angle_arm_angles=(${ANGLES-0 0.5 2 5 10})
 angle_arm_temp=${ANGLE_ARM_TEMP:-300}
-temp_arm_temps=(${TEMPERATURES:-0 1100})
+temp_arm_temps=(${TEMPERATURES-0 1100})
 temp_arm_angle=${TEMP_ARM_ANGLE:-0.5}
 
 grid_csv=../grids/grid-${ORIENT}-${GRID}x${GRID}.csv
