@@ -35,7 +35,11 @@ temp_arm_temps=(${TEMPERATURES:-0 1100})
 temp_arm_angle=${TEMP_ARM_ANGLE:-0.5}
 
 grid_csv=../grids/grid-${ORIENT}-${GRID}x${GRID}.csv
-[ -f "${grid_csv}" ] || { echo "missing grid: ${grid_csv} (run make_channel_grid.py)" >&2; exit 1; }
+if [ ! -f "${grid_csv}" ]; then
+  echo "grid ${grid_csv} missing -- generating"
+  ( cd .. && python3 make_channel_grid.py --orientation "${ORIENT}" --n "${GRID}" --out grids )
+fi
+[ -f "${grid_csv}" ] || { echo "could not obtain grid ${grid_csv}" >&2; exit 1; }
 ngrid=$(wc -l < "${grid_csv}")
 ntasks=$(( ngrid * REPEATS ))
 
