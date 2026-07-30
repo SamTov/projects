@@ -7,8 +7,11 @@
 #SBATCH --job-name=bd-sn
 #SBATCH --output=result-%a.out
 #SBATCH --error=error-%a.err
-#SBATCH --nodes=1
-#SBATCH --ntasks=64
+# No --nodes=1: whole-node requests never schedule here (the partition
+# runs many small jobs, so idle capacity is fragmented across nodes).
+# 32 ranks fit existing gaps; measured throughput is ~half the 64-rank
+# rate, i.e. the cross-node scatter costs little beyond the rank count.
+#SBATCH --ntasks=32
 #SBATCH --time=14:00:00
 #SBATCH --array=0-99
 
