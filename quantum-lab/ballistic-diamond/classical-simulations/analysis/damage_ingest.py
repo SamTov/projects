@@ -259,6 +259,10 @@ def main() -> int:
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--tree-workers", type=int, default=1)
     ap.add_argument("--only", default=None, help="substring filter on the run path")
+    ap.add_argument("--summary-name", default="summary.csv",
+                    help="summary file name inside --out; give each chunk its own "
+                         "(summary-<tag>.csv) when a sweep is split over several jobs -- "
+                         "damage_report.py reads every summary*.csv it finds")
     ap.add_argument("--limit", type=int, default=0)
     args = ap.parse_args()
 
@@ -295,13 +299,13 @@ def main() -> int:
             if key not in cols:
                 cols.append(key)
     args.out.mkdir(parents=True, exist_ok=True)
-    with (args.out / "summary.csv").open("w", newline="") as fh:
+    with (args.out / args.summary_name).open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=cols, restval="")
         writer.writeheader()
         writer.writerows(rows)
     n_ok = sum(r["ok"] for r in rows)
     print(f"analysed {len(rows)} impacts ({n_ok} ok) in {time.time() - t0:.0f}s "
-          f"-> {args.out / 'summary.csv'}")
+          f"-> {args.out / args.summary_name}")
     for row in rows:
         if not row["ok"]:
             print(f"  NOT OK: {row['run']}: {row['status']}")

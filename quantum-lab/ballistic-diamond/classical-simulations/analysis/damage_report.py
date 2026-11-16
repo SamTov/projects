@@ -61,7 +61,11 @@ def tilt_label(angle: float) -> str:
 
 
 def load(results: Path, temperature: float, energy: float, orientation: int) -> pd.DataFrame:
-    df = pd.read_csv(results / "summary.csv")
+    files = sorted(results.glob("summary*.csv"))
+    if not files:
+        raise FileNotFoundError(f"no summary*.csv in {results}")
+    df = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
+    df = df.drop_duplicates(subset="run", keep="last")
     df = df[(df["ok"] == 1) & (df["T_K"] == temperature) & (df["E_keV"] == energy)
             & (df["orientation"] == orientation)].copy()
     df["vac_clustered_r10"] = df["vac_r10"] - df["V1_r10"]
