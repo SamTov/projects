@@ -33,7 +33,7 @@ def _parse_density_from_log(log_path: Path) -> float:
     """
     text = log_path.read_text(errors="ignore")
     # Thermo blocks start with a "Step" header. We take the LAST block (prod).
-    blocks = re.findall(r"^Step.*?^Loop time", text, flags=re.MULTILINE | re.DOTALL)
+    blocks = re.findall(r"^[ \t]*Step.*?^Loop time", text, flags=re.MULTILINE | re.DOTALL)
     if not blocks:
         return float("nan")
     block = blocks[-1]

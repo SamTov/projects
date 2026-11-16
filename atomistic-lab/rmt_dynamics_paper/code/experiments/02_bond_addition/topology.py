@@ -51,16 +51,22 @@ def read_lammps_data(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray, fl
             mass = float(lines[j].split()[1])
         if stripped == "Atoms" or stripped.startswith("Atoms "):
             j = i + 2  # skip blank line
+            # `write_data` labels the style ("Atoms # atomic") and appends
+            # three image flags, so the column count alone is ambiguous:
+            # atomic is `id type x y z [ix iy iz]`, bond is
+            # `id mol type x y z [ix iy iz]`.
+            n_cols = len(lines[j].split())
+            if "#" in stripped:
+                is_bond = stripped.split("#", 1)[1].strip() == "bond"
+            else:
+                is_bond = n_cols in (6, 9)
             positions = np.empty((n_atoms, 3), dtype=np.float64)
             atom_types = np.empty(n_atoms, dtype=np.int64)
             for k in range(n_atoms):
                 parts = lines[j + k].split()
                 aid = int(parts[0]) - 1
                 atype = int(parts[1])
-                # atom_style atomic: id type x y z
-                # atom_style bond:  id mol type x y z (we handle both)
-                if len(parts) >= 6:
-                    # bond format
+                if is_bond:
                     atype = int(parts[2])
                     x = float(parts[3]); y = float(parts[4]); z = float(parts[5])
                 else:
