@@ -205,7 +205,7 @@ def vacancy_depth_profiles(df, results: Path, out, bin_nm=10.0, max_nm=320.0):
         sub = df[df["angle_deg"] == ang]
         depths = []
         for run in sub["run"]:
-            f = results / "defects" / Path(run).with_suffix(".npz")
+            f = results / "defects" / (run + ".npz")
             if not f.exists():
                 continue
             with np.load(f) as z:

@@ -204,7 +204,9 @@ def process_run(task: tuple) -> dict:
 
         # --- per-impact defect file ---
         out_dir = Path(out_dir)
-        npz = out_dir / "defects" / rel.with_suffix(".npz")
+        # NOT rel.with_suffix(): run names contain dots ("angle-0.5-12"), and
+        # with_suffix would truncate them all to the same "angle-0".
+        npz = out_dir / "defects" / rel.parent / (rel.name + ".npz")
         npz.parent.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(
             npz, vac_pos=res["vac_pos"], int_pos=res["int_pos"], int_site=res["int_site"],
@@ -238,7 +240,7 @@ def process_run(task: tuple) -> dict:
             "V1": row["V1_r10"], "V2": row["V2_r10"], "V3plus": row["V3p_r10"],
             "state": "as-quenched MD, 50 ps after the cascade",
         }
-        write_snippet(out_dir / "snippets" / rel.with_suffix(".xyz"), header, rows)
+        write_snippet(out_dir / "snippets" / rel.parent / (rel.name + ".xyz"), header, rows)
 
         row["ok"], row["status"] = 1, "ok"
     except Exception as exc:                       # keep the batch alive
