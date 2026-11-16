@@ -201,11 +201,18 @@ group       bath_geom region bath_xhi
 group       bath_geom region bath_ylo
 group       bath_geom region bath_yhi
 group       bath_geom region bath_zlo
-group       bath intersect diamond bath_geom
+group       bath_all intersect diamond bath_geom
 
 # Pin the bottom material layer against recoil pressure (during strike+quench).
 region      anchor block INF INF INF INF 10 11 units lattice
 group       anchor region anchor
+# The bath must NOT contain anchor atoms.  `fix pin` zeroes their forces, so
+# a Langevin kick on top turns them into free Brownian particles that wander
+# out of the slab bottom and disorder the lowest few nm.  (The lateral skins
+# span all heights, so 19% of the anchor used to be thermostatted: the 2026
+# campaign lost ~700-950 atoms per run this way and carries ~4 nm of scaffold
+# damage above the slab bottom, which the damage analysis excludes.)
+group       bath subtract bath_all anchor
 
 # ---------- Output directory + provenance ----------
 shell       mkdir -p ${scratch}
