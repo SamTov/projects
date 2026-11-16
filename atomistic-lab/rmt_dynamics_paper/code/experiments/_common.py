@@ -239,11 +239,18 @@ def write_row(path: Path, row: dict[str, Any]) -> None:
     """Append a single CSV row; writes header if the file doesn't exist yet."""
     import csv
 
-    exists = path.is_file()
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", newline="") as fh:
+        # Array tasks append to one summary file; hold a lock so two tasks
+        # finishing together cannot both write the header or interleave rows.
+        try:
+            import fcntl
+            fcntl.flock(fh, fcntl.LOCK_EX)
+        except (ImportError, OSError):
+            pass
+        fh.seek(0, os.SEEK_END)
         writer = csv.DictWriter(fh, fieldnames=list(row.keys()))
-        if not exists:
+        if fh.tell() == 0:
             writer.writeheader()
         writer.writerow(row)
 

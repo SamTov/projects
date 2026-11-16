@@ -13,6 +13,7 @@ from rmt_dynamics import (
     mp_cdf,
     mp_density,
     mp_edges,
+    window_T_eff,
 )
 
 
@@ -67,6 +68,33 @@ def test_mp_null_on_white_noise(make_white_noise):
     # λ_max should not overshoot the MP edge by more than a few percent.
     _, lam_plus = mp_edges(n_particles, T_eff, sigma2)
     assert mu.max() <= 1.15 * lam_plus
+
+
+def test_window_T_eff_white_noise_single_lag(make_white_noise):
+    """L = 1 on white noise reduces to three stacked Wishart matrices."""
+    v = make_white_noise(n_frames=2048, n_particles=48)
+    assert np.isclose(window_T_eff(v, dt=1.0, t_max=1.0), 3 * 2048, rtol=0.05)
+
+
+def test_mp_null_on_correlated_velocities(make_ou):
+    """OU velocities with t_max = 10·τ: MP holds with the window sample count.
+
+    T_eff = n_frames/τ_int (the naive count) overestimates the samples by
+    ~2.7x here and puts ~10 % of the bulk above the edge.
+    """
+    n_frames, n_particles, tau, n_lag = 12000, 96, 5.0, 50
+    v = make_ou(n_frames=n_frames, n_particles=n_particles, tau_frames=tau)
+    C = build_C(v, dt=1.0, t_max=float(n_lag))
+    mu = eigenvalues(C)
+    sigma2 = float(np.trace(C) / n_particles)
+    T_eff = window_T_eff(v, dt=1.0, t_max=float(n_lag))
+    # Long-window limit 3·3n/(2L), reduced slightly by the finite τ/L.
+    assert 0.7 * 4.5 * n_frames / n_lag < T_eff < 4.5 * n_frames / n_lag
+    assert ks_distance(mu, n_particles, T_eff, sigma2) < 0.06
+    lo, hi = mp_edges(n_particles, T_eff, sigma2)
+    assert mu.max() <= 1.1 * hi and mu.min() >= 0.85 * lo
+    naive = n_frames / tau
+    assert ks_distance(mu, n_particles, naive, sigma2) > 0.1
 
 
 def test_tau_int_recovers_ou_constant(make_ou):

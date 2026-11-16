@@ -1,5 +1,6 @@
-"""Experiment 3 post-processing: density + entropy panels, phase spectra,
-and FWHM extraction for the `S(C)` vs `ρ` transition-resolution claim.
+"""Experiment 3 post-processing: density, entropy and diffusion along the
+isobar for each starting state, phase spectra, and FWHM extraction for the
+`S(C)` vs `ρ` transition-resolution claim.
 """
 from __future__ import annotations
 
@@ -13,27 +14,35 @@ import numpy as np
 from rmt_dynamics import fwhm_in_window
 from rmt_dynamics.plotting import apply_style, plot_spectrum
 
-# Windows in T (K) where the two first-order transitions are expected.
-# Solid–liquid for argon-parameter LJ is ~20–25 K; liquid–vapor at P = 1 atm
-# is ~85–90 K. Widen by a few K on either side so peak-finding has slack.
+# Windows in T (K) searched for each first-order transition on the 20 atm
+# isobar. They are deliberately wide: the heating branch (fcc start) melts
+# above coexistence and the dense branches boil above it, while the dilute
+# branch condenses below it.
 TRANSITION_WINDOWS = {
-    "melt": (10.0, 50.0),
-    "boil": (70.0, 110.0),
+    "melt": (50.0, 115.0),
+    "boil": (95.0, 155.0),
 }
+BRANCHES = {"fcc": ("C0", "crystal start"), "dense": ("C1", "dense start"), "dilute": ("C2", "dilute start")}
+# (label, starting state, temperature) for the representative spectra.
+PHASE_EXAMPLES = [("solid", "fcc", 40.0), ("liquid", "dense", 100.0), ("vapor", "dilute", 150.0)]
 
 
 def _load_summary(path: Path) -> list[dict]:
     with open(path) as fh:
-        return [dict(r) for r in csv.DictReader(fh)]
+        rows = [dict(r) for r in csv.DictReader(fh)]
+    for r in rows:
+        r.setdefault("init", "dense")
+    return rows
 
 
-def _aggregate(rows, key):
+def _aggregate(rows, key, init):
     out = {}
     for r in rows:
-        T = float(r["temperature"])
+        if r["init"] != init or r.get(key) in (None, ""):
+            continue
         v = float(r[key])
         if not np.isnan(v):
-            out.setdefault(T, []).append(v)
+            out.setdefault(float(r["temperature"]), []).append(v)
     Ts = sorted(out)
     means = np.array([np.mean(out[T]) for T in Ts])
     stds = np.array([np.std(out[T]) for T in Ts])
@@ -41,41 +50,45 @@ def _aggregate(rows, key):
 
 
 def fig_density_entropy(rows, outfile: Path) -> None:
-    fig, axes = plt.subplots(3, 1, figsize=(5, 8), sharex=True, constrained_layout=True)
-    Ts, rho, rho_err = _aggregate(rows, "density")
-    _, S, S_err = _aggregate(rows, "S")
-
-    axes[0].errorbar(Ts, rho, yerr=rho_err, marker="o", capsize=2, color="C0")
-    axes[0].set_ylabel(r"density (g/cm$^3$)")
-
-    axes[1].errorbar(Ts, S, yerr=S_err, marker="o", capsize=2, color="C1")
-    axes[1].set_ylabel(r"$S(C)$")
-
-    # Numerical derivatives via central differences.
-    def ddx(y):
-        d = np.gradient(y, Ts)
-        return d
-    axes[2].plot(Ts, ddx(rho), marker="o", color="C0", label=r"$d\rho/dT$")
-    axes[2].plot(Ts, ddx(S), marker="s", color="C1", label=r"$dS/dT$")
-    axes[2].legend(frameon=False)
-    axes[2].set_xlabel("T (K)")
-    axes[2].set_ylabel("derivative")
-
+    panels = [
+        ("density", r"density (g/cm$^3$)"),
+        ("S_over_logN", r"$S(C) / \ln N$"),
+        ("diffusion", r"$\mathrm{Tr}(C)/N$ ($\mathrm{\AA}^2$/fs)"),
+    ]
+    fig, axes = plt.subplots(len(panels) + 1, 1, figsize=(5, 10), sharex=True, constrained_layout=True)
+    for init, (color, label) in BRANCHES.items():
+        curves = {}
+        for ax, (key, ylabel) in zip(axes, panels):
+            Ts, y, err = _aggregate(rows, key, init)
+            if Ts.size == 0:
+                continue
+            ax.errorbar(Ts, y, yerr=err, marker="o", markersize=3, capsize=2, color=color, label=label)
+            ax.set_ylabel(ylabel)
+            curves[key] = (Ts, y)
+        # Derivatives, each scaled to its own maximum so the widths compare.
+        for key, style in [("density", "-"), ("S_over_logN", "--")]:
+            if key in curves and curves[key][0].size >= 3:
+                Ts, y = curves[key]
+                d = np.abs(np.gradient(y, Ts))
+                if d.max() > 0:
+                    axes[-1].plot(Ts, d / d.max(), style, color=color)
+    axes[0].legend(frameon=False)
+    axes[-1].set_xlabel("T (K)")
+    axes[-1].set_ylabel(r"$|d/dT|$, scaled (solid: $\rho$, dashed: $S$)")
     fig.savefig(outfile)
     plt.close(fig)
 
 
 def fig_spectra_by_phase(rows, runs_dir: Path, outfile: Path) -> None:
-    """Representative T in each phase (solid, liquid, gas) — uses 20, 60, 100 K."""
-    targets = [20.0, 60.0, 100.0]
-    labels = ["solid (T=20 K)", "liquid (T=60 K)", "vapor (T=100 K)"]
-    fig, axes = plt.subplots(1, 3, figsize=(11, 3.2), constrained_layout=True)
-    for ax, T, lbl in zip(axes, targets, labels):
-        cohort = [r for r in rows if float(r["temperature"]) == T]
+    """Pooled eigenvalue histogram at one representative state per phase."""
+    fig, axes = plt.subplots(1, len(PHASE_EXAMPLES), figsize=(11, 3.2), constrained_layout=True)
+    for ax, (phase, init, T) in zip(axes, PHASE_EXAMPLES):
+        lbl = f"{phase} ({init} start, T={T:g} K)"
         eigs = []
-        for r in cohort:
-            tag = f"temperature={T:g}_seed={int(r['seed'])}"
-            p = runs_dir / tag / "eigvals.npy"
+        for r in rows:
+            if r["init"] != init or float(r["temperature"]) != T:
+                continue
+            p = runs_dir / f"init={init}_temperature={T:g}_seed={int(r['seed'])}" / "eigvals.npy"
             if p.is_file():
                 eigs.append(np.load(p))
         if not eigs:
@@ -88,25 +101,23 @@ def fig_spectra_by_phase(rows, runs_dir: Path, outfile: Path) -> None:
 
 
 def extract_transition_widths(rows) -> list[dict]:
-    """Per seed, per transition, compute peak T and FWHM for dρ/dT and dS/dT.
+    """Per starting state and seed, peak T and FWHM of dρ/dT and dS/dT.
 
-    For each seed, we evaluate the derivatives on that seed's own T-sweep
-    (np.gradient on the per-seed ρ(T) and S(T) curves), find the peak of
-    |d/dT| inside each transition window, and measure FWHM by linear
-    interpolation between sample points. Returning per-seed rows lets the
-    caller aggregate the seed-to-seed scatter.
+    The derivatives are taken on each run series' own T-sweep; the peak of
+    |d/dT| is located inside each transition window and its FWHM measured by
+    linear interpolation between sample points. Per-seed rows let the caller
+    aggregate the seed-to-seed scatter.
     """
-    by_seed: dict[int, list[tuple[float, float, float]]] = {}
+    series: dict[tuple[str, int], list[tuple[float, float, float]]] = {}
     for r in rows:
-        seed = int(r["seed"])
         T = float(r["temperature"])
         rho = float(r["density"])
         S = float(r["S"])
         if not (np.isnan(rho) or np.isnan(S)):
-            by_seed.setdefault(seed, []).append((T, rho, S))
+            series.setdefault((r["init"], int(r["seed"])), []).append((T, rho, S))
 
     results: list[dict] = []
-    for seed, items in sorted(by_seed.items()):
+    for (init, seed), items in sorted(series.items()):
         items.sort()
         T = np.array([it[0] for it in items])
         rho = np.array([it[1] for it in items])
@@ -119,8 +130,9 @@ def extract_transition_widths(rows) -> list[dict]:
             for obs_name, d_y in [("rho", d_rho), ("S", d_S)]:
                 peak_T, peak_h, fwhm = fwhm_in_window(T, d_y, window, use_abs=True)
                 results.append({
+                    "init": init,
                     "seed": seed,
-                    "transition": transition,
+                    "transition": f"{transition}/{init}",
                     "observable": obs_name,
                     "peak_T": peak_T,
                     "peak_height": peak_h,

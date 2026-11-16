@@ -17,7 +17,7 @@ from _common import (  # noqa: E402
 )
 
 from rmt_dynamics import (  # noqa: E402
-    build_C, eigenvalues, estimate_tau_int, save_C, vn_entropy,
+    build_C, eigenvalues, estimate_tau_int, save_C, vn_entropy, window_T_eff,
 )
 
 
@@ -56,8 +56,20 @@ def _parse_density_from_log(log_path: Path) -> float:
 def run_one(cell, config, args):
     fixed = config["fixed"]
     N = int(fixed["n_atoms"])
-    box = _cubic_box_length(N, float(fixed["density_reduced"]), float(fixed["sigma"]))
+    init = str(cell.get("init", "dense"))
+    sigma = float(fixed["sigma"])
+    if "init_density_reduced" in fixed:
+        density_reduced = float(fixed["init_density_reduced"][init])
+    else:
+        density_reduced = float(fixed["density_reduced"])
+    box = _cubic_box_length(N, density_reduced, sigma)
     context = {**cell, **fixed, "box_length": box, "out_dump": "dump.lammpstrj"}
+    if init == "fcc":
+        n_cells = int(fixed["n_cells"])
+        if 4 * n_cells ** 3 != N:
+            raise ValueError(f"n_atoms = {N} does not fill {n_cells}^3 fcc cells")
+        # Four atoms per cubic cell of edge a: rho = 4 / a^3.
+        context["lattice_a"] = sigma * (4.0 / density_reduced) ** (1.0 / 3.0)
     ctx = resolve_run_ctx(
         config=config, cell=cell, output_root=args.output_dir / "runs",
         template_name=config["template"], lmp_binary=args.lmp,
@@ -81,21 +93,31 @@ def run_one(cell, config, args):
     mu = eigenvalues(C)
     S = vn_entropy(C)
     tau_int = estimate_tau_int(velocities, dt=dt_sample_fs)
+    T_eff = window_T_eff(velocities, dt_sample_fs, t_max_fs)
     density = _parse_density_from_log(log_path)
+    # trace(C)/N is the mean integrated velocity autocorrelation, i.e. the
+    # self-diffusion coefficient up to the factor from the dot product. It
+    # tells a spectral change apart from diffusion simply switching on.
+    diffusion = float(np.trace(C) / N)
 
     save_C(ctx.output_dir / "C.npz", C, metadata=cell)
     np.save(ctx.output_dir / "eigvals.npy", mu)
     write_meta(
         ctx.output_dir / "meta.json",
-        {"cell": cell, "box_length_A": box, "tau_int_fs": tau_int, "density": density},
+        {"cell": cell, "box_length_A": box, "tau_int_fs": tau_int, "density": density,
+         "T_eff": T_eff, "t_max_fs": t_max_fs},
     )
     write_row(
         args.output_dir / "lj_summary.csv",
         {
+            "init": init,
             "temperature": float(cell["temperature"]),
             "seed": int(cell["seed"]),
             "density": density,
             "S": S,
+            "S_over_logN": S / float(np.log(N)),
+            "diffusion": diffusion,
+            "T_eff": T_eff,
             "trace_C": float(np.trace(C)),
             "tau_int_fs": tau_int,
         },

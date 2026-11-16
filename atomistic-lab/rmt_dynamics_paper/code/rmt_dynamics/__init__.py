@@ -11,6 +11,7 @@ from .io import load_C, load_velocities, save_C
 from .peaks import find_peak_in_window, fwhm_in_window
 from .rmt_null import (
     T_eff_from_trajectory,
+    window_T_eff,
     estimate_tau_int,
     ks_distance,
     mp_cdf,
@@ -47,6 +48,7 @@ __all__ = [
     "mp_edges",
     "estimate_tau_int",
     "T_eff_from_trajectory",
+    "window_T_eff",
     "ks_distance",
     "save_C",
     "load_C",

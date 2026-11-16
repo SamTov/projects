@@ -44,6 +44,7 @@ from rmt_dynamics import (  # noqa: E402
     estimate_tau_int,
     ks_distance,
     mp_edges,
+    window_T_eff,
     save_C,
     vn_entropy,
 )
@@ -113,7 +114,8 @@ def run_one(cell: dict, config: dict, ctx_args: argparse.Namespace) -> None:
     S = vn_entropy(C)
     tau_int = estimate_tau_int(velocities, dt=dt_sample_fs)
     n_frames = velocities.shape[0]
-    T_eff = max(1, int(round(n_frames * dt_sample_fs / tau_int)))
+    # Sample count of the lag-window estimator (set by t_max, not tau_int).
+    T_eff = window_T_eff(velocities, dt_sample_fs, t_max_fs, remove_mean=remove_mean)
     N = int(cell["n_atoms"])
     sigma2 = float(np.trace(C) / N)
     _, lam_plus = mp_edges(N, T_eff, sigma2)

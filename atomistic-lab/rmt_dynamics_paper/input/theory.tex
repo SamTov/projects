@@ -115,7 +115,7 @@ In this representation, the scalars of Equation~\ref{eqn:fgdefs} are block sums 
 Moving from those linear functionals to the spectrum of $C$ is the step that takes us beyond what a transport coefficient reports.
 
 $C$ is itself a finite-sample estimator.
-For a trajectory of length $T_{\text{traj}}$, Equation~\ref{eqn:Cij} is evaluated as a time-origin average, so the entries of $C$ carry sampling noise whose magnitude scales with the effective number of independent time samples $T_{\text{eff}} = T_{\text{traj}} / \tau_{\text{int}}$, where $\tau_{\text{int}}$ is the integral relaxation time of the underlying velocity autocorrelation.
+For a trajectory of length $T_{\text{traj}}$, Equation~\ref{eqn:Cij} is evaluated as a time-origin average, so the entries of $C$ carry sampling noise whose magnitude is set by an effective number of independent samples $T_{\text{eff}}$, fixed by the trajectory length relative to the lag $\tau_{\max}$ over which the integral is evaluated (Section~\ref{subsec:de-noising-correlation-matrices}).
 Across an ensemble of independent trajectories, each realisation of $C$ is drawn from a distribution determined by the underlying dynamics, and $C$ is natural to regard as a random matrix.
 In the limiting case of non-interacting particles, the $|\N|$ time series $\{a_{i}(t)\}$ are independent, so the off-diagonal entries of $C$ are inner products of independent signals and have zero mean; the resulting spectrum converges to a Marchenko--Pastur distribution~\cite{TODO:marchenko1967} set by $|\N|$ and $T_{\text{eff}}$.
 This uncorrelated limit provides the null against which we measure deviation: physical signal --- bonded pairs, solvation shells, collective modes associated with phase behaviour --- appears as structure inconsistent with the noise-only reference, most directly as eigenvalue outliers above the bulk edge.
@@ -128,14 +128,27 @@ Because the integrated autocorrelation $\int_{0}^{\infty} dt\, \langle X(t)\cdot
 \subsubsection{Spectrum}
 The eigenvalue distribution of $C$ separates naturally into a bulk and a set of outliers.
 The bulk remains close to the Marchenko--Pastur null of Section~\ref{subsec:atom-wise-correlation-matrix} and encodes the sampling noise present even in an uncorrelated system.
-Outliers above the bulk edge correspond to collective modes whose eigenvectors $\phi_{k}$ identify which atoms participate in a given correlated motion.
+Eigenvalues outside the bulk carry the physical signal, and their eigenvectors $\phi_{k}$ identify which atoms participate in the corresponding motion.
+Which edge they leave through follows from the Einstein form of Equation~\ref{eqn:Cij},
+\begin{align}
+    C_{ij} = \lim_{t \to \infty} \frac{1}{2t} \langle \Delta \mathbf{r}_{i}(t) \cdot \Delta \mathbf{r}_{j}(t) \rangle,
+    \label{eqn:Cij-einstein}
+\end{align}
+which identifies $C$ as the matrix of long-time displacement covariances.
+Any coordinate whose excursions remain bounded is therefore a null direction of $C$.
+A bond between atoms $i$ and $j$ bounds their relative coordinate, so the antisymmetric combination $(\phi_{i}, \phi_{j}) \propto (1, -1)$ is driven to zero eigenvalue, while the symmetric combination carries the diffusion of the bonded unit.
+Bonding thus appears as eigenvalues leaving the bulk through its \emph{lower} edge, one per constraint, and the number of sub-bulk modes counts the diffusive degrees of freedom that bonding has removed.
+With a finite integration lag, a bond need only survive for longer than $\tau_{\max}$ to register, so $\tau_{\max}$ sets the lifetime above which an association is counted as a bond.
+Eigenvalues above the upper edge instead require collective transport that exceeds the single-particle baseline.
+The same argument implies that $C$ vanishes identically in a non-diffusing crystal, where the measured spectrum reflects only the finite-lag residual of the estimator.
 The participation ratio
 \begin{align}
     \mathrm{PR}_{k} = \frac{1}{\sum_{i} \phi_{ik}^{4}}
     \label{eqn:participation-ratio}
 \end{align}
-counts, in a normalised sense, how many atoms are active in mode $k$: bonded pairs yield $\mathrm{PR} \approx 2$, small clusters yield $\mathrm{PR}$ of order the cluster size, and system-spanning collective modes yield $\mathrm{PR}$ of order $|\N|$.
-This gives a direct route from matrix structure to physical interpretation: a large eigenvalue with small $\mathrm{PR}$ flags a local correlation such as a bond, whereas a large eigenvalue with large $\mathrm{PR}$ flags a long-range collective mode of the kind expected near a phase transition.
+counts, in a normalised sense, how many atoms are active in mode $k$: an isolated bonded pair yields $\mathrm{PR} \approx 2$, small clusters yield $\mathrm{PR}$ of order the cluster size, and system-spanning collective modes yield $\mathrm{PR}$ of order $|\N|$.
+This gives a direct route from matrix structure to physical interpretation: a sub-bulk eigenvalue with small $\mathrm{PR}$ flags a local constraint such as a bond, whereas an outlying eigenvalue with large $\mathrm{PR}$ flags a long-range collective mode of the kind expected near a phase transition.
+When many bonds are present their null modes are nearly degenerate and mix, so the participation ratio of an individual eigenvector overestimates the size of the bonded unit; the subspace spanned by the sub-bulk modes remains well defined and is the object to compare against the bonding topology.
 
 \subsubsection{Entropy}
 The \emph{von Neumann entropy} of $C$ is defined as

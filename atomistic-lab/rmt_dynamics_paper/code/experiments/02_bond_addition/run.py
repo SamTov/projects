@@ -40,6 +40,34 @@ from rmt_dynamics import (  # noqa: E402
 )
 
 
+def bond_constraint_basis(bonds, n_atoms: int) -> np.ndarray:
+    """Orthonormal basis of the space spanned by bond vectors e_i - e_j.
+
+    Its dimension is the number of independent constraints the bond graph
+    imposes on relative motion, n_atoms - (number of connected components);
+    redundant bonds inside a cycle do not add to it.
+    """
+    if len(bonds) == 0:
+        return np.zeros((n_atoms, 0))
+    B = np.zeros((n_atoms, len(bonds)))
+    for col, bond in enumerate(bonds):
+        B[int(bond[0]), col] = 1.0
+        B[int(bond[1]), col] = -1.0
+    U, s, _ = np.linalg.svd(B, full_matrices=False)
+    return U[:, s > 1e-8 * s.max()]
+
+
+def bond_subspace_overlap(Phi_low: np.ndarray, basis: np.ndarray) -> float:
+    """Fraction of the bond-constraint space captured by the modes Phi_low.
+
+    1 means the selected eigenvectors span exactly the bonded relative
+    coordinates; for random modes the expectation is Phi_low.shape[1] / N.
+    """
+    if basis.shape[1] == 0 or Phi_low.shape[1] == 0:
+        return float("nan")
+    return float(np.sum((Phi_low.T @ basis) ** 2) / basis.shape[1])
+
+
 def _cubic_box_length(n_atoms: int, density_reduced: float, sigma: float) -> float:
     number_density_inv_vol = density_reduced / (sigma ** 3)
     return float((n_atoms / number_density_inv_vol) ** (1.0 / 3.0))
@@ -58,6 +86,7 @@ def _phase_equilibrate(ctx, config, context, seed):
     }
     # Force "no bonds" for this phase: the template checks `bonds_file is defined`.
     eq_context.pop("bonds_file", None)
+    eq_context.pop("data_file", None)
     eq_context.pop("out_dump", None)
     eq_path = ctx.output_dir / "input.equilibrate.lammps"
     eq_path.write_text(render_template(ctx.template_name, eq_context))
@@ -65,12 +94,18 @@ def _phase_equilibrate(ctx, config, context, seed):
 
 
 def _phase_production(ctx, context, bonds_file):
-    """Render + run the production with an optional bonded data file."""
+    """Render + run the production from the equilibrated configuration.
+
+    Every k restarts from ``equilibrated.data`` (with bonds added for k > 0),
+    so the k = 0 baseline is the same liquid as the bonded runs. Velocities
+    are redrawn on restart, hence the short re-thermalisation before the dump.
+    """
     prod_context = {
         **context,
         "out_dump": "dump.lammpstrj",
         "bonds_file": bonds_file,
-        "n_equil": 0,     # Already equilibrated; go straight to production.
+        "data_file": None if bonds_file else "equilibrated.data",
+        "n_equil": int(context.get("n_rethermalise", 10000)),
         "n_prod": int(context["n_prod_actual"]),
     }
     prod_context.pop("write_data_file", None)
@@ -156,16 +191,29 @@ def run_one(cell: dict, config: dict, args: argparse.Namespace) -> None:
     np.save(ctx.output_dir / "eigvals.npy", mu)
     np.save(ctx.output_dir / "participation.npy", pr)
 
-    # Count outlier modes above MP edge — use trace/N as sigma2, and a
-    # simple heuristic for T_eff.
+    # Count modes outside the MP bulk. T_eff is the sample count of the
+    # lag-window estimator (set by t_max). A bond removes one diffusive
+    # degree of freedom, so it appears as a mode *below* the lower edge
+    # (antisymmetric on the bonded pair); the upper edge is kept as a check.
+    # sigma2 = trace/N is a first pass: it is biased low once many atoms are
+    # bonded, so the cross-run analysis should prefer the k = 0 baseline.
     sigma2 = float(np.trace(C) / N)
-    from rmt_dynamics import estimate_tau_int, mp_edges
+    from rmt_dynamics import estimate_tau_int, mp_edges, window_T_eff
     tau_int = estimate_tau_int(velocities, dt=dt_sample_fs)
-    T_eff = max(1, int(round(velocities.shape[0] * dt_sample_fs / tau_int)))
-    _, lam_plus = mp_edges(N, T_eff, sigma2)
+    T_eff = window_T_eff(velocities, dt_sample_fs, t_max_fs)
+    lam_minus, lam_plus = mp_edges(N, T_eff, sigma2)
     outlier_mask = mu > lam_plus
+    below_mask = mu < lam_minus
     n_outliers = int(outlier_mask.sum())
+    n_below = int(below_mask.sum())
     mean_pr_outlier = float(pr[outlier_mask].mean()) if n_outliers > 0 else float("nan")
+
+    # Compare the lowest modes with the bond graph. Atom ids in the dump are
+    # sorted, so index = id - 1 matches the 0-based pairs from topology.py.
+    basis = bond_constraint_basis(bonds, N)
+    n_constraints = int(basis.shape[1])
+    overlap_lowest = bond_subspace_overlap(Phi[:, :n_constraints], basis)
+    np.save(ctx.output_dir / "bonds.npy", np.array([[int(b[0]), int(b[1])] for b in bonds], dtype=int).reshape(-1, 2))
 
     write_meta(
         ctx.output_dir / "meta.json",
@@ -181,8 +229,15 @@ def run_one(cell: dict, config: dict, args: argparse.Namespace) -> None:
             "k_bonds": int(cell["k_bonds"]),
             "seed": int(cell["seed"]),
             "n_outliers": n_outliers,
+            "n_below": n_below,
+            "n_bonds_actual": len(bonds),
+            "n_constraints": n_constraints,
+            "overlap_lowest": overlap_lowest,
             "mean_pr_outlier": mean_pr_outlier,
             "lambda_plus_MP": float(lam_plus),
+            "lambda_minus_MP": float(lam_minus),
+            "sigma2": sigma2,
+            "T_eff": T_eff,
             "S": S,
             "trace_C": float(np.trace(C)),
         },

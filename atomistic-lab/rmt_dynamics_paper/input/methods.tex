@@ -5,10 +5,11 @@
 \label{subsec:matrix-computation}
 Given a molecular dynamics trajectory of length $T_{\text{traj}}$ from which we sample $M$ velocity snapshots at uniform intervals $\delta t$, we compute the finite-sample estimator of Equation~\ref{eqn:Cij} as
 \begin{align}
-    \hat{C}_{ij} = \delta t \sum\limits_{\tau = 0}^{\tau_{\max}/\delta t} \frac{1}{M - \tau} \sum\limits_{m = 0}^{M - \tau - 1} \mathbf{v}_{i}(t_{m} + \tau\, \delta t) \cdot \mathbf{v}_{j}(t_{m}),
+    \hat{C}_{ij} = \frac{\delta t}{2} \sum\limits_{\tau = -L}^{L} \left(1 - \frac{|\tau|}{L}\right) \frac{1}{M} \sum\limits_{m} \mathbf{v}_{i}(t_{m} + \tau\, \delta t) \cdot \mathbf{v}_{j}(t_{m}), \qquad L = \tau_{\max} / \delta t,
     \label{eqn:Chat}
 \end{align}
-where the outer sum is a Riemann approximation to the time integral, truncated at a lag $\tau_{\max}$ that we choose to be several times the integral relaxation time of the velocity autocorrelation (see below), and the inner sum averages over time origins $t_{m}$.
+where the inner sum averages over all time origins $t_{m}$ for which both snapshots lie inside the trajectory, and the outer sum is the symmetrised (two-sided) form of the time integral, tapered to zero at a lag $\tau_{\max}$ that we choose to be several times the integral relaxation time of the velocity autocorrelation (see below).
+The triangular (Bartlett) taper is not a cosmetic choice: a sharp truncation at $\tau_{\max}$ does not yield a positive semi-definite matrix, whereas the Bartlett-weighted estimator is positive semi-definite by construction, which the entropy of Equation~\ref{eqn:vnentropy} requires.
 
 Evaluating Equation~\ref{eqn:Chat} by direct summation costs $\mathcal{O}(|\N|^{2} M^{2})$ and is intractable at the system sizes we use.
 Instead, for each pair $(i,j)$ we compute the cross-correlation in frequency space via the Wiener--Khinchin theorem, using a single pair of FFTs per Cartesian component and summing the three component contributions, reducing the cost to $\mathcal{O}(|\N|^{2} M \log M)$.
@@ -23,8 +24,7 @@ We estimate the integral relaxation time
     \tau_{\text{int}} = \int\limits_{0}^{\infty} dt \, \frac{\langle \mathbf{v}_{i}(t) \cdot \mathbf{v}_{i}(0) \rangle}{\langle \mathbf{v}_{i}(0) \cdot \mathbf{v}_{i}(0) \rangle}
     \label{eqn:tau-int}
 \end{align}
-directly from the trajectory, averaging over atoms, and set $\tau_{\max} = 10\, \tau_{\text{int}}$ by default.
-The same estimate provides the effective number of independent time samples $T_{\text{eff}} = T_{\text{traj}} / \tau_{\text{int}}$ used in the noise model of Section~\ref{subsec:de-noising-correlation-matrices}.
+directly from the trajectory, averaging over atoms, and set $\tau_{\max} = 10\, \tau_{\text{int}}$ by default in diffusive systems; where $\tau_{\text{int}}$ vanishes because the motion is bound, $\tau_{\max}$ is fixed by hand.
 
 \subsection{De-noising via the Marchenko--Pastur Null}
 \label{subsec:de-noising-correlation-matrices}
@@ -34,6 +34,15 @@ For a system of $|\N|$ non-interacting particles sampled at $T_{\text{eff}}$ ind
     \label{eqn:mp-density}
 \end{align}
 with aspect ratio $q = |\N| / T_{\text{eff}}$, edges $\mu_{\pm} = \sigma^{2}\, (1 \pm \sqrt{q})^{2}$, and noise scale $\sigma^{2}$ fitted from the bulk.
+The sample count $T_{\text{eff}}$ is a property of the estimator and not of the decorrelation time alone.
+Equation~\ref{eqn:Chat} is a quadratic form $\hat{C} = V^{\top} A V$ in the $M \times |\N|$ matrix of velocity samples, with $A$ the banded matrix of lag weights; for independent particles with temporal covariance $R$, matching its first two spectral moments to those of a Wishart matrix gives
+\begin{align}
+    T_{\text{eff}} = d\, \frac{\mathrm{Tr}(A R)^{2}}{\mathrm{Tr}(A R A R)} \;\longrightarrow\; \frac{3 d}{2} \frac{T_{\text{traj}}}{\tau_{\max}} \qquad (\tau_{\max} \gg \tau_{\text{int}}),
+    \label{eqn:teff}
+\end{align}
+where $d = 3$ is the number of Cartesian components averaged over.
+Lengthening $\tau_{\max}$ therefore reduces the number of independent samples in proportion, and the count $T_{\text{traj}} / \tau_{\text{int}}$ overstates it by a factor of order $\tau_{\max} / \tau_{\text{int}}$.
+We evaluate the traces in Equation~\ref{eqn:teff} in the frequency domain from the lag weights and the measured particle-averaged velocity power spectrum, and keep $q$ well below one, where the Marchenko--Pastur form is an accurate description of the weighted estimator.
 We refer to $\rho_{\text{MP}}$ as the noise-only null and use it in two ways.
 
 First, we test how close the empirical spectrum $\rho_{\text{emp}}(\mu)$ is to the null using the Kolmogorov--Smirnov distance $D_{\mathrm{KS}}(\rho_{\text{emp}}, \rho_{\text{MP}})$ and a comparison between the empirical largest eigenvalue $\mu_{\max}$ and the MP edge $\mu_{+}$.
@@ -54,15 +63,17 @@ We validate this machinery on synthetic trajectories with prescribed correlation
 \subsection{Molecular Dynamics Simulations}
 \label{subsec:molecular-dynamics-simulations}
 Simulations fall into three families, one per experimental system, and use the classical molecular dynamics code LAMMPS~\cite{TODO:lammps} unless otherwise noted.
-All production runs use Langevin dynamics in the constant-$NVT$ ensemble unless $NPT$ is explicitly required, with a damping time of $0.1$~ps.
-For $NPT$ runs we use a Nos\'e--Hoover barostat with coupling constants of $0.1$~ps (thermostat) and $1.0$~ps (barostat).
+Production runs of interacting systems use a Nos\'e--Hoover thermostat with a coupling time of $0.1$~ps in the constant-$NVT$ ensemble, and a Nos\'e--Hoover barostat with coupling constants of $0.1$~ps (thermostat) and $1.0$~ps (barostat) where $NPT$ is required, so that the dynamics conserve total momentum and the distinct correlations are not damped by a stochastic bath.
+The non-interacting reference, which has no other source of decorrelation, uses Langevin dynamics with a damping time of $0.1$~ps.
 Each run is initialised from a randomly seeded velocity distribution and separately reported in output metadata, and every reported observable is averaged over a minimum of three and up to five independent seeds.
 
 \paragraph{Lennard-Jones fluids (Experiments~\ref{subsec:convergence-of-the-noise-term}, \ref{subsec:bond-addition}, and~\ref{subsec:lennard-jones-phases}).}
-The Lennard-Jones potential is taken with argon parameters $\sigma = 3.4$~\AA{}, $\varepsilon / k_{B} = 120$~K, and particle mass $40$~amu, cut and shifted at $r_{c} = 2.5\,\sigma$.
-System size is $|\N| = 512$ for the phase sweep and the bond-addition experiment, and we sweep $|\N| \in \{64, 256, 1024, 4096\}$ in the noise-convergence study.
+The Lennard-Jones potential is taken with argon parameters $\sigma = 3.405$~\AA{}, $\varepsilon / k_{B} = 119.8$~K, and particle mass $39.948$~amu, truncated at $r_{c} = 3\,\sigma$.
+System size is $|\N| = 500$ for the phase sweep and $|\N| = 512$ for the bond-addition experiment, and we sweep $|\N| \in \{64, 256, 1024, 4096\}$ in the noise-convergence study.
 The integration timestep is $\delta t = 2$~fs.
-For the phase sweep we equilibrate for $10^{5}$ steps in $NPT$ at $P = 1$~atm and run for $5 \times 10^{5}$ steps of production; for the bond-addition experiment we equilibrate an $NVT$ liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$ before inserting bonds and running for $5 \times 10^{5}$ production steps; for the non-interacting noise study we disable the pair potential entirely and run at low density and high temperature.
+For the phase sweep we equilibrate for $1.5 \times 10^{5}$ steps in $NPT$ and run for $5 \times 10^{5}$ steps of production along the $P = 20$~atm isobar, which lies below the critical pressure and, unlike the $1$~atm isobar, has a liquid range of several tens of kelvin.
+Because a periodic system of this size superheats and supercools, every temperature is simulated from three initial conditions --- an fcc crystal, a dense disordered configuration at $\rho = 0.8\,\sigma^{-3}$, and a dilute gas at $\rho = 0.02\,\sigma^{-3}$ --- so that each transition is bracketed from both sides;
+for the bond-addition experiment we equilibrate an $NVT$ liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$, insert bonds into the equilibrated configuration, re-thermalise for $10^{4}$ steps, and run for $5 \times 10^{5}$ production steps, with the bond-free reference restarted from the same configuration; for the non-interacting noise study we disable the pair potential entirely and run at low density and high temperature.
 Harmonic bonds for the bond-addition experiment are added between random eligible pairs with stiffness $k_{b} = 100\,\varepsilon/\sigma^{2}$ and rest length set at the current pair separation.
 When run-time bond insertion is required we use ESPResSo~\cite{TODO:espresso} in place of LAMMPS.
 

@@ -9,7 +9,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from rmt_dynamics import load_C
+from rmt_dynamics import load_C, mp_edges
 from rmt_dynamics.plotting import apply_style, plot_heatmap, plot_spectrum
 
 
@@ -18,7 +18,72 @@ def _load_summary(path: Path) -> list[dict]:
         return [dict(r) for r in csv.DictReader(fh)]
 
 
-def fig_bond_spectrum(rows, runs_dir: Path, outfile: Path) -> None:
+def baseline_edges(rows, runs_dir: Path) -> tuple[float, float] | None:
+    """MP bulk edges taken from the bond-free (k = 0) liquid.
+
+    The per-run edges use sigma2 = trace/N, which falls as atoms are bonded
+    (a bonded atom diffuses more slowly), so the unbonded liquid is the
+    reference against which modes leaving the bulk are counted.
+    """
+    base = [r for r in rows if int(r["k_bonds"]) == 0 and r.get("sigma2")]
+    if not base:
+        return None
+    sigma2 = float(np.mean([float(r["sigma2"]) for r in base]))
+    T_eff = float(np.mean([float(r["T_eff"]) for r in base]))
+    p = runs_dir / f"k_bonds=0_seed={int(base[0]['seed'])}" / "eigvals.npy"
+    if not p.is_file():
+        return None
+    return mp_edges(int(np.load(p).size), T_eff, sigma2)
+
+
+def count_modes(rows, runs_dir: Path, edges) -> list[dict]:
+    """Recount sub- and super-bulk modes per run against the k = 0 edges."""
+    out = []
+    for r in rows:
+        k, seed = int(r["k_bonds"]), int(r["seed"])
+        p = runs_dir / f"k_bonds={k}_seed={seed}" / "eigvals.npy"
+        if not p.is_file():
+            continue
+        mu = np.load(p)
+        out.append({
+            "k_bonds": k,
+            "seed": seed,
+            "n_constraints": int(float(r.get("n_constraints") or 0)),
+            "n_below": int((mu < edges[0]).sum()),
+            "n_above": int((mu > edges[1]).sum()),
+            "overlap_lowest": float(r.get("overlap_lowest") or "nan"),
+        })
+    return out
+
+
+def fig_bond_modes(counts, outfile: Path) -> None:
+    """Modes below the bulk vs independent bond constraints, and the overlap
+    of the lowest modes with the bonded relative coordinates."""
+    ks = sorted({c["k_bonds"] for c in counts})
+    def agg(key):
+        vals = [[c[key] for c in counts if c["k_bonds"] == k] for k in ks]
+        return np.array([np.nanmean(v) for v in vals]), np.array([np.nanstd(v) for v in vals])
+    nc, _ = agg("n_constraints")
+    fig, axes = plt.subplots(1, 2, figsize=(8, 3.5), constrained_layout=True)
+    for key, lbl, c in [("n_below", "below lower edge", "C0"), ("n_above", "above upper edge", "C3")]:
+        m, s = agg(key)
+        axes[0].errorbar(nc, m, yerr=s, marker="o", capsize=3, color=c, label=lbl)
+    lim = max(1.0, float(nc.max()))
+    axes[0].plot([0, lim], [0, lim], color="0.5", linestyle="--", linewidth=0.8, label="one per constraint")
+    axes[0].set_xlabel("independent bond constraints")
+    axes[0].set_ylabel("modes outside the bulk")
+    axes[0].legend(frameon=False)
+    m, s = agg("overlap_lowest")
+    keep = nc > 0
+    axes[1].errorbar(nc[keep], m[keep], yerr=s[keep], marker="o", capsize=3, color="C0")
+    axes[1].set_ylim(0, 1.05)
+    axes[1].set_xlabel("independent bond constraints")
+    axes[1].set_ylabel("overlap of lowest modes with bond space")
+    fig.savefig(outfile)
+    plt.close(fig)
+
+
+def fig_bond_spectrum(rows, runs_dir: Path, outfile: Path, edges=None) -> None:
     ks = sorted({int(r["k_bonds"]) for r in rows})
     fig, axes = plt.subplots(1, len(ks), figsize=(3 * len(ks), 3), constrained_layout=True)
     if len(ks) == 1:
@@ -38,7 +103,10 @@ def fig_bond_spectrum(rows, runs_dir: Path, outfile: Path) -> None:
             continue
         pooled = np.concatenate(eigs)
         plot_spectrum(ax, pooled, bins=60)
-        if lam_plus is not None:
+        if edges is not None:
+            for edge in edges:
+                ax.axvline(edge, color="red", linestyle="--", linewidth=0.8)
+        elif lam_plus is not None:
             ax.axvline(lam_plus, color="red", linestyle="--", linewidth=0.8,
                        label=rf"$\lambda_+$ MP")
         ax.set_title(f"k = {k}")
@@ -92,7 +160,17 @@ def main() -> int:
     rows = _load_summary(args.output_dir / "bond_summary.csv")
     figs = args.output_dir / "figures"
     figs.mkdir(parents=True, exist_ok=True)
-    fig_bond_spectrum(rows, args.output_dir / "runs", figs / "fig_bond_spectrum.pdf")
+    runs_dir = args.output_dir / "runs"
+    edges = baseline_edges(rows, runs_dir)
+    fig_bond_spectrum(rows, runs_dir, figs / "fig_bond_spectrum.pdf", edges=edges)
+    if edges is not None:
+        counts = count_modes(rows, runs_dir, edges)
+        if counts:
+            with open(args.output_dir / "bond_mode_counts.csv", "w", newline="") as fh:
+                w = csv.DictWriter(fh, fieldnames=list(counts[0].keys()))
+                w.writeheader()
+                w.writerows(counts)
+            fig_bond_modes(counts, figs / "fig_bond_modes.pdf")
     fig_bond_entropy(rows, figs / "fig_bond_entropy.pdf")
     fig_bond_heatmap(rows, args.output_dir / "runs", figs / "fig_bond_heatmap.pdf")
     return 0

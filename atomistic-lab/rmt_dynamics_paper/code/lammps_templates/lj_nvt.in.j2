@@ -20,6 +20,11 @@
 ##   cutoff          LJ cutoff (Å) — argon default 3 * sigma = 10.215
 ##   bonds_file      optional path to a `read_data` file containing bonds
 ##                   (present only for Exp 2 with k > 0); omit otherwise.
+##   data_file       optional bond-free `read_data` file to restart from
+##                   (Exp 2, k = 0 production); omit otherwise.
+##   init            'fcc' builds an fcc crystal of n_cells^3 unit cells with
+##                   lattice constant lattice_a (Å); anything else (or unset)
+##                   places n_atoms at random and minimises.
 
 units           real
 {% if bonds_file is defined and bonds_file %}
@@ -31,6 +36,13 @@ boundary        p p p
 
 {% if bonds_file is defined and bonds_file %}
 read_data       {{ bonds_file }}
+{% elif data_file is defined and data_file %}
+read_data       {{ data_file }}
+{% elif init is defined and init == 'fcc' %}
+lattice         fcc {{ lattice_a }}
+region          box block 0 {{ n_cells }} 0 {{ n_cells }} 0 {{ n_cells }}
+create_box      1 box
+create_atoms    1 box
 {% else %}
 region          box block 0 {{ box_length }} 0 {{ box_length }} 0 {{ box_length }}
 create_box      1 box
@@ -48,7 +60,11 @@ bond_style      harmonic
 
 velocity        all create {{ temperature }} {{ seed }} mom yes rot yes dist gaussian
 
+{% if not ((bonds_file is defined and bonds_file) or (data_file is defined and data_file) or (init is defined and init == 'fcc')) %}
+# Random placement overlaps atoms; relax before integrating. Restarted and
+# lattice configurations are left as they are.
 minimize        1.0e-4 1.0e-6 1000 10000
+{% endif %}
 
 timestep        {{ timestep }}
 {% if ensemble == 'npt' -%}

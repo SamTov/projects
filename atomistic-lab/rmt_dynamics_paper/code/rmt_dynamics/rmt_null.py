@@ -19,6 +19,7 @@ __all__ = [
     "mp_cdf",
     "estimate_tau_int",
     "T_eff_from_trajectory",
+    "window_T_eff",
     "ks_distance",
 ]
 
@@ -172,6 +173,68 @@ def T_eff_from_trajectory(
     n_frames = velocities.shape[0]
     total_time = n_frames * dt
     return max(1, int(round(total_time / tau_int)))
+
+
+def window_T_eff(
+    velocities: np.ndarray,
+    dt: float,
+    t_max: float,
+    n_components: int = 3,
+    remove_mean: bool = True,
+    max_particles: int = 256,
+) -> float:
+    """Effective sample count of the `build_C` estimator, for the MP null.
+
+    `build_C` is a lag-window (Bartlett) estimate of the zero-frequency
+    cross-spectrum, C = V^T A V with A the banded Toeplitz matrix of window
+    weights. For independent particles with temporal covariance R, its
+    eigenvalue moments match a Wishart matrix with aspect ratio
+
+        q = N · tr(ARAR) / tr(AR)^2 / n_components,
+
+    so the sample count entering Marchenko–Pastur is set by the lag window
+    (T_eff ≈ n_components · 3 · n_frames / (2 · n_lag) when t_max is long
+    compared with the velocity decorrelation time), *not* by n_frames·dt/τ_int.
+    The traces are evaluated in the frequency domain from the window weights
+    and the measured particle-averaged power spectrum, so the result stays
+    meaningful when the integrated autocorrelation vanishes (bound motion).
+
+    Returns T_eff = N / q as a float.
+    """
+    from .correlation import _bartlett_weight_rfft
+
+    v = np.asarray(velocities)
+    if v.ndim != 3 or v.shape[-1] != 3:
+        raise ValueError(f"velocities must have shape (n_frames, N, 3); got {v.shape}")
+    n_frames, n_particles, _ = v.shape
+    n_lag = int(np.floor(t_max / dt))
+    if n_lag < 1:
+        raise ValueError("t_max is smaller than dt; no lag steps included")
+    if n_particles > max_particles:
+        idx = np.linspace(0, n_particles - 1, max_particles).astype(int)
+        v = v[:, idx, :]
+
+    pad_len = 2 * n_frames
+    W = _bartlett_weight_rfft(n_frames, pad_len, n_lag, dt)  # one-sided, interior doubled
+    c = np.full(W.shape, 2.0)
+    c[0] = 1.0
+    if pad_len % 2 == 0:
+        c[-1] = 1.0
+
+    power = np.zeros(W.shape, dtype=np.float64)
+    for alpha in range(3):
+        V = v[..., alpha].astype(np.float64, copy=False)
+        if remove_mean:
+            V = V - V.mean(axis=0, keepdims=True)
+        F = np.fft.rfft(V, n=pad_len, axis=0)
+        power += (F.real ** 2 + F.imag ** 2).mean(axis=1)
+    A = W * power
+    first = A.sum()
+    second = (A * A / c).sum()
+    if first <= 0 or second <= 0:
+        raise RuntimeError("degenerate power spectrum; cannot estimate T_eff")
+    pad_factor = pad_len / n_frames
+    return float(n_components * first * first / (pad_factor * second))
 
 
 def ks_distance(
