@@ -501,7 +501,7 @@ def analyse_damage_reference(
                                 from the statistics.  The anchor scaffold of
                                 the 2026 runs is disordered (thermostatted
                                 pinned atoms, see README), so the excluded
-                                height is max(bottom_margin, scaffold_top+20)
+                                height is max(bottom_margin, 1.5*scaffold_top)
                                 with scaffold_top measured per run.
     top_margin                : A below the surface excluded (surface-layer
                                 bookkeeping; deeper sputter damage counts)
@@ -529,13 +529,24 @@ def analyse_damage_reference(
     zb = state["z_bottom"] - box["zlo"]
     zs = state["z_surface"] - box["zlo"]
 
-    # Height of the disordered anchor scaffold: contiguous run of 5 A slices,
-    # counted from the slab bottom, holding more than a handful of vacancies.
-    edges = zb + np.arange(0.0, 405.0, 5.0)
+    # Height of the disordered anchor scaffold: the run of 5 A slices above
+    # the slab bottom holding more than a handful of vacancies.  The bottom
+    # is the measured half-density edge, unless the scaffold has swollen and
+    # lifted the crystal clear of its own debris (long quenches: the
+    # registered lattice then starts several A above the debris edge, and
+    # scanning from the debris would begin in an empty gap).
+    site_min = float(sites_r[:, 2].min())
+    base = site_min if site_min - zb > 2.5 else zb
+    edges = base + np.arange(0.0, 405.0, 5.0)
     hist, _ = np.histogram(sites_r[occupancy == 0][:, 2], bins=edges)
-    clean = np.nonzero(hist <= 20)[0]
-    scaffold_top = float(edges[clean[0]] - zb) if len(clean) else 400.0
-    z_lo = zb + max(bottom_margin, scaffold_top + 20.0)
+    dirty = hist > 20
+    scaffold_top = 0.0
+    if dirty.any():
+        first = int(np.argmax(dirty))
+        after = np.nonzero(~dirty[first:])[0]
+        scaffold_top = float(edges[first + after[0]] - base) if len(after) else 400.0
+    # The disorder decays over a tail roughly half as long again as its core.
+    z_lo = base + max(bottom_margin, 1.5 * scaffold_top)
     site_interior = (sites_r[:, 2] > z_lo) & (sites_r[:, 2] < zs - top_margin)
 
     vac_mask = (occupancy == 0) & site_interior
