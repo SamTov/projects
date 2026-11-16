@@ -172,9 +172,10 @@ def vacancy_clusters(df, out):
     a1.set_xticks(x, [tilt_label(a) for a in angles])
     a1.set_xlabel("beam tilt")
     a1.set_ylabel("vacancies within 10 nm of the Sn (mean per ion)")
-    a1.set_title("How the vacancies near the ion are grouped", loc="left")
+    a1.set_title("How the vacancies near the ion are grouped", loc="left", pad=30)
     a1.grid(axis="y", color=RULE, linewidth=0.8, zorder=0)
-    a1.legend(loc="upper left", fontsize=10)
+    a1.legend(loc="lower left", bbox_to_anchor=(0.0, 1.0), ncols=3, fontsize=10,
+              borderaxespad=0.2, handlelength=1.2, columnspacing=1.4)
 
     a2.bar(x, 100 * clean.to_numpy(), width=0.62, color=S1, edgecolor=SURFACE, linewidth=1.6, zorder=3)
     for xi, v in zip(x, 100 * clean.to_numpy()):
@@ -183,7 +184,7 @@ def vacancy_clusters(df, out):
     a2.set_ylim(0, 108); a2.set_yticks([0, 25, 50, 75, 100])
     a2.set_xlabel("beam tilt")
     a2.set_ylabel("share of impacts [%]")
-    a2.set_title("Impacts with no divacancy or larger cluster within 10 nm", loc="left")
+    a2.set_title("Impacts with no divacancy or larger cluster within 10 nm", loc="left", pad=30)
     a2.grid(axis="y", color=RULE, linewidth=0.8, zorder=0)
     fig.savefig(out, dpi=220)
     plt.close(fig)
@@ -299,10 +300,10 @@ def main() -> int:
     args.out.mkdir(parents=True, exist_ok=True)
     head = (f"Sn {args.energy:g} keV → diamond ⟨{args.orientation}⟩, {args.temperature:g} K")
     channel_maps(df, "depth_stop_nm", "Sn stop depth [nm]",
-                 f"{head} — stop depth by where the ion enters the channel cell",
+                 f"{head}: stop depth by entry position",
                  args.out / "depth_channel_maps.png", vmax=300.0)
     channel_maps(df, "vac_r10", "vacancies within 10 nm of the Sn",
-                 f"{head} — damage left around the stopped ion, by entry position",
+                 f"{head}: damage around the stopped ion by entry position",
                  args.out / "damage_channel_maps.png")
     damage_vs_depth(df, args.out / "damage_vs_depth.png")
     vacancy_clusters(df, args.out / "vacancy_clusters.png")
