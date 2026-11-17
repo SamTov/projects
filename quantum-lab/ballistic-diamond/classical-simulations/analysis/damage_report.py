@@ -38,6 +38,7 @@ from matplotlib.colors import LinearSegmentedColormap
 sys.path.insert(0, str(Path(__file__).parent))
 import fold_channel_map as fcm  # noqa: E402  (projected lattice + overlay, box frame)
 
+ION = "Sn"                    # element label; set from --species in main()
 SURFACE, INK, INK2, RULE = "#fcfcfb", "#0b0b0b", "#52514e", "#e2e1dc"
 S1, S2, S3 = "#2a78d6", "#eb6834", "#1baf7a"          # categorical slots 1-3
 SEQ = LinearSegmentedColormap.from_list("seq_blue", [
@@ -137,12 +138,12 @@ def damage_vs_depth(df, out, cone=2.0):
         sub = df[mask]
         ax.scatter(sub["depth_stop_nm"], sub["vac_r10"], s=46, color=colour, alpha=0.85,
                    edgecolors=SURFACE, linewidths=1.2, label=f"{label}, n={len(sub)}", zorder=3)
-    ax.set_xlabel("Sn stop depth [nm]")
-    ax.set_ylabel("vacancies within 10 nm of the stopped Sn")
+    ax.set_xlabel(f"{ION} stop depth [nm]")
+    ax.set_ylabel(f"vacancies within 10 nm of the stopped {ION}")
     ax.set_xlim(left=0); ax.set_ylim(bottom=-6)
     ax.grid(axis="y", color=RULE, linewidth=0.8, zorder=0)
     ax.legend(loc="upper right", fontsize=10)
-    ax.set_title("Ions that channel deep stop in almost undamaged crystal", loc="left")
+    ax.set_title("Local damage against how deep the ion went", loc="left")
     fig.savefig(out, dpi=220)
     plt.close(fig)
 
@@ -171,7 +172,7 @@ def vacancy_clusters(df, out):
                 fontsize=10, color=INK)
     a1.set_xticks(x, [tilt_label(a) for a in angles])
     a1.set_xlabel("beam tilt")
-    a1.set_ylabel("vacancies within 10 nm of the Sn (mean per ion)")
+    a1.set_ylabel(f"vacancies within 10 nm of the {ION} (mean per ion)")
     a1.set_title("How the vacancies near the ion are grouped", loc="left", pad=30)
     a1.grid(axis="y", color=RULE, linewidth=0.8, zorder=0)
     a1.legend(loc="lower left", bbox_to_anchor=(0.0, 1.0), ncols=3, fontsize=10,
@@ -218,7 +219,7 @@ def vacancy_depth_profiles(df, results: Path, out, bin_nm=10.0, max_nm=320.0):
         ax.bar(bins[:-1], fv, width=bin_nm, align="edge", color=S1, edgecolor=SURFACE,
                linewidth=0.8, label="vacancies", zorder=2)
         ax.step(np.r_[bins[:-1], bins[-1]], np.r_[fs, fs[-1]], where="post", color=S2,
-                linewidth=2.0, label="stopped Sn", zorder=3)
+                linewidth=2.0, label=f"stopped {ION}", zorder=3)
         ax.set_title(f"{tilt_label(ang)} tilt", loc="left", fontsize=11)
         ax.grid(axis="y", color=RULE, linewidth=0.8, zorder=0)
         stats[ang] = (len(vac) / max(len(sub), 1), float(np.median(vac)) if len(vac) else float("nan"))
@@ -226,7 +227,7 @@ def vacancy_depth_profiles(df, results: Path, out, bin_nm=10.0, max_nm=320.0):
     axes[-1].set_xlabel("depth below the surface [nm]")
     axes[len(axes) // 2].set_ylabel(f"fraction per {bin_nm:g} nm")
     axes[-1].set_xlim(0, max_nm)
-    fig.suptitle("Where the vacancies are, and where the Sn ends up", x=0.01, ha="left", fontsize=12.5)
+    fig.suptitle(f"Where the vacancies are, and where the {ION} ends up", x=0.01, ha="left", fontsize=12.5)
     fig.savefig(out, dpi=220)
     plt.close(fig)
     return stats
@@ -244,10 +245,10 @@ def tables(df, profile_stats) -> str:
                 f"{d['vac_r10'].mean():.0f} | {d['vac_r10'].median():.0f} | "
                 f"{100 * (d['vac_r10'] == 0).mean():.0f}% | {100 * (~clustered).mean():.0f}% | "
                 f"{d['V2_r10'].mean():.1f} | {d['V3p_r10'].mean():.1f} |")
-    head = ("| {} | impacts | median depth [nm] | vacancies / ion (whole track) | within 10 nm of Sn (mean) | "
+    head = ("| {} | impacts | median depth [nm] | vacancies / ion (whole track) | within 10 nm of ION (mean) | "
             "within 10 nm (median) | impacts with 0 vacancies within 10 nm | impacts with no V2+ within 10 nm | "
             "divacancies within 10 nm (mean) | clusters of 3+ within 10 nm (mean) |\n"
-            "|---|---|---|---|---|---|---|---|---|---|")
+            "|---|---|---|---|---|---|---|---|---|---|").replace("ION", ION)
     lines += ["### Damage by beam tilt", "", head.format("tilt")]
     for ang in sorted(df["angle_deg"].unique()):
         lines.append(row(tilt_label(ang), df[df["angle_deg"] == ang]))
@@ -259,8 +260,8 @@ def tables(df, profile_stats) -> str:
         if len(d):
             lines.append(row(f"{lo}–{hi} nm" if hi < 1000 else f"> {lo} nm", d))
 
-    lines += ["", "### Where the Sn sits (vacant lattice sites within 2 Å of the ion)", "",
-              "| tilt | impacts | none (interstitial Sn) | one (substitutional-like) | two or more (split-vacancy-like) |",
+    lines += ["", f"### Where the {ION} sits (vacant lattice sites within 2 Å of the ion)", "",
+              f"| tilt | impacts | none (interstitial {ION}) | one (substitutional-like) | two or more (split-vacancy-like) |",
               "|---|---|---|---|---|"]
     for ang in sorted(df["angle_deg"].unique()):
         d = df[df["angle_deg"] == ang]
@@ -291,18 +292,21 @@ def main() -> int:
     ap.add_argument("--temperature", type=float, default=300.0)
     ap.add_argument("--energy", type=float, default=35.0)
     ap.add_argument("--orientation", type=int, default=110)
+    ap.add_argument("--species", default="sn", help="implanted element (labels only)")
     args = ap.parse_args()
 
+    global ION
+    ION = args.species.capitalize()
     df = load(args.results, args.temperature, args.energy, args.orientation)
     if df.empty:
         print("no matching impacts in summary.csv")
         return 1
     args.out.mkdir(parents=True, exist_ok=True)
-    head = (f"Sn {args.energy:g} keV → diamond ⟨{args.orientation}⟩, {args.temperature:g} K")
-    channel_maps(df, "depth_stop_nm", "Sn stop depth [nm]",
+    head = (f"{ION} {args.energy:g} keV → diamond ⟨{args.orientation}⟩, {args.temperature:g} K")
+    channel_maps(df, "depth_stop_nm", f"{ION} stop depth [nm]",
                  f"{head}: stop depth by entry position",
                  args.out / "depth_channel_maps.png", vmax=300.0)
-    channel_maps(df, "vac_r10", "vacancies within 10 nm of the Sn",
+    channel_maps(df, "vac_r10", f"vacancies within 10 nm of the {ION}",
                  f"{head}: damage around the stopped ion by entry position",
                  args.out / "damage_channel_maps.png")
     damage_vs_depth(df, args.out / "damage_vs_depth.png")

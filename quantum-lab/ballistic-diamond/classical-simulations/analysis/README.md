@@ -103,6 +103,11 @@ python damage_report.py --results /work/stovey/ballistic-diamond/analysis/damage
                         --out figures/final
 ```
 
+Pb runs use the same carbon slab, so the same reference slabs apply; deploy
+with `tersoff-sweep-pb/deploy-channel-map.sh` (output under
+`tersoff-sweep-pb-maps`) and pass `pb` / `--species pb` to the two commands
+above.
+
 Output of `damage_ingest.py` (about 40 s and 3 GB per impact per worker):
 
 | file | content |
