@@ -10,6 +10,10 @@
 #
 # `ensemble` is the raw task id, so every task gets its own output directory,
 # and the entry point it actually used is recorded in that run's params.json.
+#
+# LMP_EXTRA passes extra LAMMPS arguments through, e.g. a truncated test:
+#   LMP_EXTRA="-var warmup_steps 200 -var collision_steps 1500 -var anneal_steps 200" \
+#       sbatch --array=990 --time=00:15:00 submit-grid.sh
 
 #SBATCH --job-name=bd-sn-map
 #SBATCH --output=result-%a.out
@@ -72,6 +76,7 @@ for attempt in 1 2 3; do
         -var ensemble ${SLURM_ARRAY_TASK_ID} \
         -var x0_lat ${x0} \
         -var y0_lat ${y0} \
+        ${LMP_EXTRA:-} \
         -log log-${SLURM_ARRAY_TASK_ID}.lammps \
         -in simulate.lmp
     rc=$?
