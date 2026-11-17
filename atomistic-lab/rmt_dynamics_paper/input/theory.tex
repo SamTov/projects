@@ -138,7 +138,9 @@ which identifies $C$ as the matrix of long-time displacement covariances.
 Any coordinate whose excursions remain bounded is therefore a null direction of $C$.
 A bond between atoms $i$ and $j$ bounds their relative coordinate, so the antisymmetric combination $(\phi_{i}, \phi_{j}) \propto (1, -1)$ is driven to zero eigenvalue, while the symmetric combination carries the diffusion of the bonded unit.
 Bonding thus appears as eigenvalues leaving the bulk through its \emph{lower} edge, one per constraint, and the number of sub-bulk modes counts the diffusive degrees of freedom that bonding has removed.
-With a finite integration lag, a bond need only survive for longer than $\tau_{\max}$ to register, so $\tau_{\max}$ sets the lifetime above which an association is counted as a bond.
+With a finite integration lag two conditions apply.
+A bond need only survive for longer than $\tau_{\max}$ to register, so $\tau_{\max}$ sets the lifetime above which an association is counted as a bond.
+Conversely, a bond of length $r_{0}$ fixes only the separation of the pair and leaves it free to rotate, so the relative coordinate is distinguishable from free diffusion only once the atoms would otherwise have diffused further than the bond length, $\tau_{\max} \gg r_{0}^{2} / 6D$; over shorter lags the corresponding eigenvalue is reduced but not removed.
 Eigenvalues above the upper edge instead require collective transport that exceeds the single-particle baseline.
 The same argument implies that $C$ vanishes identically in a non-diffusing crystal, where the measured spectrum reflects only the finite-lag residual of the estimator.
 The participation ratio

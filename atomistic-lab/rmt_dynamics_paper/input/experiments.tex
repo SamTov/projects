@@ -6,6 +6,57 @@
 
 \subsection{Bond Addition}
 \label{subsec:bond-addition}
+To test how bonding enters the spectrum under controlled conditions, we add $k$ harmonic bonds between randomly chosen pairs of atoms separated by less than $2\sigma$ in an equilibrated Lennard-Jones liquid of $|\N| = 512$ atoms at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$, and compare against the same liquid restarted without bonds.
+Each run is $1$~ns long and $C$ is evaluated with $\tau_{\max} = 2$~ps, for which Equation~\ref{eqn:teff} gives $T_{\text{eff}} \approx 2260$ and $q \approx 0.23$.
+All quantities are averaged over three independent seeds.
+
+Figure~\ref{fig:bond-spectrum} shows the eigenvalue density for each $k$, with the Marchenko--Pastur edges of the bond-free liquid marked.
+Without bonds the spectrum is bulk-like: a single eigenvalue sits at zero, as required by conservation of total momentum, and $11$ to $12$ of the $512$ eigenvalues lie above the upper edge.
+These upper modes are delocalised, with participation ratios near $170$, and are present before any bond is added, so they are a property of the dense liquid and not a bonding signature.
+Adding bonds does not produce additional localised modes above the bulk; instead, weight moves towards and through the lower edge, as anticipated in Section~\ref{subsec:interpreting-atomic-correlation-matrices}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig_bond_spectrum.pdf}
+    \caption{Eigenvalue density of $C$ for the Lennard-Jones liquid with $k$ added harmonic bonds, pooled over three seeds, with $\tau_{\max} = 2$~ps. Dashed lines mark the Marchenko--Pastur edges of the bond-free liquid.}
+    \label{fig:bond-spectrum}
+\end{figure}
+
+The effect of a bond is unambiguous at the level of a single pair.
+For a bonded pair $(i, j)$ the relative-motion mode has the value $(C_{ii} + C_{jj} - 2 C_{ij}) / 2$, which for the bonded pairs is $0.61 \pm 0.01$ of the mean diagonal element of unbonded atoms at $k = 64$ and $0.52 \pm 0.01$ at $k = 256$, against $0.99 \pm 0.04$ for randomly chosen unbonded pairs (measured in a $k = 16$ system).
+This reduction is, however, not large enough to carry the mode out of the bulk, whose lower edge lies at $0.28$ in the same units.
+The number of eigenvalues below the lower edge therefore lags far behind the number of independent constraints imposed by the bond graph (Table~\ref{tab:bond-addition} and Figure~\ref{fig:bond-modes}): it is unchanged at $k = 16$, reaches $54$ of $254$ at $k = 256$, and approaches the constraint count only at $k = 1024$, where the bond network spans almost the whole system and diffusion is largely arrested.
+The subspace spanned by the lowest modes nonetheless carries the bond topology well before individual modes separate.
+Taking as many of the lowest eigenvectors as there are constraints, the fraction of the bond-constraint space they capture is $0.18$ at $k = 16$ and $0.37$ at $k = 64$, six and three times the value expected for randomly oriented modes.
+
+\begin{table}
+    \begin{tabular}{@{}rrrrrr@{}}
+        \toprule
+        $k$ & constraints & sub-bulk modes & overlap & chance overlap & $S(C)$ \\ \midrule
+        0    & 0   & 1   & --     & --     & $6.1133 \pm 0.0005$ \\
+        16   & 16  & 1   & $0.18$ & $0.03$ & $6.1112 \pm 0.0006$ \\
+        64   & 64  & 4--5 & $0.37$ & $0.13$ & $6.1045 \pm 0.0001$ \\
+        256  & 253--255 & 54 & $0.69$ & $0.50$ & $6.0644 \pm 0.0009$ \\
+        1024 & 502--507 & 400--410 & $0.99$ & $0.98$ & $5.697 \pm 0.007$ \\ \bottomrule
+    \end{tabular}
+    \caption{Bond addition at $\tau_{\max} = 2$~ps. Constraints are the independent relative coordinates fixed by the bond graph; sub-bulk modes are eigenvalues below the lower Marchenko--Pastur edge of the bond-free liquid; overlap is the fraction of the constraint space captured by the same number of lowest eigenvectors, with the value expected for random modes alongside. For reference, $\ln |\N| = 6.238$.}
+    \label{tab:bond-addition}
+\end{table}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig_bond_modes.pdf}
+    \caption{Left: number of eigenvalues outside the bulk of the bond-free liquid against the number of independent bond constraints. Right: overlap of the lowest eigenvectors with the bond-constraint space.}
+    \label{fig:bond-modes}
+\end{figure}
+
+The von Neumann entropy decreases monotonically with the number of bonds, from $6.1133$ without bonds to $5.697$ at $k = 1024$, and separates the $16$-bond system from the bond-free liquid by about three times the seed-to-seed scatter.
+
+The incomplete separation at small $k$ is a consequence of the integration lag and not of the estimator.
+A harmonic bond fixes the separation of a pair but not its orientation, so the pair remains free to rotate and its relative coordinate is distinguishable from free diffusion only when $\tau_{\max} \gg r_{0}^{2} / 6D$.
+With $D \approx 2.2 \times 10^{-4}$~\AA$^{2}$\,fs$^{-1}$ and bond lengths of up to $2\sigma$, this requires lags of tens of picoseconds.
+Re-evaluating a single $k = 16$ trajectory with longer lags confirms the trend: the bonded relative-motion mode falls from $0.61$ at $2$~ps to $0.57$, $0.53$, $0.47$ and $0.39$ at $5$, $10$, $20$ and $40$~ps, while unbonded pairs remain at $0.98$ to $0.99$.
+For a $1$~ns trajectory these longer lags leave too few independent samples for the bulk edge to be defined ($q > 1$ beyond $10$~ps), so resolving individual bonds spectrally requires trajectories that are longer in proportion to the lag.
 
 \subsection{Lennard-Jones Phases}
 \label{subsec:lennard-jones-phases}
