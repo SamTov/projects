@@ -1,0 +1,44 @@
+# Experiment 2, long-window variant.
+#
+# A bond fixes only the distance between two atoms, so the pair still rotates
+# and its relative coordinate looks free until the atoms would otherwise have
+# diffused further than the bond length: tau_max >> r0^2 / (6 D). For the
+# 1 ns / 2 ps runs of config.yaml the bonded modes sit at ~0.6 of the free
+# value and stay inside the Marchenko-Pastur bulk. Here the bonds are
+# nearest-neighbour (short r0), the window is 100 ps, and the trajectory is
+# long enough (26 ns) that q = N / T_eff stays near 0.2 at that window:
+# T_eff ~ 4.5 * T_traj / tau_max ~ 1170 for N = 216.
+#
+# Positions are sampled every 0.5 ps and the analysis uses interval-averaged
+# velocities (displacements), which keeps the time integral exact at sparse
+# sampling.
+
+template: lj_nvt.in.j2
+
+fixed:
+  mass: 39.948
+  sigma: 3.405            # Å
+  epsilon: 0.2381         # kcal/mol
+  cutoff: 10.215          # Å (3·sigma); box edge is 22.0 Å > 2·cutoff
+  n_atoms: 216
+  density_reduced: 0.8    # rho * sigma^3
+  temperature: 80.0       # K
+  pressure: 0.0           # NVT — pressure ignored; kept for template
+  ensemble: nvt
+  timestep: 2.0           # fs
+  n_equil: 50000          # 100 ps equilibration
+  n_prod: 13000000        # 26 ns production
+  sample_every: 250       # 0.5 ps
+
+  # Bond generation
+  bond_stiffness_reduced: 100.0   # k_b in units of epsilon / sigma^2
+  bond_max_distance_sigma: 1.3    # first coordination shell only
+
+  analysis:
+    observable: displacement
+    t_max_fs: 100000.0
+    remove_mean: true
+
+sweep:
+  k_bonds: [0, 8, 27, 54, 108]
+  seed:    [1, 2, 3]

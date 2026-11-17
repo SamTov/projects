@@ -68,6 +68,11 @@ def bond_subspace_overlap(Phi_low: np.ndarray, basis: np.ndarray) -> float:
     return float(np.sum((Phi_low.T @ basis) ** 2) / basis.shape[1])
 
 
+def _observable(fixed: dict) -> str:
+    """'velocity' (default) or 'displacement', from the analysis block."""
+    return str(fixed.get("analysis", {}).get("observable", "velocity"))
+
+
 def _cubic_box_length(n_atoms: int, density_reduced: float, sigma: float) -> float:
     number_density_inv_vol = density_reduced / (sigma ** 3)
     return float((n_atoms / number_density_inv_vol) ** (1.0 / 3.0))
@@ -103,6 +108,7 @@ def _phase_production(ctx, context, bonds_file):
     prod_context = {
         **context,
         "out_dump": "dump.lammpstrj",
+        "dump_columns": "xu yu zu" if _observable(context) == "displacement" else "vx vy vz",
         "bonds_file": bonds_file,
         "data_file": None if bonds_file else "equilibrated.data",
         "n_equil": int(context.get("n_rethermalise", 10000)),
@@ -177,10 +183,20 @@ def run_one(cell: dict, config: dict, args: argparse.Namespace) -> None:
         return
 
     dump = parse_lammps_dump_custom(ctx.output_dir / "dump.lammpstrj")
-    velocities = dump.velocities
-    if velocities is None:
-        raise RuntimeError("dump has no velocity columns")
     dt_sample_fs = float(fixed["timestep"]) * float(fixed["sample_every"])
+    if _observable(fixed) == "displacement":
+        # Long lag windows need sparse sampling, and sparsely sampled
+        # instantaneous velocities alias fast motion into the zero-frequency
+        # estimate. The mean velocity over each sampling interval,
+        # (x(t + dt) - x(t)) / dt from unwrapped positions, has the same time
+        # integral without the aliasing.
+        if dump.positions is None:
+            raise RuntimeError("dump has no position columns")
+        velocities = np.diff(dump.positions, axis=0) / dt_sample_fs
+    else:
+        velocities = dump.velocities
+        if velocities is None:
+            raise RuntimeError("dump has no velocity columns")
     t_max_fs = float(fixed["analysis"]["t_max_fs"])
     C = build_C(velocities, dt=dt_sample_fs, t_max=t_max_fs)
     mu, Phi = eigendecomposition(C)
@@ -213,6 +229,17 @@ def run_one(cell: dict, config: dict, args: argparse.Namespace) -> None:
     basis = bond_constraint_basis(bonds, N)
     n_constraints = int(basis.shape[1])
     overlap_lowest = bond_subspace_overlap(Phi[:, :n_constraints], basis)
+    # Pair-level view of the same signal: the relative-motion (antisymmetric)
+    # mode of each bonded pair, in units of the mean diagonal of unbonded atoms.
+    pairs = np.array([[int(b[0]), int(b[1])] for b in bonds], dtype=int).reshape(-1, 2)
+    free = np.setdiff1d(np.arange(N), pairs.ravel())
+    d_free = float(np.diag(C)[free].mean()) if free.size else float("nan")
+    if len(pairs):
+        anti = (C[pairs[:, 0], pairs[:, 0]] + C[pairs[:, 1], pairs[:, 1]]
+                - 2.0 * C[pairs[:, 0], pairs[:, 1]]) / 2.0
+        bond_anti_over_free = float(anti.mean() / d_free)
+    else:
+        bond_anti_over_free = float("nan")
     np.save(ctx.output_dir / "bonds.npy", np.array([[int(b[0]), int(b[1])] for b in bonds], dtype=int).reshape(-1, 2))
 
     write_meta(
@@ -233,6 +260,8 @@ def run_one(cell: dict, config: dict, args: argparse.Namespace) -> None:
             "n_bonds_actual": len(bonds),
             "n_constraints": n_constraints,
             "overlap_lowest": overlap_lowest,
+            "bond_anti_over_free": bond_anti_over_free,
+            "diag_free": d_free,
             "mean_pr_outlier": mean_pr_outlier,
             "lambda_plus_MP": float(lam_plus),
             "lambda_minus_MP": float(lam_minus),

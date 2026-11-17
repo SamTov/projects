@@ -13,6 +13,8 @@
 ##   n_prod          production steps
 ##   sample_every    dump velocity every N steps
 ##   out_dump        trajectory output path
+##   dump_columns    per-atom columns to dump (default 'vx vy vz'; 'xu yu zu'
+##                   for displacement-based analysis)
 ##   ensemble        'nvt' or 'npt'
 ##   mass            per-atom mass (g/mol; argon default 39.948)
 ##   sigma           LJ σ (Å)  — argon: 3.405
@@ -80,7 +82,7 @@ run             {{ n_equil }}
 
 reset_timestep  0
 {% if out_dump is defined and out_dump %}
-dump            d_vel all custom {{ sample_every }} {{ out_dump }} id type vx vy vz
+dump            d_vel all custom {{ sample_every }} {{ out_dump }} id type {{ dump_columns | default('vx vy vz') }}
 dump_modify     d_vel sort id
 {% endif %}
 run             {{ n_prod }}
