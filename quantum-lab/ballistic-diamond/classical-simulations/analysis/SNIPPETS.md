@@ -19,7 +19,14 @@ the molecular-dynamics end states.
 
 ## File layout
 
-`snippets/orient-110/energy-35/temperature-300/angle-<tilt>-<index>.xyz`,
+Two sets, each with its own `summary.csv`:
+
+- `maps/` — 245 impacts at 300 K: beam tilts 0, 0.5, 2, 5 and 10°, 49 entry
+  points per tilt on a grid over the projected channel cell.
+- `random_entry/` — 110 impacts with random entry points: 300 K at 0, 0.5
+  and 2° tilt, and the over-vibrating 1100 K lattice at 0.5°.
+
+`<set>/snippets/orient-110/energy-35/temperature-<T>/angle-<tilt>-<index>.xyz`,
 extended XYZ:
 
 ```
@@ -66,10 +73,16 @@ number of vacant sites within 2 Å and 3 Å of the ion (`sn_nvac_2A`,
 
 ## Things to know before using them
 
-- **Depth scale.**  A classical 300 K lattice vibrates less than real
-  diamond (no zero-point motion), so ions channel roughly 25–40% too deep in
-  absolute terms.  Which ions channel, and how little damage a channeled ion
-  leaves, is set by geometry and is not affected.
+- **Depth scale and channeled share.**  A classical 300 K lattice vibrates
+  less than real diamond (no zero-point motion), so too many ions channel
+  and they travel too far.  In a deliberately over-vibrating lattice
+  (1100 K) the share of ions deeper than 100 nm at 0.5° tilt falls from 57%
+  to 30% and the median depth from 144 to 77 nm; real diamond lies between
+  the two (the matching classical temperature is about 700 K), which puts
+  the 300 K depths an estimated 20–45% too deep.  The damage an ion leaves
+  *for a given stop depth* is the same in both lattices, so each file is a
+  fair picture of an ion that stopped at that depth; what carries the
+  uncertainty is the depth label and how common the deep, clean impacts are.
 - **One realisation per entry point.**  Each file is a single stochastic
   cascade; average over files of similar depth rather than reading one.
 - **Deep-channeled ions end as interstitial Sn** with no vacancy next to

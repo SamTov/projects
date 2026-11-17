@@ -20,6 +20,7 @@ analysis/
 ├── damage_ingest.py     CLI: defects per impact -> summary.csv, defect
 │                        .npz files and KMC snippets
 ├── damage_report.py     figures + tables from damage_ingest output
+├── damage_checks.py     quench-length and lattice-vibration checks
 ├── submit-damage.sh     SLURM wrapper for damage_ingest.py
 ├── fold_channel_map.py  entry point -> projected channel cell (maps)
 ├── plot_channel_map.py  three-panel channel-map figure from score CSVs
