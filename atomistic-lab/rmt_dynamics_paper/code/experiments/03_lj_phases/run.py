@@ -53,7 +53,15 @@ def _parse_density_from_log(log_path: Path) -> float:
         return float("nan")
     h, rows = max(blocks, key=lambda b: (b[1][-1][0] - b[1][0][0], len(b[1])))
     idx = h.index("Density")
-    return float(np.mean([r[idx] for r in rows]))
+    rho = np.array([r[idx] for r in rows])
+    if "Volume" in h:
+        # Interleaved writes can splice two lines into one that still parses.
+        # Mass is conserved, so density x volume is the same on every intact
+        # row; drop rows that disagree with the median product.
+        prod = rho * np.array([r[h.index("Volume")] for r in rows])
+        ok = np.abs(prod / np.median(prod) - 1.0) < 1e-4
+        rho = rho[ok]
+    return float(rho.mean()) if rho.size else float("nan")
 
 
 def run_one(cell, config, args):

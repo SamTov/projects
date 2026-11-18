@@ -124,7 +124,10 @@ def run_md(input_file: Path, log_file: Path, ctx: RunContext) -> None:
         return
     # lmp_binary may include an MPI wrapper, e.g. "mpirun -n 8 lmp".
     cmd_prefix = shlex.split(ctx.lmp_binary)
-    cmd = [*cmd_prefix, *ctx.lmp_flags, "-in", str(input_file)]
+    # LAMMPS writes its own log.lammps by default. Experiments that capture
+    # stdout to a file of the same name got two interleaved writers, which
+    # spliced thermo lines; stdout already carries everything, so disable it.
+    cmd = [*cmd_prefix, *ctx.lmp_flags, "-log", "none", "-in", str(input_file)]
     with open(log_file, "w") as fh:
         proc = subprocess.run(
             cmd, cwd=str(ctx.output_dir), stdout=fh, stderr=subprocess.STDOUT,
