@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from pathlib import Path
 
@@ -27,30 +26,34 @@ def _cubic_box_length(n_atoms: int, density_reduced: float, sigma: float) -> flo
 
 
 def _parse_density_from_log(log_path: Path) -> float:
-    """Average the 'density' column in LAMMPS's thermo output over production.
+    """Mean of the thermo 'Density' column over the production run.
 
-    Returns NaN if the log doesn't contain a density column.
+    The log can hold the same thermo block twice (LAMMPS's own log and the
+    captured stdout) interleaved with other output, so only rows with as many
+    numeric fields as the header are kept, and the production block is the
+    one reaching the largest step count after `reset_timestep 0`.
+    Returns NaN if no density column is found.
     """
-    text = log_path.read_text(errors="ignore")
-    # Thermo blocks start with a "Step" header. We take the LAST block (prod).
-    blocks = re.findall(r"^[ \t]*Step.*?^Loop time", text, flags=re.MULTILINE | re.DOTALL)
+    blocks: list[tuple[list[str], list[list[float]]]] = []
+    header: list[str] | None = None
+    for line in log_path.read_text(errors="ignore").splitlines():
+        parts = line.split()
+        if parts and parts[0] == "Step":
+            header = parts
+            blocks.append((header, []))
+            continue
+        if header is None or len(parts) != len(header):
+            continue
+        try:
+            blocks[-1][1].append([float(x) for x in parts])
+        except ValueError:
+            continue
+    blocks = [(h, rows) for h, rows in blocks if rows and "Density" in h]
     if not blocks:
         return float("nan")
-    block = blocks[-1]
-    header = block.splitlines()[0].split()
-    if "Density" not in header:
-        return float("nan")
-    idx = header.index("Density")
-    rows = block.splitlines()[1:-1]  # skip header + "Loop time"
-    values: list[float] = []
-    for row in rows:
-        parts = row.split()
-        if len(parts) > idx:
-            try:
-                values.append(float(parts[idx]))
-            except ValueError:
-                continue
-    return float(np.mean(values)) if values else float("nan")
+    h, rows = max(blocks, key=lambda b: (b[1][-1][0] - b[1][0][0], len(b[1])))
+    idx = h.index("Density")
+    return float(np.mean([r[idx] for r in rows]))
 
 
 def run_one(cell, config, args):
