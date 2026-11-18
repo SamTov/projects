@@ -95,6 +95,7 @@ def run_one(cell, config, args):
         "data_file": str(data_file.name),
         "out_dump": "dump.lammpstrj",
     }
+    context.pop("premelt_T", None)  # pre-melt only for the liquid start
     if init == "liquid":
         context["premelt_T"] = float(fixed["premelt_T"])
         context["premelt_steps"] = int(fixed["premelt_steps"])
@@ -204,7 +205,8 @@ def run_one(cell, config, args):
     write_meta(
         ctx.output_dir / "meta.json",
         {
-            "cell": cell, "species": species, "f_alpha": f_alpha, "f_ab": f_ab,
+            "cell": cell, "species": species, "f_alpha": f_alpha,
+            "f_ab": {f"{a},{b}": v for (a, b), v in f_ab.items()},
             "g_ab": {f"{a},{b}": v for (a, b), v in g_ab.items()},
             "tau_int_fs": tau_int_fs, "box_length_A": list(box),
             "coord_number_NaCl": coord_number,

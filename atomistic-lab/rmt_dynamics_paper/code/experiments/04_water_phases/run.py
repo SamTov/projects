@@ -52,6 +52,9 @@ def run_one(cell, config, args):
     init = str(cell.get("init", "liquid"))
     water_data = ctx.output_dir / "water.data"
     context = {**cell, **fixed, "data_file": str(water_data.name), "out_dump": "dump.lammpstrj"}
+    # The pre-melt stage belongs to the liquid start only; the template
+    # runs it whenever premelt_T is set.
+    context.pop("premelt_T", None)
     if args.ice_data is not None:
         import shutil
         shutil.copy(args.ice_data, water_data)
