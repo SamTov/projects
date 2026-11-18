@@ -1,17 +1,21 @@
 ## TIP4P/2005 water for Experiment 4 (water phases).
-## Uses LAMMPS's tip4p long pair style and SHAKE for rigid O-H.
+## Uses LAMMPS's tip4p long pair style and SHAKE for rigid geometry.
 ##
 ## Jinja2 context expected:
 ##   seed            integer RNG seed
 ##   data_file       LAMMPS data file with 3-site water topology
-##                   (atoms numbered O=1, H=2, with bond/angle types defined)
+##                   (O = type 1 carrying the M-site charge, H = type 2)
 ##   temperature     target T (Kelvin)
 ##   pressure        target P (atm)
-##   timestep        integrator dt (fs), typically 1.0 with SHAKE
+##   barostat        'iso' (liquid start) or 'aniso' (ice start)
+##   cutoff          real-space cutoff for LJ and Coulomb (A)
+##   timestep        integrator dt (fs)
 ##   n_equil         equilibration steps
 ##   n_prod          production steps
-##   sample_every    dump velocity every N steps
+##   sample_every    dump positions every N steps
 ##   out_dump        trajectory output path
+##   premelt_T       optional: equilibrate at this T (NVT) first
+##   premelt_steps   steps of the pre-melt stage
 
 units           real
 atom_style      full
@@ -19,15 +23,17 @@ boundary        p p p
 
 read_data       {{ data_file }}
 
-# TIP4P/2005 parameters.
-# Massless M site is synthesised at position 0.1546 Å from O along HOH bisector.
-pair_style      lj/cut/tip4p/long 1 2 1 1 0.1546 12.0
-pair_coeff      1 1 0.1852 3.1589   # O-O (ε, σ)
-pair_coeff      * 2 0.0 0.0         # H interactions vanish (all through M)
+# TIP4P/2005 (Abascal & Vega, J. Chem. Phys. 123, 234505 (2005)).
+# The O charge (-1.1128 e) is carried on type 1 in the data file and moved
+# by the pair style to the massless M site 0.1546 A along the HOH bisector.
+pair_style      lj/cut/tip4p/long 1 2 1 1 0.1546 {{ cutoff }}
+pair_coeff      1 1 0.1852 3.1589
+pair_coeff      1 2 0.0 0.0
+pair_coeff      2 2 0.0 0.0
+pair_modify     tail yes
 
 bond_style      harmonic
-bond_coeff      1 0.0 0.9572        # rigid, stiffness overridden by SHAKE
-
+bond_coeff      1 0.0 0.9572        # rigid; held by SHAKE
 angle_style     harmonic
 angle_coeff     1 0.0 104.52
 
@@ -35,17 +41,22 @@ kspace_style    pppm/tip4p 1.0e-5
 
 fix             rigid all shake 1.0e-4 100 0 b 1 a 1
 
-velocity        all create {{ temperature }} {{ seed }} mom yes rot yes dist gaussian
-
+velocity        all create {{ premelt_T | default(temperature) }} {{ seed }} mom yes rot yes dist gaussian
 timestep        {{ timestep }}
-fix             integrate all npt temp {{ temperature }} {{ temperature }} 100.0 iso {{ pressure }} {{ pressure }} 1000.0
-
 thermo          1000
-thermo_style    custom step temp press vol density
+thermo_style    custom step temp etotal press vol density
 
+{% if premelt_T is defined and premelt_T %}
+# Liquid start: randomise the lattice configuration before cooling.
+fix             melt all nvt temp {{ premelt_T }} {{ premelt_T }} 100.0
+run             {{ premelt_steps }}
+unfix           melt
+{% endif %}
+
+fix             integrate all npt temp {{ temperature }} {{ temperature }} 100.0 {{ barostat }} {{ pressure }} {{ pressure }} 1000.0
 run             {{ n_equil }}
 
 reset_timestep  0
-dump            d_vel all custom {{ sample_every }} {{ out_dump }} id type xu yu zu vx vy vz
-dump_modify     d_vel sort id
+dump            d_pos all custom {{ sample_every }} {{ out_dump }} id type xu yu zu
+dump_modify     d_pos sort id
 run             {{ n_prod }}

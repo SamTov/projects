@@ -1,15 +1,18 @@
-## Molten NaCl (Tosi–Fumi / Born–Mayer + Coulomb) for Experiment 5.
+## NaCl with the Tosi-Fumi rigid-ion potential for Experiment 5.
 ##
 ## Jinja2 context expected:
 ##   seed            integer RNG seed
 ##   data_file       LAMMPS data file with Na (type 1) / Cl (type 2) atoms
-##   temperature     target T (Kelvin), typically 1100–1800
-##   timestep        integrator dt (fs), typically 1.0
+##   temperature     target T (Kelvin)
+##   pressure        target P (atm)
+##   timestep        integrator dt (fs)
 ##   n_equil         equilibration steps
 ##   n_prod          production steps
-##   sample_every    dump velocity every N steps
+##   sample_every    dump positions every N steps
 ##   out_dump        trajectory output path
-##   cutoff          real-space cutoff (Å) — typical 10–12
+##   cutoff          real-space cutoff (A)
+##   premelt_T       optional: melt at this T (NVT) before equilibrating
+##   premelt_steps   steps of the pre-melt stage
 
 units           real
 atom_style      charge
@@ -17,30 +20,36 @@ boundary        p p p
 
 read_data       {{ data_file }}
 
-# Tosi–Fumi-style Born–Mayer pair potential.
-# Users should double-check A, ρ, C, D against Fumi & Tosi 1964 for their
-# specific system (RbI, NaCl, etc.). The coefficients below are the standard
-# NaCl parameters in kcal/mol and Å.
-pair_style      born/coul/long {{ cutoff | default(12.0) }}
-# pair_coeff <type1> <type2> A rho sigma C D     (LAMMPS Born convention)
-# Placeholder coefficients — review before production runs.
-pair_coeff      1 1   0.2637   0.317  2.340   1.0486   0.4993   # Na-Na
-pair_coeff      1 2   0.2108   0.317  2.755   6.9906   8.6757   # Na-Cl
-pair_coeff      2 2   0.1582   0.317  3.170  72.4003 145.4277   # Cl-Cl
+# Tosi & Fumi, J. Phys. Chem. Solids 25, 45 (1964):
+#   phi_ij = q_i q_j / r + b beta_ij exp((sigma_ij - r)/rho) - C_ij/r^6 - D_ij/r^8
+# with b = 0.338e-19 J, rho = 0.317 A, beta = 1.25 / 1.00 / 0.75 (++ / +- / --),
+# sigma_ij = 2.340 / 2.755 / 3.170 A and C, D as tabulated there.
+# LAMMPS `born` is A exp((sigma - r)/rho) - C/r^6 + D/r^8, so D enters with a
+# minus sign. Energies converted from J to kcal/mol for `units real`.
+pair_style      born/coul/long {{ cutoff }}
+#               i j  A(kcal/mol)  rho(A) sigma(A)  C(kcal/mol A^6)  D(kcal/mol A^8)
+pair_coeff      1 1  6.08115  0.317  2.340  24.1807  -11.5146
+pair_coeff      1 2  4.86492  0.317  2.755  161.2045  -200.0663
+pair_coeff      2 2  3.64869  0.317  3.170  1669.6184  -3353.6300
 
 kspace_style    pppm 1.0e-5
 
-velocity        all create {{ temperature }} {{ seed }} mom yes rot yes dist gaussian
-
+velocity        all create {{ premelt_T | default(temperature) }} {{ seed }} mom yes rot yes dist gaussian
 timestep        {{ timestep }}
-fix             integrate all nvt temp {{ temperature }} {{ temperature }} 100.0
-
 thermo          1000
-thermo_style    custom step temp etotal press vol
+thermo_style    custom step temp etotal press vol density
 
+{% if premelt_T is defined and premelt_T %}
+# Liquid start: melt the lattice, then quench to the target temperature.
+fix             melt all nvt temp {{ premelt_T }} {{ premelt_T }} 100.0
+run             {{ premelt_steps }}
+unfix           melt
+{% endif %}
+
+fix             integrate all npt temp {{ temperature }} {{ temperature }} 100.0 iso {{ pressure }} {{ pressure }} 1000.0
 run             {{ n_equil }}
 
 reset_timestep  0
-dump            d_vel all custom {{ sample_every }} {{ out_dump }} id type q xu yu zu vx vy vz
-dump_modify     d_vel sort id
+dump            d_pos all custom {{ sample_every }} {{ out_dump }} id type xu yu zu
+dump_modify     d_pos sort id
 run             {{ n_prod }}

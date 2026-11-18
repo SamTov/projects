@@ -60,7 +60,7 @@ def fig_hbond_overlap(runs_dir: Path, outfile: Path, target_T: float = 300.0) ->
     pooled_amp: list[np.ndarray] = []
     pooled_deg: list[np.ndarray] = []
     legend_lines = []
-    for run in sorted(runs_dir.glob(f"temperature={target_T:g}*_seed=*")):
+    for run in sorted(runs_dir.glob(f"*temperature={target_T:g}_seed=*")):
         C_path = run / "C_oxygens.npz"
         deg_path = run / "hbond_degree_mean.npy"
         eigvec_path = run / "eigvecs_oxygens.npy"

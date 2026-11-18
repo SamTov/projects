@@ -1,21 +1,33 @@
-# Experiment 4 — Water phases (TIP4P/2005, NPT, P = 1 atm).
-# See experiments.md §4.
+# Experiment 4 — Water phases (TIP4P/2005, NPT, P = 1 atm). See experiments.md §4.
+#
+# Two starting states bracket the melting transition, as for the LJ isobar:
+# a proton-disordered ice Ih crystal (6 x 3 x 3 orthorhombic cells, 432
+# molecules), which superheats, and a liquid melted at 400 K, which
+# supercools. TIP4P/2005 melts at 252 K and has its density maximum near
+# 278 K. The vapour is not simulated: at 1 atm it would need a box several
+# hundred times larger.
+#
+# Positions every 0.1 ps; C is built from interval-mean velocities.
 
 template: water_tip4p2005.in.j2
 
 fixed:
-  n_water: 512                 # 1536 atoms total
+  n_water: 432                 # 1296 atoms
+  ice_cells: [6, 3, 3]         # orthorhombic ice Ih cells -> 432 molecules
   pressure: 1.0                # atm
-  timestep: 1.0                # fs (SHAKE allows 1 fs)
-  n_equil: 1000000             # 1 ns
-  n_prod: 5000000              # 5 ns
-  sample_every: 20             # dump every 20 fs
-  initial_density: 0.997       # g/cm^3 liquid at 298 K
+  cutoff: 10.0                 # Å; shortest box edge is ~22 Å
+  timestep: 2.0                # fs, rigid water under SHAKE
+  premelt_T: 400.0             # K, liquid start only
+  premelt_steps: 25000         # 50 ps
+  n_equil: 250000              # 0.5 ns
+  n_prod: 1500000              # 3 ns
+  sample_every: 50             # 0.1 ps
+  initial_density: 0.997       # g/cm^3, liquid start lattice
   analysis:
     t_max_fs: 4000.0
     remove_mean: true
 
-# Ice Ih endpoint is separate; run with --ice-data path-to-ice.data.
 sweep:
-  temperature: [240.0, 260.0, 280.0, 300.0, 320.0, 350.0, 400.0, 450.0, 500.0]
+  init: [ice, liquid]
+  temperature: [200.0, 220.0, 240.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 340.0]
   seed: [1, 2, 3]

@@ -238,6 +238,47 @@ def parse_lammps_dump_custom(path: Path) -> DumpData:
                     atom_types=types, box=box_last)
 
 
+def thermo_mean(log_path: Path, column: str) -> float:
+    """Mean of one thermo column over the longest-running block of a log.
+
+    Keeps only rows with as many numeric fields as the header, so warnings
+    and spliced lines are ignored; the production block is the one spanning
+    the most steps. Returns NaN if the column is absent.
+    """
+    blocks: list[tuple[list[str], list[list[float]]]] = []
+    header: list[str] | None = None
+    for line in Path(log_path).read_text(errors="ignore").splitlines():
+        parts = line.split()
+        if parts and parts[0] == "Step":
+            header = parts
+            blocks.append((header, []))
+            continue
+        if header is None or len(parts) != len(header):
+            continue
+        try:
+            blocks[-1][1].append([float(x) for x in parts])
+        except ValueError:
+            continue
+    blocks = [(h, r) for h, r in blocks if r and column in h]
+    if not blocks:
+        return float("nan")
+    h, rows = max(blocks, key=lambda b: (b[1][-1][0] - b[1][0][0], len(b[1])))
+    return float(np.mean([r[h.index(column)] for r in rows]))
+
+
+def interval_velocities(dump: "DumpData", dt_sample: float) -> np.ndarray:
+    """Mean velocity over each sampling interval from unwrapped positions.
+
+    (x(t + dt) - x(t)) / dt has the same time integral as the instantaneous
+    velocity but does not alias fast motion when the sampling is sparse, so
+    the correlation matrix can be built from a trajectory written every
+    0.1 ps or so instead of every few fs.
+    """
+    if dump.positions is None:
+        raise RuntimeError("dump has no position columns")
+    return np.diff(dump.positions, axis=0) / float(dt_sample)
+
+
 def write_row(path: Path, row: dict[str, Any]) -> None:
     """Append a single CSV row; writes header if the file doesn't exist yet."""
     import csv

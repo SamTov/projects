@@ -16,17 +16,17 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from _common import (  # noqa: E402
-    add_common_args, enumerate_cells, load_config, parse_lammps_dump_custom,
-    pick_cell, print_sweep, render_template, resolve_run_ctx, run_md,
-    write_meta, write_row,
+    add_common_args, enumerate_cells, interval_velocities, load_config,
+    parse_lammps_dump_custom, pick_cell, print_sweep, render_template,
+    resolve_run_ctx, run_md, thermo_mean, write_meta, write_row,
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from topology import build_water_data, liquid_box_length  # noqa: E402
+from topology import build_ice_ih_data, build_water_data, liquid_box_length  # noqa: E402
 
 from rmt_dynamics import (  # noqa: E402
     build_C, eigendecomposition, eigenvalues, estimate_tau_int,
-    save_C, time_averaged_hbond_degree, vn_entropy,
+    save_C, time_averaged_hbond_degree, vn_entropy, window_T_eff,
 )
 from scipy.stats import spearmanr  # noqa: E402
 
@@ -49,21 +49,27 @@ def run_one(cell, config, args):
         dry_run=args.dry_run, skip_md=args.skip_md,
     )
 
-    # Build the water data file unless overridden by --ice-data.
+    init = str(cell.get("init", "liquid"))
     water_data = ctx.output_dir / "water.data"
+    context = {**cell, **fixed, "data_file": str(water_data.name), "out_dump": "dump.lammpstrj"}
     if args.ice_data is not None:
-        # Copy pre-built ice Ih data file.
         import shutil
         shutil.copy(args.ice_data, water_data)
-    elif not args.skip_md:
-        box = liquid_box_length(n_water, float(fixed["initial_density"]))
-        build_water_data(water_data, n_water, box, seed)
-
-    context = {
-        **cell, **fixed,
-        "data_file": str(water_data.name),
-        "out_dump": "dump.lammpstrj",
-    }
+        context["barostat"] = "aniso"
+    elif init == "ice":
+        nx, ny, nz = (int(x) for x in fixed["ice_cells"])
+        if 8 * nx * ny * nz != n_water:
+            raise ValueError(f"ice_cells {fixed['ice_cells']} hold {8 * nx * ny * nz} molecules, not {n_water}")
+        if not args.skip_md:
+            build_ice_ih_data(water_data, nx, ny, nz, seed)
+        context["barostat"] = "aniso"
+    else:
+        if not args.skip_md:
+            box = liquid_box_length(n_water, float(fixed["initial_density"]))
+            build_water_data(water_data, n_water, box, seed)
+        context["barostat"] = "iso"
+        context["premelt_T"] = float(fixed["premelt_T"])
+        context["premelt_steps"] = int(fixed["premelt_steps"])
     input_path = ctx.output_dir / "input.lammps"
     input_path.write_text(render_template(ctx.template_name, context))
     run_md(input_path, ctx.output_dir / "log.lammps", ctx)
@@ -72,13 +78,13 @@ def run_one(cell, config, args):
         return
 
     dump = parse_lammps_dump_custom(ctx.output_dir / "dump.lammpstrj")
-    velocities = dump.velocities
     atom_types = dump.atom_types
     positions = dump.positions
     box = dump.box
-    if velocities is None:
-        raise RuntimeError("dump has no velocity columns")
     dt_sample_fs = float(fixed["timestep"]) * float(fixed["sample_every"])
+    # Positions are written every 0.1 ps; interval-mean velocities keep the
+    # time integral exact at that spacing.
+    velocities = interval_velocities(dump, dt_sample_fs)
     t_max_fs = float(fixed["analysis"]["t_max_fs"])
 
     def _build_and_save(mask, name):
@@ -88,13 +94,15 @@ def run_one(cell, config, args):
         save_C(ctx.output_dir / f"C_{name}.npz", Cm, metadata={**cell, "variant": name})
         np.save(ctx.output_dir / f"eigvals_{name}.npy", mu)
         np.save(ctx.output_dir / f"eigvecs_{name}.npy", Phi)
-        return Cm, mu, Phi, vn_entropy(Cm)
+        return Cm, mu, Phi, vn_entropy(Cm), window_T_eff(sub, dt_sample_fs, t_max_fs)
 
     o_mask = atom_types == 1
     h_mask = atom_types == 2
     all_mask = np.ones_like(atom_types, dtype=bool)
-    _, mu_O, Phi_O, S_O = _build_and_save(o_mask, "oxygens")
-    _, _, _, S_all = _build_and_save(all_mask, "all")
+    C_O, mu_O, Phi_O, S_O, T_eff_O = _build_and_save(o_mask, "oxygens")
+    C_all, _, _, S_all, T_eff_all = _build_and_save(all_mask, "all")
+    density = thermo_mean(ctx.output_dir / "log.lammps", "Density")
+    diffusion_O = float(np.trace(C_O) / C_O.shape[0])
 
     tau_int_fs = estimate_tau_int(velocities[:, o_mask, :], dt=dt_sample_fs)
 
@@ -152,10 +160,19 @@ def run_one(cell, config, args):
     write_row(
         args.output_dir / "water_summary.csv",
         {
+            "init": init,
             "temperature": float(cell["temperature"]),
             "seed": seed,
+            "density": density,
             "S_oxygens": S_O,
             "S_all": S_all,
+            "S_oxygens_over_logN": S_O / float(np.log(C_O.shape[0])),
+            "S_all_over_logN": S_all / float(np.log(C_all.shape[0])),
+            "T_eff_oxygens": T_eff_O,
+            "T_eff_all": T_eff_all,
+            "N_oxygens": int(C_O.shape[0]),
+            "N_all": int(C_all.shape[0]),
+            "diffusion_O": diffusion_O,
             "tau_int_fs": tau_int_fs,
             "hbond_mean_degree": (
                 float(np.mean(hb_degree_mean)) if hb_degree_mean is not None

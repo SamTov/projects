@@ -24,7 +24,8 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from _common import (  # noqa: E402
-    add_common_args, enumerate_cells, load_config, parse_lammps_dump_custom,
+    add_common_args, enumerate_cells, interval_velocities, load_config,
+    parse_lammps_dump_custom, thermo_mean,
     pick_cell, print_sweep, render_template, resolve_run_ctx, run_md,
     write_meta, write_row,
 )
@@ -33,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from topology import box_length_from_density, build_nacl_data  # noqa: E402
 
 from rmt_dynamics import (  # noqa: E402
-    build_C, contact_graph, coordination_number, estimate_tau_int,
+    build_C, contact_graph, coordination_number, estimate_tau_int, window_T_eff,
     green_kubo_integral, save_C, time_averaged_rdf, vn_entropy,
 )
 from scipy.stats import spearmanr  # noqa: E402
@@ -76,7 +77,8 @@ def _delta_sigma(species, f_alpha, g_ab):
 def run_one(cell, config, args):
     fixed = config["fixed"]
     n_pairs = int(fixed["n_pairs"])
-    box = box_length_from_density(n_pairs, float(fixed["density"]))
+    init = str(cell.get("init", "liquid"))
+    box = box_length_from_density(n_pairs, float(fixed["init_density"][init]))
 
     ctx = resolve_run_ctx(
         config=config, cell=cell, output_root=args.output_dir / "runs",
@@ -93,6 +95,9 @@ def run_one(cell, config, args):
         "data_file": str(data_file.name),
         "out_dump": "dump.lammpstrj",
     }
+    if init == "liquid":
+        context["premelt_T"] = float(fixed["premelt_T"])
+        context["premelt_steps"] = int(fixed["premelt_steps"])
     input_path = ctx.output_dir / "input.lammps"
     input_path.write_text(render_template(ctx.template_name, context))
     run_md(input_path, ctx.output_dir / "log.lammps", ctx)
@@ -101,13 +106,11 @@ def run_one(cell, config, args):
         return
 
     dump = parse_lammps_dump_custom(ctx.output_dir / "dump.lammpstrj")
-    velocities = dump.velocities
     atom_types = dump.atom_types
     positions = dump.positions
     box = dump.box
-    if velocities is None:
-        raise RuntimeError("dump has no velocity columns")
     dt_sample_fs = float(fixed["timestep"]) * float(fixed["sample_every"])
+    velocities = interval_velocities(dump, dt_sample_fs)
     t_max_fs = float(fixed["analysis"]["t_max_fs"])
 
     C = build_C(velocities, dt=dt_sample_fs, t_max=t_max_fs)
@@ -144,6 +147,19 @@ def run_one(cell, config, args):
 
     tau_int_fs = estimate_tau_int(velocities, dt=dt_sample_fs)
     S = vn_entropy(C)
+    T_eff = window_T_eff(velocities, dt_sample_fs, t_max_fs)
+    log_path = ctx.output_dir / "log.lammps"
+    volume = thermo_mean(log_path, "Volume")
+    density = thermo_mean(log_path, "Density")
+    # sigma = e^2 / (V k_B T) * (1/3) int <J(t).J(0)> dt; S_JJ is the
+    # component-averaged integral in Å^2/fs, V in Å^3.
+    e, kB = 1.602176634e-19, 1.380649e-23
+    T = float(cell["temperature"])
+    to_SI = 1e-5 / 1e-30  # (Å^2/fs) / Å^3 -> (m^2/s) / m^3
+    sigma_S_per_m = e * e * S_JJ_from_matrix * to_SI / (volume * kB * T)
+    sigma_NE_S_per_m = e * e * sigma_ne_proportional * to_SI / (volume * kB * T)
+    D_Na = f_alpha.get(1, float("nan")) / max(1, int(mask_na.sum()))
+    D_Cl = f_alpha.get(2, float("nan")) / max(1, int(mask_cl.sum()))
 
     # Structural cross-check: Na-Cl RDF, coordination number, and the
     # leading-SVD-vector / contact-degree correlation.
@@ -198,8 +214,18 @@ def run_one(cell, config, args):
     write_row(
         args.output_dir / "salt_summary.csv",
         {
+            "init": init,
             "temperature": float(cell["temperature"]),
             "seed": int(cell["seed"]),
+            "density": density,
+            "volume_A3": volume,
+            "sigma_S_per_m": sigma_S_per_m,
+            "sigma_NE_S_per_m": sigma_NE_S_per_m,
+            "D_Na_A2_per_fs": D_Na,
+            "D_Cl_A2_per_fs": D_Cl,
+            "S_over_logN": S / float(np.log(C.shape[0])),
+            "T_eff": T_eff,
+            "N": int(C.shape[0]),
             "Delta_sigma_matrix": delta_matrix,
             "Delta_sigma_from_C_charges": delta_from_C,
             "Delta_sigma_from_time_GK": delta_from_time,

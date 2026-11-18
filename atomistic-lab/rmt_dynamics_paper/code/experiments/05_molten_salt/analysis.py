@@ -61,7 +61,7 @@ def fig_rdf_and_coordination(rows, runs_dir: Path, outfile: Path) -> None:
         for r in rows:
             if float(r["temperature"]) != target_T:
                 continue
-            tag = f"temperature={target_T:g}_seed={int(r['seed'])}"
+            tag = f"init={r.get('init', 'liquid')}_temperature={target_T:g}_seed={int(r['seed'])}"
             r_path = runs_dir / tag / "rdf_NaCl_r.npy"
             g_path = runs_dir / tag / "rdf_NaCl_g.npy"
             if r_path.is_file() and g_path.is_file():
@@ -106,7 +106,7 @@ def fig_crossblock_spectrum(rows, runs_dir: Path, outfile: Path) -> None:
     cohort = [r for r in rows if float(r["temperature"]) == T_target]
     svs = []
     for r in cohort:
-        tag = f"temperature={T_target:g}_seed={int(r['seed'])}"
+        tag = f"init={r.get('init', 'liquid')}_temperature={T_target:g}_seed={int(r['seed'])}"
         p = runs_dir / tag / "cross_block_svd.npy"
         if p.is_file():
             svs.append(np.load(p))
