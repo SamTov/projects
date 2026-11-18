@@ -25,7 +25,9 @@ Nernst--Einstein-type decompositions of such coefficients into a self contributi
 Those derivations are, however, written down coefficient by coefficient; to our knowledge they have not been cast in a species-generic form that treats on a single footing any dissipative quantity derivable from a single-particle primitive.
 We do so here.
 The resulting formalism makes the \emph{same} distinct-correlation correction $\Delta^{\lambda}$ --- and, as we will show in Section~\ref{subsec:atom-wise-correlation-matrix}, the \emph{same} underlying matrix $C$ --- the common object behind self-diffusion, ionic conductivity, electrophoretic mobility, and the other transport coefficients built from a particle-wise observable with a species-specific scalar.
-The notation used throughout this section is collected in Table~\ref{tab:definitions}.
+The notation used throughout is collected in Table~\ref{tab:definitions}.
+
+\input{input/definitions}
 
 Consider a dissipative quantity $\lambda$ related by a Green--Kubo expression to a system-wide observable $A$,
 \begin{align}
@@ -97,7 +99,7 @@ This decomposition exposes the microscopic origin of transport coefficients and 
 
 We note in closing a scope caveat.
 The derivation above presumes that $A$ admits a single-particle expansion of the form of Equation~\ref{eqn:localproperties}, which is immediate for self-diffusion, ionic conductivity, and electrophoretic mobility.
-For transport coefficients whose flux carries an explicit pair-interaction contribution --- shear viscosity and thermal conductivity being the canonical examples --- an Irving--Kirkwood-type atom-wise partition of the interaction term~\cite{TODO:irving-kirkwood} is required to bring the observable into the required form, after which the same decomposition applies.
+For transport coefficients whose flux carries an explicit pair-interaction contribution --- shear viscosity and thermal conductivity being the canonical examples --- an Irving--Kirkwood-type atom-wise partition of the interaction term~\cite{irving1950} is required to bring the observable into the required form, after which the same decomposition applies.
 We do not develop that partition here and restrict the experiments in Section~\ref{sec:experiments} to transport coefficients that admit the single-particle expansion directly.
 
 \subsection{The Atom-Wise Correlation Matrix}
@@ -117,7 +119,7 @@ Moving from those linear functionals to the spectrum of $C$ is the step that tak
 $C$ is itself a finite-sample estimator.
 For a trajectory of length $T_{\text{traj}}$, Equation~\ref{eqn:Cij} is evaluated as a time-origin average, so the entries of $C$ carry sampling noise whose magnitude is set by an effective number of independent samples $T_{\text{eff}}$, fixed by the trajectory length relative to the lag $\tau_{\max}$ over which the integral is evaluated (Section~\ref{subsec:de-noising-correlation-matrices}).
 Across an ensemble of independent trajectories, each realisation of $C$ is drawn from a distribution determined by the underlying dynamics, and $C$ is natural to regard as a random matrix.
-In the limiting case of non-interacting particles, the $|\N|$ time series $\{a_{i}(t)\}$ are independent, so the off-diagonal entries of $C$ are inner products of independent signals and have zero mean; the resulting spectrum converges to a Marchenko--Pastur distribution~\cite{TODO:marchenko1967} set by $|\N|$ and $T_{\text{eff}}$.
+In the limiting case of non-interacting particles, the $|\N|$ time series $\{a_{i}(t)\}$ are independent, so the off-diagonal entries of $C$ are inner products of independent signals and have zero mean; the resulting spectrum converges to a Marchenko--Pastur distribution~\cite{marchenko1967} set by $|\N|$ and $T_{\text{eff}}$.
 This uncorrelated limit provides the null against which we measure deviation: physical signal --- bonded pairs, solvation shells, collective modes associated with phase behaviour --- appears as structure inconsistent with the noise-only reference, most directly as eigenvalue outliers above the bulk edge.
 
 \subsection{Spectral Observables}
@@ -160,5 +162,5 @@ The \emph{von Neumann entropy} of $C$ is defined as
 \end{align}
 where $\{\mu_{k}\}$ are the eigenvalues of $C$.
 $S(C)$ is a scalar summary of how broadly correlation is distributed across the eigenmodes of $C$: it is maximal when eigenvalues are uniform (fully delocalised correlation) and minimal when a single eigenvalue dominates (one collective mode).
-$S(C)$ can also be read as an entropy of the trace-normalised operator $C / \mathrm{Tr}(C)$, which makes explicit the formal parallel with the von Neumann entropy of a density matrix in quantum statistics and with the spectral configurational entropy of Schlitter~\cite{TODO:schlitter1993} applied to positional covariance.
+$S(C)$ can also be read as an entropy of the trace-normalised operator $C / \mathrm{Tr}(C)$, which makes explicit the formal parallel with the von Neumann entropy of a density matrix in quantum statistics and with the spectral configurational entropy of Schlitter~\cite{schlitter1993} applied to positional covariance.
 We use $S(C)$ as the primary spectral observable throughout the experiments that follow.

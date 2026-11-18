@@ -272,6 +272,44 @@ def bonding_figure(res: Path, outfile: Path) -> None:
     plt.close(fig)
 
 
+# ---------------------------------------------------------- noise null ---
+def noise_figure(res: Path, outfile: Path) -> None:
+    d = np.load(res / "01_noise_convergence" / "synthetic_spectrum_L50.npz")
+    rows = read_csv(res / "01_noise_convergence" / "synthetic_validation.csv")
+    N, s2 = int(d["N"]), float(d["sigma2"])
+    fig, axes = plt.subplots(1, 2, figsize=(FULL_WIDTH * 0.72, 2.3), constrained_layout=True)
+    fig.get_layout_engine().set(w_pad=0.06, wspace=0.1)
+    ax = axes[0]
+    mu = d["mu"] / s2
+    ax.hist(mu, bins=np.linspace(0, 2.6, 52), density=True, histtype="stepfilled", color=BAND,
+            edgecolor=INK_2, lw=1.0, label="spectrum of $C$")
+    for T, color, ls, lbl in [(float(d["T_window"]), SERIES[0], "-", "MP, lag-window $T_{\\mathrm{eff}}$"),
+                              (float(d["T_naive"]), SERIES[1], "--", "MP, $T_{\\mathrm{traj}}/\\tau_{\\mathrm{int}}$")]:
+        lo, hi = mp_edges(N, T, 1.0)
+        x = np.linspace(lo, hi, 400)
+        ax.plot(x, mp_density(x, N, T, 1.0), color=color, ls=ls, lw=1.5, label=lbl)
+    ax.set_xlabel(r"eigenvalue $\mu/\sigma^2$")
+    ax.set_ylabel("density")
+    ax.set_xlim(0, 2.6)
+    soft_legend(ax, loc="upper right")
+    ax = axes[1]
+    for kind, color, mk, lbl in [("window", SERIES[0], "o", "lag-window $T_{\\mathrm{eff}}$"),
+                                 ("naive", SERIES[1], "s", "$T_{\\mathrm{traj}}/\\tau_{\\mathrm{int}}$")]:
+        r = [x for x in rows if x["T_eff_kind"] == kind]
+        ax.plot([fnum(x["lag_over_tau"]) for x in r], [fnum(x["KS"]) for x in r], color=color, marker=mk, label=lbl)
+    ax.set_xscale("log")
+    ax.set_xticks([2, 5, 10, 20])
+    ax.set_xticklabels(["2", "5", "10", "20"])
+    ax.set_ylim(0, 0.32)
+    ax.set_xlabel(r"lag $\tau_{\max}/\tau_{\mathrm{int}}$")
+    ax.set_ylabel("Kolmogorov–Smirnov distance")
+    soft_legend(ax, loc="upper left")
+    for ax, l in zip(axes, "ab"):
+        panel_label(ax, l)
+    fig.savefig(outfile)
+    plt.close(fig)
+
+
 # ------------------------------------------------------------ LJ phases ---
 BRANCHES = [("fcc", "crystal start"), ("dense", "dense start"), ("dilute", "dilute start")]
 
@@ -363,6 +401,7 @@ def main() -> int:
     res, figs = Path(sys.argv[1]), Path(sys.argv[2])
     figs.mkdir(parents=True, exist_ok=True)
     apply_paper_style()
+    noise_figure(res, figs / "fig_noise_null.pdf")
     bonding_figure(res, figs / "fig_bonding.pdf")
     table = lj_figure(res, figs / "fig_lj_phases.pdf")
     with open(res / "03_lj_phases" / "entropy_excess.csv", "w", newline="") as fh:

@@ -28,7 +28,7 @@ directly from the trajectory, averaging over atoms, and set $\tau_{\max} = 10\, 
 
 \subsection{De-noising via the Marchenko--Pastur Null}
 \label{subsec:de-noising-correlation-matrices}
-For a system of $|\N|$ non-interacting particles sampled at $T_{\text{eff}}$ independent times, the bulk of the eigenvalue distribution of the trace-normalised correlation matrix $\hat{C} / \mathrm{Tr}(\hat{C})$ follows the Marchenko--Pastur density~\cite{TODO:marchenko1967},
+For a system of $|\N|$ non-interacting particles sampled at $T_{\text{eff}}$ independent times, the bulk of the eigenvalue distribution of the trace-normalised correlation matrix $\hat{C} / \mathrm{Tr}(\hat{C})$ follows the Marchenko--Pastur density~\cite{marchenko1967},
 \begin{align}
     \rho_{\text{MP}}(\mu) = \frac{1}{2 \pi q\, \sigma^{2}\, \mu} \sqrt{(\mu_{+} - \mu)(\mu - \mu_{-})}, \qquad \mu \in [\mu_{-}, \mu_{+}],
     \label{eqn:mp-density}
@@ -58,37 +58,39 @@ We report two entropy quantities: the raw $S(\hat{C})$ of Equation~\ref{eqn:vnen
 where $S_{\text{bulk}}$ is the von Neumann entropy computed from only those eigenvalues below $\mu_{\text{cut}}$.
 $S_{\text{signal}}$ is the component of the spectrum that cannot be explained by the noise-only null and is the quantity most sensitive to the physical features we want to expose.
 
-We validate this machinery on synthetic trajectories with prescribed correlation structure before applying it to molecular dynamics output; the validation is reported in Experiment~\ref{subsec:convergence-of-the-noise-term}.
+We validate this machinery on synthetic trajectories without correlation structure before applying it to molecular dynamics output; the validation is reported in Section~\ref{subsec:convergence-of-the-noise-term}.
 
 \subsection{Molecular Dynamics Simulations}
 \label{subsec:molecular-dynamics-simulations}
-Simulations fall into three families, one per experimental system, and use the classical molecular dynamics code LAMMPS~\cite{TODO:lammps} unless otherwise noted.
+Simulations fall into three families, one per experimental system, and use the classical molecular dynamics code LAMMPS~\cite{thompson2022} unless otherwise noted.
 Production runs of interacting systems use a Nos\'e--Hoover thermostat with a coupling time of $0.1$~ps in the constant-$NVT$ ensemble, and a Nos\'e--Hoover barostat with coupling constants of $0.1$~ps (thermostat) and $1.0$~ps (barostat) where $NPT$ is required, so that the dynamics conserve total momentum and the distinct correlations are not damped by a stochastic bath.
-The non-interacting reference, which has no other source of decorrelation, uses Langevin dynamics with a damping time of $0.1$~ps.
+The validation of the noise null in Section~\ref{subsec:convergence-of-the-noise-term} uses synthetic Ornstein--Uhlenbeck velocities instead of a simulation.
 Each run is initialised from a randomly seeded velocity distribution and separately reported in output metadata, and every reported observable is averaged over a minimum of three and up to five independent seeds.
 
-\paragraph{Lennard-Jones fluids (Experiments~\ref{subsec:convergence-of-the-noise-term}, \ref{subsec:bond-addition}, and~\ref{subsec:lennard-jones-phases}).}
+\paragraph{Lennard-Jones systems (Sections~\ref{subsec:bond-addition} and~\ref{subsec:lennard-jones-phases}).}
 The Lennard-Jones potential is taken with argon parameters $\sigma = 3.405$~\AA{}, $\varepsilon / k_{B} = 119.8$~K, and particle mass $39.948$~amu, truncated at $r_{c} = 3\,\sigma$.
-System size is $|\N| = 500$ for the phase sweep and $|\N| = 512$ for the bond-addition experiment, and we sweep $|\N| \in \{64, 256, 1024, 4096\}$ in the noise-convergence study.
+System size is $|\N| = 500$ for the phase sweep and $|\N| = 512$ or $216$ for the two bond-addition protocols.
 The integration timestep is $\delta t = 2$~fs.
 For the phase sweep we equilibrate for $1.5 \times 10^{5}$ steps in $NPT$ and run for $5 \times 10^{5}$ steps of production along the $P = 20$~atm isobar, which lies below the critical pressure and, unlike the $1$~atm isobar, has a liquid range of several tens of kelvin.
 Because a periodic system of this size superheats and supercools, every temperature is simulated from three initial conditions --- an fcc crystal, a dense disordered configuration at $\rho = 0.8\,\sigma^{-3}$, and a dilute gas at $\rho = 0.02\,\sigma^{-3}$ --- so that each transition is bracketed from both sides;
-for the bond-addition experiment we equilibrate an $NVT$ liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$, insert bonds into the equilibrated configuration, re-thermalise for $10^{4}$ steps, and run for $5 \times 10^{5}$ production steps, with the bond-free reference restarted from the same configuration; a second set of bond-addition runs uses $|\N| = 216$, bonds within $1.3\,\sigma$ only, and $1.3 \times 10^{7}$ production steps with positions written every $250$ steps; for the non-interacting noise study we disable the pair potential entirely and run at low density and high temperature.
+for the bond-addition experiment we equilibrate an $NVT$ liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$, insert bonds into the equilibrated configuration, re-thermalise for $10^{4}$ steps, and run for $5 \times 10^{5}$ production steps, with the bond-free reference restarted from the same configuration; a second set of bond-addition runs uses $|\N| = 216$, bonds within $1.3\,\sigma$ only, and $1.3 \times 10^{7}$ production steps with positions written every $250$ steps.
 Harmonic bonds for the bond-addition experiment are added between random eligible pairs with stiffness $k_{b} = 100\,\varepsilon/\sigma^{2}$ and rest length set at the current pair separation.
-When run-time bond insertion is required we use ESPResSo~\cite{TODO:espresso} in place of LAMMPS.
+Bonds are inserted by writing a bonded data file from the equilibrated configuration and restarting from it.
 
-\paragraph{Water (Experiment~\ref{subsec:water-phases}).}
-Water is modelled with TIP4P/2005~\cite{TODO:tip4p-2005}, with rigid geometry maintained by SHAKE.
-We use $|\N_{\text{water}}| = 512$ molecules (1536 atoms) in a cubic box with periodic boundary conditions, a $10$~\AA{} real-space cutoff for the Lennard-Jones contribution, and a particle-particle particle-mesh Ewald treatment of long-range electrostatics with a real-space cutoff of $12$~\AA{}.
-The integration timestep is $\delta t = 1$~fs.
-The liquid branch is equilibrated in $NPT$ at $P = 1$~atm for $1$~ns and run for $5$~ns of production at each temperature in $\{240, 260, 280, 300, 320, 350, 400, 450, 500\}$~K; the ice branch at $240$~K is initialised from a proton-disordered ice Ih configuration and monitored through a pair correlation function to confirm the crystalline structure is retained.
-Velocities are written every $20$~fs.
+\paragraph{Water (Section~\ref{subsec:water-phases}).}
+Water is modelled with the rigid TIP4P/2005 model~\cite{abascal2005}, held rigid by SHAKE, with $432$ molecules ($1296$ atoms), a $10$~\AA{} real-space cutoff for both the Lennard-Jones and Coulomb terms with a long-range dispersion correction, and particle-particle particle-mesh electrostatics.
+The integration timestep is $\delta t = 2$~fs.
+Along the $1$~atm isobar, every temperature in $\{200, 220, 240, 260, 270, 280, 290, 300, 310, 320, 340\}$~K is simulated from two initial states with three seeds each: a proton-disordered ice Ih crystal of $6 \times 3 \times 3$ orthorhombic cells, relaxed with an anisotropic barostat, and a liquid melted at $400$~K for $50$~ps before cooling, relaxed isotropically.
+The ice configuration is generated to satisfy the Bernal--Fowler rules~\cite{bernal1933} by orienting the hydrogen-bond network along a random Euler circuit of the four-coordinated oxygen lattice, which assigns every oxygen exactly two donated and two accepted bonds, and has zero net dipole.
+Each run is equilibrated for $0.5$~ns and followed for $3$~ns, with positions written every $0.1$~ps.
 
-\paragraph{Molten salt (Experiment~\ref{subsec:molten-salt-ionic-conductivity}).}
-Molten NaCl is modelled with the Tosi--Fumi pair potential~\cite{TODO:tosi-fumi} at $216$ ion pairs (432 atoms) in a cubic $NVT$ box set to the experimental density of $1.54$~g\,cm$^{-3}$.
-Long-range electrostatics are again treated with PPPM.
-The integration timestep is $\delta t = 1$~fs.
-At each temperature in $\{1100, 1200, 1400, 1600, 1800\}$~K we equilibrate for $200$~ps and run for $2$~ns of production; velocities are written every $10$~fs.
+\paragraph{Molten salt (Section~\ref{subsec:molten-salt-ionic-conductivity}).}
+NaCl is modelled with the Tosi--Fumi rigid-ion potential~\cite{fumi1964,tosi1964} with $256$ ion pairs, a $11$~\AA{} real-space cutoff and particle-particle particle-mesh electrostatics, in the constant-$NPT$ ensemble at $1$~atm with $\delta t = 1$~fs.
+Every temperature in $\{900, 1000, 1100, 1200, 1300, 1400, 1600, 1800\}$~K is simulated from a rock-salt crystal and from a liquid melted at $2000$~K for $20$~ps, with three seeds each; runs are equilibrated for $100$~ps and followed for $1.5$~ns, with positions written every $50$~fs.
+
+\paragraph{Correlation matrices from positions.}
+Where positions rather than velocities are recorded (the long-lag bond-addition runs, water and the salt), $C$ is built from the mean velocity over each sampling interval, $[\mathbf{r}_{i}(t + \delta t) - \mathbf{r}_{i}(t)]/\delta t$, using unwrapped coordinates.
+This has the same time integral as the instantaneous velocity and does not alias fast motion into the zero-frequency estimate, so the sampling interval can be chosen for storage rather than for the fastest vibration.
 
 \paragraph{Reproducibility.}
 All input decks, analysis scripts, and random seeds used to generate the figures in Section~\ref{sec:experiments} are available in the repository described in Section~\ref{sec:data-and-availability}; each figure is regenerable from a single command and each run records its seed, source commit, and input hash in a provenance file.

@@ -11,8 +11,8 @@ Each of these reductions discards the particle-wise matrix structure from which 
 Working backwards from such a coefficient to its microscopic definition recovers a sum over pairs of particles of an integrated velocity (or current) cross-correlation, and that object --- an $|\N| \times |\N|$ real symmetric matrix over all atoms in the system --- is seldom examined on its own terms.
 
 This omission is not for lack of tools.
-Correlation matrices constructed from high-dimensional data are studied extensively in other settings, where random matrix theory (RMT) provides a natural language for distinguishing physical structure from finite-sampling noise~\cite{TODO:plerou1999,TODO:laloux1999,TODO:bouchaud2009}.
-In the molecular-dynamics literature, the closest relatives are \emph{configurational} in nature: Schlitter's formula~\cite{TODO:schlitter1993} and its refinements~\cite{TODO:andricioaei2001} compute an entropy from the spectrum of the mass-weighted positional covariance matrix, and essential-dynamics~\cite{TODO:amadei1993} / quasi-harmonic analyses diagonalise the same object to extract collective modes.
+Correlation matrices constructed from high-dimensional data are studied extensively in other settings, where random matrix theory (RMT) provides a natural language for distinguishing physical structure from finite-sampling noise~\cite{plerou1999,laloux1999,bouchaud2011}.
+In the molecular-dynamics literature, the closest relatives are \emph{configurational} in nature: Schlitter's formula~\cite{schlitter1993} and its refinements~\cite{andricioaei2001} compute an entropy from the spectrum of the mass-weighted positional covariance matrix, and essential-dynamics~\cite{amadei1993} / quasi-harmonic analyses diagonalise the same object to extract collective modes.
 The matrix assembled from integrated velocity cross-correlations --- the object that actually appears in the Green--Kubo decomposition of transport coefficients --- has, to our knowledge, not been treated with the same spectral machinery.
 
 In this work we do so, and in doing so make a contribution in two parts.
@@ -25,4 +25,4 @@ Using Lennard-Jones fluids, a controlled bond-addition protocol, water across it
 The remainder of the paper is organised as follows.
 Section~\ref{sec:theory} reviews the Onsager and Green--Kubo framework in a form suited to species-wise decomposition, introduces the matrix $C$ and the spectral quantities we use to characterise it, and states the RMT null.
 Section~\ref{sec:methods} describes the simulation protocols, the construction of $C$ from a trajectory, and the noise-correction procedure.
-Section~\ref{sec:experiments} presents the four experimental studies described above.
+Section~\ref{sec:experiments} validates the noise null and presents the four studies described above, and Section~\ref{sec:conclusion} summarises what the spectrum of $C$ does and does not resolve.
