@@ -58,19 +58,64 @@ With $D \approx 2.2 \times 10^{-4}$~\AA$^{2}$\,fs$^{-1}$ and bond lengths of up 
 Re-evaluating a single $k = 16$ trajectory with longer lags confirms the trend: the bonded relative-motion mode falls from $0.61$ at $2$~ps to $0.57$, $0.53$, $0.47$ and $0.39$ at $5$, $10$, $20$ and $40$~ps, while unbonded pairs remain at $0.98$ to $0.99$.
 For a $1$~ns trajectory these longer lags leave too few independent samples for the bulk edge to be defined ($q > 1$ beyond $10$~ps), so resolving individual bonds spectrally requires trajectories that are longer in proportion to the lag.
 
-\subsection{Lennard-Jones Phases}
-\label{subsec:lennard-jones-phases}
-As a first test of the spectral observables introduced in Section~\ref{subsec:interpreting-atomic-correlation-matrices}, we study a single-component Lennard-Jones system swept across its solid, liquid and gas regimes.
-Temperatures are reported in Kelvin using argon parameters; the simulation protocol is summarised in Section~\ref{subsec:molecular-dynamics-simulations}.
-Figure~\ref{fig:lj-results} compares the mass density (a) with the von Neumann entropy of the atom-wise velocity correlation matrix (b) across the scanned temperature range.
-A solid-to-liquid change is visible in both observables near $T \approx 20$--$25$~K, but the entropy shows a noticeably sharper step there than the density.
-At $T \gtrsim 85$~K the system leaves the condensed phase, which is reflected as a collapse in both quantities.
+We therefore repeat the experiment under conditions chosen to satisfy $\tau_{\max} \gg r_{0}^{2}/6D$ while keeping $q$ small: $|\N| = 216$ atoms at the same state point, bonds restricted to the first coordination shell ($r_{0} < 1.3\,\sigma$), $\tau_{\max} = 100$~ps, and $26$~ns of production per run, for which $T_{\text{eff}} \approx 1170$ and $q \approx 0.18$.
+Positions are recorded every $0.5$~ps and $C$ is built from the mean velocity over each sampling interval, which preserves the time integral at this sampling rate.
+In this regime the bond signature is spectral as well as pair-wise (Figure~\ref{fig:bond-long}).
+The relative-motion mode of a bonded pair falls to $0.132 \pm 0.005$ of the free value at $k = 8$ and stays between $0.13$ and $0.15$ up to $k = 108$, well below the lower bulk edge of the bond-free liquid at $0.33$.
+In all three seeds, exactly $8$ and $27$ eigenvalues leave the bulk through its lower edge for $8$ and $27$ bonds, in addition to the zero mode from momentum conservation, and $51$--$52$ do so for $54$ bonds.
+At $k = 108$, where bonded atoms make up most of the system and the diffusive baseline shifts, the count is $91$--$95$ for $106$--$108$ constraints.
+The eigenvectors of these modes reproduce the bond graph: the lowest eigenvectors, as many as there are constraints, capture $86\%$ of the constraint space for $k = 8$ and $94\%$ for $k = 27$ and $k = 54$, against $4\%$, $13\%$ and $25\%$ for randomly oriented modes.
+The bond-free liquid has a single eigenvalue above the upper edge in this regime, compared with $11$ to $12$ at $\tau_{\max} = 2$~ps.
+The von Neumann entropy again decreases monotonically, from $5.2791 \pm 0.0005$ without bonds to $5.2590$, $5.2101$, $5.1465$ and $5.0448$ for $k = 8$, $27$, $54$ and $108$ ($\ln |\N| = 5.375$).
+
 \begin{figure}
     \centering
-    \includegraphics[width=\linewidth]{figures/lj-experiment.pdf}
-    \caption{Lennard-Jones sweep as a function of temperature. (a) Mass density. (b) Von Neumann entropy of the atom-wise velocity correlation matrix $C$ [Equation~\ref{eqn:Cij}]. The solid-to-liquid change near $20$--$25$~K is resolved more sharply by the entropy than by the density, and the loss of the condensed phase above $\sim 85$~K is visible in both.}
+    \includegraphics[width=\linewidth]{figures/fig_bond_long.pdf}
+    \caption{Bond addition with $\tau_{\max} = 100$~ps, $|\N| = 216$ and nearest-neighbour bonds, three seeds per point. Left: eigenvalues below the lower Marchenko--Pastur edge of the bond-free liquid, excluding the momentum zero mode, against the number of independent bond constraints. Right: fraction of the bond-constraint space captured by the same number of lowest eigenvectors, with the expectation for random modes.}
+    \label{fig:bond-long}
+\end{figure}
+
+Bonding is therefore read off the spectrum of $C$ as a count of sub-bulk eigenvalues, one per constraint, and off its eigenvectors as the bonding topology, provided the integration lag exceeds the time a free pair needs to diffuse over the bond length.
+At shorter lags the same information is present pair by pair but does not separate from the noise bulk.
+
+\subsection{Lennard-Jones Phases}
+\label{subsec:lennard-jones-phases}
+We next follow $C$ across the solid, liquid and vapour phases of a single-component Lennard-Jones system with argon parameters, $|\N| = 500$, along the $P = 20$~atm isobar from $20$ to $160$~K.
+The pressure is chosen to be below the critical pressure but high enough that the liquid is stable over several tens of kelvin; at $1$~atm the liquid range is only a few kelvin.
+Each temperature is simulated from an fcc crystal, from a dense disordered configuration and from a dilute gas, with three seeds each, so that the hysteresis of the first-order transitions in a $500$-atom box is visible rather than hidden; the protocol is given in Section~\ref{subsec:molecular-dynamics-simulations}.
+$C$ is built with $\tau_{\max} = 2$~ps.
+
+Because $T_{\text{eff}}$, and hence $q$, changes by an order of magnitude across the isobar, the raw entropy $S(C)$ mixes physical structure with the sampling noise of Section~\ref{subsec:de-noising-correlation-matrices}: in the liquid, for example, $S(C)/\ln|\N|$ falls from $0.9805$ to $0.9758$ between $80$ and $130$~K largely because $q$ rises from $0.21$ to $0.30$.
+We therefore report the entropy deficit $\Delta S = S_{\text{MP}}(q) - S(C)$, where $S_{\text{MP}}(q)$ is the mean entropy of a white Wishart matrix of the same size and aspect ratio, evaluated numerically.
+$\Delta S$ is zero for a spectrum indistinguishable from noise and positive when correlation is concentrated in fewer modes than noise alone would produce.
+In the vapour $q$ exceeds one, where the moment-matched null is not reliable, and $\Delta S$ is not reported.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/fig_lj_isobar.pdf}
+    \caption{Lennard-Jones system along the $20$~atm isobar from three initial conditions, three seeds per point. (a) Mass density. (b) Entropy deficit of $C$ relative to the Marchenko--Pastur null at the same aspect ratio, shown where $q < 0.6$. (c) Mean diagonal element of $C$, proportional to the self-diffusion coefficient.}
     \label{fig:lj-results}
 \end{figure}
+
+Figure~\ref{fig:lj-results} shows the three branches.
+The crystal remains crystalline up to $90$~K and melts between $90$ and $95$~K, where its density drops from $1.542$ to $1.294$~g\,cm$^{-3}$.
+The two disordered starts are liquid from $60$~K upwards and solidify between $50$ and $60$~K into a solid whose density, $1.65$--$1.70$~g\,cm$^{-3}$, is below that of the crystal at the same temperature; we did not determine whether it is amorphous or polycrystalline.
+On heating, the liquid branches remain liquid up to $130$~K and vaporise by $135$~K, while the dilute start condenses only between $110$ and $115$~K, where the three seeds split between liquid and vapour.
+Melting coexistence on this isobar therefore lies between $50$ and $95$~K and liquid--vapour coexistence between $110$ and $135$~K.
+
+The entropy deficit separates the three condensed states.
+In the crystal $\Delta S/\ln|\N|$ rises from $0.040$ at $20$~K to $0.064$ at $90$~K; in the disordered solid it is larger, $0.062$ to $0.074$; and in the liquid it is an order of magnitude smaller, $0.0097$ at $60$~K, decaying monotonically to $10^{-4}$ at $120$~K and to zero within the seed scatter of a few $10^{-5}$ above.
+The seed-to-seed scatter in the liquid is about $10^{-4}$ or smaller, so this decay is resolved at every temperature.
+The two disordered starts give identical $\Delta S$ wherever they are in the same phase, and differ from the crystal branch by a factor of about $1.5$ at the same temperature and similar density, so $\Delta S$ distinguishes the crystalline from the disordered solid as well as the solid from the liquid.
+
+Every step in $\Delta S$ coincides with a step in density and in diffusion at the same grid point, on every branch, so the spectral and the thermodynamic observables locate the transitions at the same temperatures.
+On the $5$~K grid used here both steps are complete within one interval: the full widths at half maximum of $|d\rho/dT|$ and $|dS/dT|$ at the boiling transition are $10.3$ and $10.3$~K for the dense branch and $10.3$ and $10.4$~K for the crystal branch, and $11.4$ and $10.2$~K at melting on the crystal branch, all set by the grid spacing.
+These data therefore do not show that $S(C)$ resolves a transition more sharply than the density.
+
+The physical content of $\Delta S$ differs between the phases.
+In the solids the diagonal of $C$ is two orders of magnitude smaller than in the liquid (Figure~\ref{fig:lj-results}c) and, as noted in Section~\ref{subsec:interpreting-atomic-correlation-matrices}, $C$ vanishes for a non-diffusing solid in the limit of long lags; at $\tau_{\max} = 2$~ps its structure reflects vibrational correlations that have not decayed within the window.
+In the liquid the deficit reflects correlated displacements of neighbouring atoms over $2$~ps, which weaken as temperature rises until the spectrum is indistinguishable from the noise null.
+$\Delta S$ is not a function of the diffusion coefficient alone: it falls by a factor of six at melting while the diffusion coefficient rises, and continues to fall within the liquid while the diffusion coefficient rises further, but the solid branches show the opposite trend, with $\Delta S$ rising alongside diffusion.
 
 \subsection{Water Phases}
 \label{subsec:water-phases}
