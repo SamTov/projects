@@ -23,6 +23,9 @@ fixed:
   n_prod: 1500000              # 3 ns
   sample_every: 50             # 0.1 ps
   initial_density: 0.997       # g/cm^3, liquid start lattice
+  # Ice melts during equilibration at these temperatures; the anisotropic
+  # cell then collapses until PPPM fails, so they use an isotropic barostat.
+  iso_ice_T: [320.0, 340.0]
   analysis:
     t_max_fs: 4000.0
     remove_mean: true

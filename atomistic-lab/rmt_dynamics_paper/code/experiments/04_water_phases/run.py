@@ -65,7 +65,12 @@ def run_one(cell, config, args):
             raise ValueError(f"ice_cells {fixed['ice_cells']} hold {8 * nx * ny * nz} molecules, not {n_water}")
         if not args.skip_md:
             build_ice_ih_data(water_data, nx, ny, nz, seed)
-        context["barostat"] = "aniso"
+        # Anisotropic relaxation lets the crystal cell find its own shape, but
+        # when the ice melts during equilibration the cell can collapse along
+        # one axis until PPPM fails; temperatures listed in iso_ice_T use an
+        # isotropic barostat instead.
+        iso_T = [float(t) for t in fixed.get("iso_ice_T", [])]
+        context["barostat"] = "iso" if float(cell["temperature"]) in iso_T else "aniso"
     else:
         if not args.skip_md:
             box = liquid_box_length(n_water, float(fixed["initial_density"]))
@@ -166,6 +171,7 @@ def run_one(cell, config, args):
             "init": init,
             "temperature": float(cell["temperature"]),
             "seed": seed,
+            "barostat": context["barostat"],
             "density": density,
             "S_oxygens": S_O,
             "S_all": S_all,
