@@ -397,6 +397,73 @@ def lj_figure(res: Path, outfile: Path, N: int = 500) -> list[dict]:
     return table
 
 
+# ----------------------------------------------------------- molten salt ---
+SALT_BRANCHES = [("crystal", "crystal start"), ("liquid", "liquid start")]
+
+
+def _branch_stats(rows, key, init, f=lambda r, v: v):
+    groups = defaultdict(list)
+    for r in rows:
+        if r["init"] == init:
+            groups[float(r["temperature"])].append(f(r, fnum(r[key])))
+    Ts = np.array(sorted(groups))
+    return Ts, np.array([np.mean(groups[T]) for T in Ts]), np.array([np.std(groups[T]) for T in Ts])
+
+
+def salt_figure(res: Path, outfile: Path, N: int = 512) -> list[dict]:
+    rows = read_csv(res / "05_molten_salt" / "salt_summary.csv")
+    qs = np.geomspace(0.01, 0.6, 14)
+    tab = wishart_entropy_table(N, qs)
+    null = lambda q: np.interp(np.log(q), np.log(qs), tab)
+    D = lambda r, v: v  # identity
+    fig, axes = plt.subplots(2, 2, figsize=(FULL_WIDTH * 0.8, 4.4), constrained_layout=True)
+    fig.get_layout_engine().set(w_pad=0.06, h_pad=0.06, wspace=0.1, hspace=0.1)
+    ax_rho, ax_sig, ax_del, ax_ent = axes.flat
+    for (init, lbl), color, mk in zip(SALT_BRANCHES, SERIES, MARKERS):
+        T, y, e = _branch_stats(rows, "density", init)
+        ax_rho.errorbar(T, y, yerr=e, color=color, marker=mk, label=lbl)
+        ex = lambda r, v: null(N / fnum(r["T_eff"])) - v
+        T, y, e = _branch_stats(rows, "S_over_logN", init, ex)
+        ax_ent.errorbar(T, y, yerr=e, color=color, marker=mk, label=lbl)
+    # Transport only where the ions diffuse (melted states on either branch).
+    melted = [r for r in rows if fnum(r["density"]) < 1.6]
+    groups = defaultdict(list)
+    for r in melted:
+        groups[float(r["temperature"])].append(r)
+    T = np.array(sorted(groups))
+    def col(key):
+        v = [[fnum(r[key]) for r in groups[t]] for t in T]
+        return np.array([np.mean(x) for x in v]), np.array([np.std(x) for x in v])
+    sig, sig_e = col("sigma_S_per_m")
+    ne, ne_e = col("sigma_NE_S_per_m")
+    ax_sig.errorbar(T, ne, yerr=ne_e, color=MUTED, marker="s", mfc="white", label="Nernst–Einstein")
+    ax_sig.errorbar(T, sig, yerr=sig_e, color=SERIES[1], marker="o", label="Green–Kubo")
+    dm, dm_e = col("Delta_sigma_matrix")
+    dt, dt_e = col("Delta_sigma_from_time_GK")
+    ax_del.errorbar(T, dm, yerr=dm_e, color=SERIES[1], marker="o", label="block sums of $C$")
+    ax_del.errorbar(T + 12, dt, yerr=dt_e, color=INK_2, marker="s", mfc="white", ls="--",
+                    label="charge-current GK")
+    ax_del.axhline(0, color=MUTED, lw=0.8, ls="--")
+    ax_rho.set_ylabel(r"density (g cm$^{-3}$)")
+    ax_sig.set_ylabel(r"$\sigma$ (S m$^{-1}$)")
+    ax_del.set_ylabel(r"$\Delta^{\sigma}$")
+    ax_ent.set_ylabel(r"$\Delta S/\ln|\mathcal{N}|$")
+    ax_ent.axhline(0, color=MUTED, lw=0.8, ls="--")
+    for ax in axes.flat:
+        ax.set_xlabel("T (K)")
+        ax.set_xlim(850, 1850)
+    soft_legend(ax_rho, loc="upper right")
+    soft_legend(ax_sig, loc="center right")
+    soft_legend(ax_del, loc="lower left")
+    soft_legend(ax_ent, loc="center right")
+    for ax, l in zip(axes.flat, "abcd"):
+        panel_label(ax, l)
+    fig.savefig(outfile)
+    plt.close(fig)
+    return [{"T": t, "sigma": a, "sigma_NE": b, "Delta_matrix": c, "Delta_GK": d}
+            for t, a, b, c, d in zip(T, sig, ne, dm, dt)]
+
+
 def main() -> int:
     res, figs = Path(sys.argv[1]), Path(sys.argv[2])
     figs.mkdir(parents=True, exist_ok=True)
@@ -404,6 +471,8 @@ def main() -> int:
     noise_figure(res, figs / "fig_noise_null.pdf")
     bonding_figure(res, figs / "fig_bonding.pdf")
     table = lj_figure(res, figs / "fig_lj_phases.pdf")
+    if (res / "05_molten_salt" / "salt_summary.csv").is_file():
+        salt_figure(res, figs / "fig_salt.pdf")
     with open(res / "03_lj_phases" / "entropy_excess.csv", "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(table[0]))
         w.writeheader()

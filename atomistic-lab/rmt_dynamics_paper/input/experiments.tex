@@ -150,5 +150,27 @@ $C$ is built for the oxygen atoms alone and for all atoms, which separates the m
 Molten NaCl tests the transport decomposition of Section~\ref{subsec:microscopic-origins-of-transport-properties} directly.
 With velocities as the single-particle primitive and the ionic charges as $\eta_{\alpha}$, the Nernst--Einstein deviation $\Delta^{\sigma}$ of the ionic conductivity is a ratio of block sums of $C$, and must agree with the deviation obtained from the collective charge current.
 We follow the Tosi--Fumi model along the $1$~atm isobar from $900$ to $1800$~K, from a rock-salt crystal and from a pre-melted liquid, which brackets melting near $1070$~K and gives the conductivity of the liquid over a wide temperature range.
+Results are collected in Figure~\ref{fig:salt}.
 
-\textcolor{red}{[Results pending: simulations running.]}
+\begin{figure}[tbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/fig_salt.pdf}
+    \caption{Tosi--Fumi NaCl along the $1$~atm isobar, three seeds per point. (a) Density from the crystal (blue circles) and liquid (orange squares) starts. (b) Ionic conductivity from the charge current and its Nernst--Einstein estimate, for every melted state. (c) Nernst--Einstein deviation $\Delta^{\sigma}$ from the species-block sums of $C$ and from the time-domain Green--Kubo integral of the charge current (offset by $12$~K for clarity). (d) Entropy deficit of $C$ relative to the Marchenko--Pastur null.}
+    \label{fig:salt}
+\end{figure}
+
+As for the Lennard-Jones crystal, the hysteresis is wide.
+The rock-salt crystal persists to $1200$~K and has melted by $1300$~K, where its density drops from $1.815$ to $1.36$~g\,cm$^{-3}$ and the ionic self-diffusion coefficients rise by a factor of about $40$; the pre-melted liquid remains liquid down to $900$~K.
+Above $1300$~K the two branches coincide.
+
+The conductivity of the liquid is $302 \pm 3$~S\,m$^{-1}$ at $900$~K and $357 \pm 15$~S\,m$^{-1}$ at $1100$~K, rising to a maximum of about $400$~S\,m$^{-1}$ near $1600$~K and falling slightly at $1800$~K, while its Nernst--Einstein estimate rises monotonically from $316$ to $645$~S\,m$^{-1}$.
+The deviation between the two is the quantity that Equation~\ref{eqn:full-correction} expresses through the species blocks of $C$.
+With $\eta_{\mathrm{Na}} = +1$ and $\eta_{\mathrm{Cl}} = -1$, the block-sum route gives $\Delta^{\sigma} = -0.045 \pm 0.012$ at $900$~K, falling to $-0.14$ at $1100$~K and $-0.42$ at $1800$~K, and agrees within the seed scatter with the deviation obtained from the time-domain Green--Kubo integral of the charge current at every temperature (Figure~\ref{fig:salt}c); the two estimates of the charge-current integral differ by $1$--$6\%$, the size expected from their different treatment of the integration window.
+Distinct cation--anion correlation therefore reduces the conductivity below the uncorrelated estimate by an amount that grows with temperature along the isobar, as the liquid expands and the Na--Cl coordination number within $3.6$~\AA{} falls from $4.2$ at $900$~K to $2.5$ at $1800$~K.
+In the crystal both routes are dominated by the residual of the finite window and do not measure a conductivity; we do not report them.
+
+The spectrum of $C$ registers the same trend.
+The entropy deficit of the liquid is small, $0.0018$ at $900$~K, and grows monotonically to $0.0126$ at $1800$~K (Figure~\ref{fig:salt}d), in the opposite direction to the Lennard-Jones liquid, whose deficit decays with temperature.
+Across all $36$ melted runs the deficit and $\Delta^{\sigma}$ are strongly anticorrelated (Spearman $\rho = -0.95$): the more of the motion is carried by correlated cation--anion pairs, the more the spectrum departs from the noise null.
+Both quantities change monotonically with temperature, so this correlation partly reflects a common trend rather than an independent test; it nonetheless shows that the departure of the spectrum from the null follows the distinct correlations that set the transport coefficient.
+The crystal again carries a large deficit, $0.030$--$0.037$, an order of magnitude above the liquid, and loses it on melting.
