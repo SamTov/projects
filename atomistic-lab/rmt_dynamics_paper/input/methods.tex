@@ -5,10 +5,10 @@
 \label{subsec:matrix-computation}
 From $M$ velocity snapshots at intervals $\delta t$ we estimate Equation~\ref{eqn:Cij} as
 \begin{align}
-    \hat{C}_{ij} = \frac{\delta t}{2} \sum\limits_{\tau = -L}^{L} \left(1 - \frac{|\tau|}{L}\right) \frac{1}{M} \sum\limits_{m} \mathbf{v}_{i}(t_{m} + \tau\, \delta t) \cdot \mathbf{v}_{j}(t_{m}), \qquad L = \tau_{\max} / \delta t,
+    \hat{C}_{ij} = \frac{\delta t}{6} \sum\limits_{\tau = -L}^{L} \left(1 - \frac{|\tau|}{L}\right) \frac{1}{M} \sum\limits_{m} \mathbf{v}_{i}(t_{m} + \tau\, \delta t) \cdot \mathbf{v}_{j}(t_{m}), \qquad L = \tau_{\max} / \delta t,
     \label{eqn:Chat}
 \end{align}
-averaging over time origins $t_{m}$ and over the three Cartesian components.
+where the factor $1/6$ combines the component average of Equation~\ref{eqn:Cij} with the factor $1/2$ that converts the two-sided sum to a one-sided integral, and the sum over $m$ runs over time origins with zero padding outside the trajectory.
 The two-sided sum is tapered to zero at the lag $\tau_{\max}$ by a triangular (Bartlett) window; unlike a sharp truncation, this makes $\hat{C}$ positive semi-definite by construction, as the entropy of Equation~\ref{eqn:vnentropy} requires.
 The cross-correlations are evaluated in frequency space, at a cost of $\mathcal{O}(|\N|^{2} M \log M)$.
 The lag must be long enough to integrate the correlations of interest and short enough not to accumulate noise from the tail; by default we set $\tau_{\max}$ to about ten times the integral relaxation time $\tau_{\text{int}}$ of the velocity autocorrelation, and Section~\ref{subsec:bond-addition} shows how the choice sets which bonds can be resolved.
@@ -17,10 +17,10 @@ The lag must be long enough to integrate the correlations of interest and short 
 \label{subsec:de-noising-correlation-matrices}
 For $|\N|$ independent particles and $T_{\text{eff}}$ independent samples, the spectrum of $\hat{C}$ follows the Marchenko--Pastur density~\cite{marchenko1967}
 \begin{align}
-    \rho_{\text{MP}}(\mu) = \frac{1}{2 \pi q\, \sigma^{2}\, \mu} \sqrt{(\mu_{+} - \mu)(\mu - \mu_{-})}, \qquad \mu_{\pm} = \sigma^{2} (1 \pm \sqrt{q})^{2},
+    \rho_{\text{MP}}(\mu) = \frac{1}{2 \pi q\, s^{2}\, \mu} \sqrt{(\mu_{+} - \mu)(\mu - \mu_{-})}, \qquad \mu_{\pm} = s^{2} (1 \pm \sqrt{q})^{2},
     \label{eqn:mp-density}
 \end{align}
-with aspect ratio $q = |\N| / T_{\text{eff}}$ and noise scale $\sigma^{2}$, which we take from the mean diagonal element of a reference state (the bond-free liquid in Section~\ref{subsec:bond-addition}, the run itself elsewhere).
+with aspect ratio $q = |\N| / T_{\text{eff}}$ and noise scale $s^{2}$, which we take from the mean diagonal element of a reference state (the bond-free liquid in Section~\ref{subsec:bond-addition}, the run itself elsewhere).
 $T_{\text{eff}}$ is a property of the estimator, not of the decorrelation time alone.
 Equation~\ref{eqn:Chat} is a quadratic form $\hat{C} = V^{\top} A V$ in the $M \times |\N|$ matrix of samples, with $A$ the banded matrix of lag weights; for independent particles with temporal covariance $R$, matching its first two spectral moments to those of a Wishart matrix gives
 \begin{align}
@@ -29,6 +29,7 @@ Equation~\ref{eqn:Chat} is a quadratic form $\hat{C} = V^{\top} A V$ in the $M \
 \end{align}
 with $d = 3$ components.
 Lengthening the lag thus reduces the sample count in proportion, and the naive count $T_{\text{traj}}/\tau_{\text{int}}$ overstates it by a factor of order $\tau_{\max}/\tau_{\text{int}}$.
+Matching two moments is an approximation to the exact limiting spectrum of sample covariance matrices with temporally correlated or weighted samples~\cite{burda2005,pafka2004}; Section~\ref{subsec:convergence-of-the-noise-term} shows that it reproduces the bulk to within a Kolmogorov--Smirnov distance of $0.03$ for $q \le 0.3$.
 We evaluate the traces in the frequency domain from the lag weights and the measured particle-averaged velocity power spectrum, and keep $q$ well below one.
 
 The null is used in two ways.
@@ -38,7 +39,7 @@ For the entropy, because noise alone lowers $S$ by an amount that grows with $q$
     \Delta S = S_{\text{MP}}(q) - S(\hat{C}),
     \label{eqn:entropy-deficit}
 \end{align}
-where $S_{\text{MP}}(q)$ is the mean entropy of a white Wishart matrix of the same size and aspect ratio, evaluated numerically; $\Delta S$ vanishes for a spectrum indistinguishable from noise and is positive when correlation is concentrated in fewer modes.
+where $S_{\text{MP}}(q)$ is the mean entropy of a white Wishart matrix of the same size and aspect ratio, averaged over $16$ realisations (standard error below $3 \times 10^{-5}$ in $S/\ln|\N|$ for $q \le 0.3$); $\Delta S$ vanishes for a spectrum indistinguishable from noise and is positive when correlation is concentrated in fewer modes.
 Section~\ref{subsec:convergence-of-the-noise-term} validates the null on synthetic data.
 
 \subsection{Molecular Dynamics Simulations}

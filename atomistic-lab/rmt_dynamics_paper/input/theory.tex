@@ -29,13 +29,13 @@ Consider a coefficient $\lambda$ given by
 with $\beta = 1/k_{B}T$, where $a_{i}$ is a property of atom $i$ (its velocity, for the coefficients considered here) and $\eta_{\alpha}$ a scalar attached to its species, such as a charge or a mass.
 Grouping the pairs $(i, j)$ in the double sum by species, and separating $i = j$ from $i \neq j$, gives
 \begin{align}
-    \lambda = \frac{\beta}{3} \sum\limits_{\alpha, \gamma \in \Se} \eta_{\alpha} \eta_{\gamma} \left( \delta_{\alpha\gamma} f_{\alpha} + g_{\alpha\gamma} \right),
+    \lambda = \beta \sum\limits_{\alpha, \gamma \in \Se} \eta_{\alpha} \eta_{\gamma} \left( \delta_{\alpha\gamma} f_{\alpha} + g_{\alpha\gamma} \right),
     \label{eqn:expansion}
 \end{align}
-with the self and distinct integrals
+with the self and distinct integrals, averaged over Cartesian components,
 \begin{align}
-    f_{\alpha} = \int\limits_{0}^{\infty} dt \sum\limits_{i \in \N_{\alpha}} \langle a_{i}(t)\cdot a_{i}(0) \rangle, \qquad
-    g_{\alpha \gamma} = \int\limits_{0}^{\infty} dt \sum\limits_{i \in \N_{\alpha}} \sum\limits_{\substack{j \in \N_{\gamma} \\ j \neq i}} \langle a_{i}(t)\cdot a_{j}(0) \rangle.
+    f_{\alpha} = \frac{1}{3} \int\limits_{0}^{\infty} dt \sum\limits_{i \in \N_{\alpha}} \langle a_{i}(t)\cdot a_{i}(0) \rangle, \qquad
+    g_{\alpha \gamma} = \frac{1}{3} \int\limits_{0}^{\infty} dt \sum\limits_{i \in \N_{\alpha}} \sum\limits_{\substack{j \in \N_{\gamma} \\ j \neq i}} \langle a_{i}(t)\cdot a_{j}(0) \rangle.
     \label{eqn:fgdefs}
 \end{align}
 The distinct terms enter as a dimensionless correction to the Nernst--Einstein estimate $\lambda^{\text{NE}}$ built from the self terms alone,
@@ -53,9 +53,10 @@ Coefficients whose flux contains an explicit pair-interaction term, such as the 
 \label{subsec:atom-wise-correlation-matrix}
 The integrals of Equation~\ref{eqn:fgdefs} are sums over atoms; promoting the atom indices to matrix indices defines the \emph{atom-wise correlation matrix}
 \begin{align}
-    C_{ij} = \int\limits_{0}^{\infty} dt \, \langle a_{i}(t) \cdot a_{j}(0) \rangle, \qquad i, j \in \N.
+    C_{ij} = \frac{1}{3} \int\limits_{0}^{\infty} dt \, \langle a_{i}(t) \cdot a_{j}(0) \rangle, \qquad i, j \in \N,
     \label{eqn:Cij}
 \end{align}
+so that for velocities $C_{ii}$ is the self-diffusion coefficient of atom $i$.
 By time-reversal symmetry $C$ is real and symmetric.
 Ordering atoms by species partitions it into blocks $C^{(\alpha\gamma)}$, and $f_{\alpha}$ and $g_{\alpha\gamma}$ are the trace and the off-diagonal sum of these blocks, so every coefficient of the form of Equation~\ref{eqn:expansion} is a linear functional of $C$.
 The spectrum of $C$ contains more than these functionals report.
@@ -66,21 +67,23 @@ This uncorrelated limit is the null against which physical structure is measured
 
 \subsection{Spectral Observables}
 \label{subsec:interpreting-atomic-correlation-matrices}
-Because the integrated autocorrelation of any linear combination $\sum_{i} x_{i} a_{i}$ is non-negative in equilibrium~\cite{hansen90a}, $C$ is positive semi-definite, with eigenvalues $\mu_{k} \geq 0$ and orthonormal eigenvectors $\phi_{k}$.
+Because the integrated autocorrelation of any linear combination $\sum_{i} x_{i} a_{i}$ equals half its zero-frequency power spectrum and is therefore non-negative (Wiener--Khinchin)~\cite{hansen90a}, $C$ is positive semi-definite, with eigenvalues $\mu_{k} \geq 0$ and orthonormal eigenvectors $\phi_{k}$.
 
 \paragraph{Spectrum.}
 Eigenvalues inside the Marchenko--Pastur bulk are consistent with noise; those outside it carry physical signal, and their eigenvectors identify the atoms involved.
 Which edge they leave through follows from the Einstein form of Equation~\ref{eqn:Cij},
 \begin{align}
-    C_{ij} = \lim_{t \to \infty} \frac{1}{2t} \langle \Delta \mathbf{r}_{i}(t) \cdot \Delta \mathbf{r}_{j}(t) \rangle,
+    C_{ij} = \lim_{t \to \infty} \frac{1}{6t} \langle \Delta \mathbf{r}_{i}(t) \cdot \Delta \mathbf{r}_{j}(t) \rangle,
     \label{eqn:Cij-einstein}
 \end{align}
 which identifies $C$ as the matrix of long-time displacement covariances, so that any coordinate whose excursions stay bounded is a null direction.
 A bond between atoms $i$ and $j$ bounds their relative coordinate, and the antisymmetric combination $(\phi_{i}, \phi_{j}) \propto (1, -1)$ is driven to zero eigenvalue while the symmetric one carries the diffusion of the pair.
-Bonding therefore removes eigenvalues through the \emph{lower} edge of the bulk, one per independent constraint.
-With a finite lag two conditions apply: a bond must survive for longer than $\tau_{\max}$ to register, and because a bond of length $r_{0}$ fixes the separation but not the orientation of the pair, the relative coordinate is distinguishable from free diffusion only once $\tau_{\max} \gg r_{0}^{2}/6D$.
-Eigenvalues above the upper edge instead signal collective transport beyond the single-particle baseline.
-The same argument implies that $C$ vanishes in a non-diffusing crystal, whose measured spectrum reflects only the finite-lag residual of the estimator.
+Bonding therefore removes eigenvalues through the \emph{lower} edge of the bulk, one per independent bounded relative coordinate: for a bond graph this is the number of edges of a spanning forest, $|\N|$ minus the number of connected components, and a rigid water molecule contributes two, not its three geometric constraints.
+With a finite lag, a bond must survive for longer than $\tau_{\max}$ to register, and since a bond of length $r_{0}$ fixes the separation but not the orientation of the pair, its relative mode is not zero but of order $r_{0}^{2}/(6\tau_{\max})$, a fraction $r_{0}^{2}/(6 D \tau_{\max})$ of the free value $D$.
+It separates from the noise bulk when this fraction falls below the lower edge, $r_{0}^{2}/(6 D \tau_{\max}) < (1-\sqrt{q})^{2}$; because $q$ itself grows in proportion to $\tau_{\max}$ (Equation~\ref{eqn:teff}), resolving a bond spectrally requires both a long lag and a trajectory long compared with it.
+Eigenvalues above the upper edge would indicate correlated motion exceeding the single-particle baseline; we observe a few such modes but have not established their origin.
+The same argument implies that $C$ vanishes in a non-diffusing crystal.
+At finite lag the estimator is, to a good approximation, the finite-time Einstein form $\langle \Delta \mathbf{r}_{i}(\tau_{\max}) \cdot \Delta \mathbf{r}_{j}(\tau_{\max}) \rangle / 6\tau_{\max}$, so in a solid it measures the vibrational displacement covariance divided by $\tau_{\max}$, the object that quasi-harmonic and essential-dynamics analyses diagonalise~\cite{schlitter1993,amadei1993}.
 The participation ratio
 \begin{align}
     \mathrm{PR}_{k} = \Big( \sum\nolimits_{i} \phi_{ik}^{4} \Big)^{-1}
@@ -90,11 +93,11 @@ counts the atoms active in mode $k$, from about $2$ for an isolated bonded pair 
 When many bonds are present their null modes are nearly degenerate and mix, so the subspace spanned by the sub-bulk modes, rather than any single eigenvector, is the object to compare with the bonding topology.
 
 \paragraph{Entropy.}
-The von Neumann entropy
+The spectral entropy
 \begin{align}
     S(C) = -\sum\limits_{k} p_{k} \ln p_{k}, \qquad p_{k} = \frac{\mu_{k}}{\sum_{l} \mu_{l}},
     \label{eqn:vnentropy}
 \end{align}
-is the entropy of the trace-normalised operator $C/\mathrm{Tr}\,C$, in parallel with the entropy of a density matrix and with Schlitter's entropy of the positional covariance~\cite{schlitter1993}.
+is the Shannon entropy of the normalised eigenvalues, formally the von Neumann entropy of the trace-normalised operator $C/\mathrm{Tr}\,C$.
 It is maximal, $\ln |\N|$, for a uniform spectrum and falls as correlation concentrates in fewer modes.
 Because sampling noise alone spreads the spectrum by an amount set by $T_{\text{eff}}$, we report it relative to the noise null (Section~\ref{subsec:de-noising-correlation-matrices}).

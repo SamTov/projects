@@ -107,7 +107,7 @@ def fnum(x) -> float:
 
 
 # ---------------------------------------------------------- null model ---
-def wishart_entropy_table(N: int, qs: np.ndarray, reps: int = 4, seed: int = 1) -> np.ndarray:
+def wishart_entropy_table(N: int, qs: np.ndarray, reps: int = 16, seed: int = 1) -> np.ndarray:
     """S/ln N of a white Wishart matrix with N columns and N/q rows."""
     rng = np.random.default_rng(seed)
     out = []
@@ -195,7 +195,7 @@ def bonding_figure(res: Path, outfile: Path) -> None:
         ax.set_yscale("log")
         ax.set_ylim(1e-3, 5)
         ax.set_xlim(0, 2.2)
-        ax.set_xlabel(r"eigenvalue $\mu / \sigma^2_{\mathrm{free}}$")
+        ax.set_xlabel(r"eigenvalue $\mu / s^2_{\mathrm{free}}$")
         ax.set_ylabel("density")
         ax.set_title(title, color=INK_2, loc="left")
         leg = soft_legend(ax, loc="lower center", bbox_to_anchor=(0.56, 0.0), ncol=2,
@@ -288,7 +288,7 @@ def noise_figure(res: Path, outfile: Path) -> None:
         lo, hi = mp_edges(N, T, 1.0)
         x = np.linspace(lo, hi, 400)
         ax.plot(x, mp_density(x, N, T, 1.0), color=color, ls=ls, lw=1.5, label=lbl)
-    ax.set_xlabel(r"eigenvalue $\mu/\sigma^2$")
+    ax.set_xlabel(r"eigenvalue $\mu/s^2$")
     ax.set_ylabel("density")
     ax.set_xlim(0, 2.6)
     soft_legend(ax, loc="upper right")
@@ -598,7 +598,7 @@ def concept_figure(res: Path, figs: Path, outfile: Path, k: int = 27, seed: int 
     ax_s.set_ylim(2e-3, 4)
     ax_s.set_xlim(-4, N + 4)
     ax_s.set_xlabel("eigenvalue rank")
-    ax_s.set_ylabel(r"$\mu/\sigma^{2}_{\mathrm{free}}$")
+    ax_s.set_ylabel(r"$\mu/s^{2}_{\mathrm{free}}$")
     ax_s.set_title(r"spectrum, $\tau_{\max} = 100$ ps", color=INK_2, loc="left")
     soft_legend(ax_s, loc="lower right")
     for ax, l in zip((ax_r, ax_c, ax_s), "abc"):
