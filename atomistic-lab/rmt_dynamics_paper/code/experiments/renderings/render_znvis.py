@@ -34,7 +34,20 @@ def material(rgb, roughness=0.35):
     return vis.Material(colour=np.array(rgb), mitsuba_bsdf=bsdf)
 
 
-def scene_dict(res):
+def scene_dict(res, fov=32, white=False):
+    if white:
+        # Uniform white environment (background renders as white) plus a soft
+        # key light for shape; atoms take their colour from the BSDF.
+        return {
+            "type": "scene",
+            "integrator": {"type": "path", "max_depth": 6},
+            "ambient": {"type": "constant", "radiance": {"type": "rgb", "value": 1.0}},
+            "key": {"type": "directional", "direction": [-0.3, -0.5, -1.0],
+                    "irradiance": {"type": "rgb", "value": 0.9}},
+            "sensor": {"type": "perspective", "fov": fov, "near_clip": 0.1, "far_clip": 20000,
+                       "thefilm": {"type": "hdrfilm", "width": res, "height": res},
+                       "thesampler": {"type": "multijitter", "sample_count": 64}},
+        }
     return {
         "type": "scene",
         "integrator": {"type": "path", "max_depth": 6},
@@ -61,14 +74,14 @@ def cylinders(name, mid, vec, radius, rgb):
 
 
 def render(particles, box, out_png: Path, res: int, spp: int, distance=2.3,
-           view=(0.85, 0.55, 0.65)):
+           view=(0.85, 0.55, 0.65), fov=32, white=False):
     centre = box / 2.0
     view = np.asarray(view, dtype=float)
     eye = centre + distance * view / np.linalg.norm(view) * box.max()
     cam = vis.cameras.StaticCamera(center=centre, eye=eye, up=np.array([0.0, 0.0, 1.0]))
     tmp = out_png.parent / f"_{out_png.stem}"
     viz = vis.HeadlessVisualizer(
-        particles=particles, output_folder=tmp, renderer=vis.rendering.Mitsuba(scene_dict=scene_dict(res), update_camera=True),
+        particles=particles, output_folder=tmp, renderer=vis.rendering.Mitsuba(scene_dict=scene_dict(res, fov=fov, white=white), update_camera=True),
         renderer_resolution=[res, res], renderer_spp=spp, camera=cam, do_create_video=False,
         number_of_steps=1)
     viz.render_visualization(frame_indices=[0], skip_existing_frames=False)
@@ -78,7 +91,37 @@ def render(particles, box, out_png: Path, res: int, spp: int, distance=2.3,
     print("wrote", out_png)
 
 
+def bonded_liquid_clean(scenes: Path, out: Path, res: int, spp: int) -> None:
+    """Concept-figure render: whole cell, near-orthographic, white background.
+
+    Unbonded atoms are drawn small and grey so the bond network reads through
+    them; bonded atoms are dark blue with ink bonds.
+    """
+    s = np.load(scenes / "bonded_liquid.npz")
+    pos, box, bonded = s["positions"], s["box"], s["bonded"]
+    # Draw each bond's atoms at that bond's own periodic image, so an atom in
+    # two bonds that straddle the cell boundary appears at both ends.
+    ends = np.concatenate([s["bond_mid"] - 0.5 * s["bond_vec"], s["bond_mid"] + 0.5 * s["bond_vec"]])
+    parts = [
+        spheres("free", pos[~bonded], 0.17 * SIGMA, np.array([0.42, 0.42, 0.40])),
+        spheres("bonded", ends, 0.32 * SIGMA, hex_rgb("#1c5cab")),
+        cylinders("bonds", s["bond_mid"], s["bond_vec"], 0.09 * SIGMA, np.array([0.12, 0.12, 0.12])),
+    ]
+    # Long distance and narrow field of view approximate an orthographic view.
+    render(parts, box, out / "render_bonded_liquid.png", res, spp, distance=9.0,
+           view=(1.0, 0.32, 0.42), fov=9.5, white=True)
+
+
 def main() -> int:
+    scenes, out = Path(sys.argv[1]), Path(sys.argv[2])
+    res = int(sys.argv[3]) if len(sys.argv) > 3 else 1400
+    spp = int(sys.argv[4]) if len(sys.argv) > 4 else 128
+    out.mkdir(parents=True, exist_ok=True)
+    bonded_liquid_clean(scenes, out, res, spp)
+    return 0
+
+
+def main_legacy() -> int:  # earlier four-panel set (bonded liquid + LJ phases)
     scenes, out = Path(sys.argv[1]), Path(sys.argv[2])
     res = int(sys.argv[3]) if len(sys.argv) > 3 else 1400
     spp = int(sys.argv[4]) if len(sys.argv) > 4 else 128

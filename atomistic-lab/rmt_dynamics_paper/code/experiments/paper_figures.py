@@ -530,11 +530,90 @@ def water_figure(res: Path, outfile: Path) -> None:
     plt.close(fig)
 
 
+# -------------------------------------------------------------- concept ---
+def concept_figure(res: Path, figs: Path, outfile: Path, k: int = 27, seed: int = 1) -> None:
+    """Render of a bonded liquid, its correlation matrix, and its spectrum."""
+    from matplotlib.colors import LinearSegmentedColormap
+    from rmt_dynamics import load_C
+
+    name = "02_bond_addition_long"
+    rows, counts, s2, T_eff, _ = _bond_tables(res, name)
+    run = res / name / "runs" / f"k_bonds={k}_seed={seed}"
+    C, _ = load_C(run / "C.npz")
+    bonds = np.load(run / "bonds.npy")
+    N = C.shape[0]
+    # Show isolated bonds (atoms in exactly one bond) so each pair is a clean
+    # 2 x 2 block, followed by an equal number of free atoms.
+    uses = np.bincount(bonds.ravel(), minlength=N)
+    iso = [(int(i), int(j)) for i, j in bonds if uses[i] == 1 and uses[j] == 1][:8]
+    in_bond = set(int(x) for x in bonds.ravel())
+    free = [i for i in range(N) if i not in in_bond]
+    d_free = float(np.mean(np.diag(C)[free]))
+    bonded = [a for pair in iso for a in pair]
+    order = bonded + free[: len(bonded)]
+    sub = C[np.ix_(order, order)] / d_free
+
+    fig = plt.figure(figsize=(FULL_WIDTH, 2.55), constrained_layout=True)
+    fig.get_layout_engine().set(w_pad=0.04, wspace=0.06)
+    gs = fig.add_gridspec(1, 3, width_ratios=[1.0, 1.08, 1.12])
+    ax_r, ax_c, ax_s = (fig.add_subplot(gs[0, i]) for i in range(3))
+
+    img = plt.imread(figs / "render_bonded_liquid.png")
+    h, w = img.shape[:2]
+    m = int(0.06 * h)
+    ax_r.imshow(img[m:h - m, m:w - m])
+    ax_r.set_axis_off()
+    ax_r.set_title(f"{k} bonds, $|\\mathcal{{N}}| = {N}$", color=INK_2, loc="left")
+
+    cmap = LinearSegmentedColormap.from_list("div", ["#2a78d6", "#f0efec", "#e34948"])
+    im = ax_c.imshow(sub, cmap=cmap, vmin=-1, vmax=1, interpolation="nearest")
+    ax_c.grid(False)
+    nb = len(bonded)
+    for x in (nb - 0.5,):
+        ax_c.axhline(x, color=INK_2, lw=0.6)
+        ax_c.axvline(x, color=INK_2, lw=0.6)
+    ax_c.set_xticks([nb / 2, nb + (len(order) - nb) / 2])
+    ax_c.set_xticklabels(["bonded", "free"])
+    ax_c.set_yticks([nb / 2, nb + (len(order) - nb) / 2])
+    ax_c.set_yticklabels(["bonded", "free"], rotation=90, va="center")
+    ax_c.tick_params(length=0)
+    cb = fig.colorbar(im, ax=ax_c, shrink=0.85, pad=0.02)
+    cb.set_label(r"$C_{ij}/C^{\mathrm{free}}_{ii}$")
+    cb.outline.set_visible(False)
+    ax_c.set_title(f"$C$, {len(iso)} bonded pairs and {len(bonded)} free atoms", color=INK_2, loc="left")
+
+    mu = np.sort(np.linalg.eigvalsh(C)) / s2
+    mu0 = np.sort(np.concatenate([np.load(p) for p in sorted((res / name / "runs").glob(
+        "k_bonds=0_seed=*/eigvals.npy"))])) / s2
+    lo, hi = mp_edges(N, T_eff, 1.0)
+    ax_s.axhspan(lo, hi, color=BAND, lw=0, zorder=0)
+    ax_s.text(N * 0.98, (lo * hi) ** 0.5, "noise bulk", ha="right", va="center", fontsize=7, color=INK_2)
+    ranks = np.arange(1, N + 1)
+    ax_s.plot(np.linspace(1, N, mu0.size), mu0, color=MUTED, lw=1.0, label="no bonds")
+    ax_s.plot(ranks[k + 1:], mu[k + 1:], color=INK_2, lw=1.4, label=f"{k} bonds")
+    ax_s.plot(ranks[1:k + 1], mu[1:k + 1], "o", color=SERIES[0], ms=3.2, label=f"{k} bond modes")
+    ax_s.plot(ranks[:1], np.maximum(mu[:1], 2e-3), "D", color=INK_2, ms=3.2, mfc="white",
+              label="momentum mode")
+    ax_s.set_yscale("log")
+    ax_s.set_ylim(2e-3, 4)
+    ax_s.set_xlim(-4, N + 4)
+    ax_s.set_xlabel("eigenvalue rank")
+    ax_s.set_ylabel(r"$\mu/\sigma^{2}_{\mathrm{free}}$")
+    ax_s.set_title(r"spectrum, $\tau_{\max} = 100$ ps", color=INK_2, loc="left")
+    soft_legend(ax_s, loc="lower right")
+    for ax, l in zip((ax_r, ax_c, ax_s), "abc"):
+        panel_label(ax, l)
+    fig.savefig(outfile)
+    plt.close(fig)
+
+
 def main() -> int:
     res, figs = Path(sys.argv[1]), Path(sys.argv[2])
     figs.mkdir(parents=True, exist_ok=True)
     apply_paper_style()
     noise_figure(res, figs / "fig_noise_null.pdf")
+    if (figs / "render_bonded_liquid.png").is_file():
+        concept_figure(res, figs, figs / "fig_concept.pdf")
     bonding_figure(res, figs / "fig_bonding.pdf")
     table = lj_figure(res, figs / "fig_lj_phases.pdf")
     if (res / "05_molten_salt" / "salt_summary.csv").is_file():

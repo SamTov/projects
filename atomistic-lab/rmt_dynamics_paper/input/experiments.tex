@@ -3,28 +3,9 @@
 
 \begin{figure}[tbp]
     \centering
-    \begin{subfigure}[b]{0.24\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{figures/render_bonded_liquid.png}
-        \caption{}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.24\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{figures/render_lj_crystal.png}
-        \caption{}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.24\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{figures/render_lj_liquid.png}
-        \caption{}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.24\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{figures/render_lj_vapour.png}
-        \caption{}
-    \end{subfigure}
-    \caption{Systems studied, rendered with ZnVis~\cite{znvis}. (a) Lennard-Jones liquid with $27$ nearest-neighbour bonds (dark cylinders) from the $\tau_{\max} = 100$~ps protocol; bonded atoms are coloured by their weight in the $27$ sub-bulk eigenvectors of $C$ (light to dark blue, quartiles) and unbonded atoms are grey. (b--d) Lennard-Jones crystal at $40$~K, liquid at $100$~K and vapour at $150$~K on the $20$~atm isobar, each in its own simulation cell and not to a common scale.}
-    \label{fig:renderings}
+    \includegraphics[width=\linewidth]{figures/fig_concept.pdf}
+    \caption{How bonding appears in $C$. (a) Lennard-Jones liquid ($|\N| = 216$) with $27$ harmonic bonds between nearest neighbours (blue, with bonds drawn), rendered with ZnVis~\cite{znvis}; unbonded atoms are grey and drawn smaller. (b) Part of the correlation matrix from a $26$~ns run with $\tau_{\max} = 100$~ps, normalised by the mean diagonal element of unbonded atoms: eight bonded pairs, each a $2 \times 2$ block, and sixteen unbonded atoms. (c) Sorted eigenvalues of the full matrix against those of the same liquid without bonds; the shaded band is the Marchenko--Pastur support. One eigenvalue per bond (blue) leaves the bulk through its lower edge, in addition to the zero mode from momentum conservation.}
+    \label{fig:concept}
 \end{figure}
 
 \subsection{Validation of the Noise Null}
@@ -43,7 +24,7 @@ Every count of outliers in what follows uses the lag-window sample count.
 
 \subsection{Bond Addition}
 \label{subsec:bond-addition}
-To test how bonding enters the spectrum under controlled conditions, we add $k$ harmonic bonds to an equilibrated Lennard-Jones liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$ and compare against the same liquid restarted without bonds (Figure~\ref{fig:renderings}a).
+To test how bonding enters the spectrum under controlled conditions, we add $k$ harmonic bonds to an equilibrated Lennard-Jones liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$ and compare against the same liquid restarted without bonds (Figure~\ref{fig:concept}).
 Two protocols are used.
 In the first, $|\N| = 512$, bonds join random pairs closer than $2\sigma$, each run is $1$~ns long and $C$ is evaluated with $\tau_{\max} = 2$~ps ($T_{\text{eff}} \approx 2260$, $q \approx 0.23$).
 In the second, chosen to satisfy the lag condition of Section~\ref{subsec:interpreting-atomic-correlation-matrices}, $|\N| = 216$, bonds are restricted to the first coordination shell ($r_{0} < 1.3\,\sigma$), each run is $26$~ns long and $\tau_{\max} = 100$~ps ($T_{\text{eff}} \approx 1170$, $q \approx 0.18$).
@@ -89,7 +70,7 @@ Re-evaluating one $16$-bond trajectory with longer lags confirms the trend (Figu
 The second protocol meets both conditions, and the bond signature becomes spectral as well as pair-wise (Figure~\ref{fig:bonding}b).
 The bonded relative-motion mode falls to $0.13$--$0.15$ of the free value, well below the lower bulk edge at $0.33$.
 In all three seeds exactly $8$ and $27$ eigenvalues leave the bulk through its lower edge for $8$ and $27$ bonds, and $51$--$52$ do so for $54$ bonds; at $k = 108$, where bonded atoms make up most of the system and the diffusive baseline shifts, the count is $91$--$95$ for $106$--$108$ constraints (Figure~\ref{fig:bonding}d).
-The corresponding eigenvectors reproduce the bond graph, capturing $86$--$94\%$ of the constraint space against $4$--$25\%$ for random modes (Figure~\ref{fig:bonding}e), and Figure~\ref{fig:renderings}a shows that their weight sits on the bonded atoms.
+The corresponding eigenvectors reproduce the bond graph, capturing $86$--$94\%$ of the constraint space against $4$--$25\%$ for random modes (Figure~\ref{fig:bonding}e); in the example of Figure~\ref{fig:concept}, $98\%$ of the weight of the $27$ bond modes lies on the $51$ bonded atoms, a quarter of the system.
 The bond-free liquid has a single eigenvalue above the upper edge in this regime, compared with $11$ to $12$ at $2$~ps.
 
 In both protocols the von Neumann entropy decreases monotonically with the number of bonds (Figure~\ref{fig:bonding}f), from $6.1133 \pm 0.0005$ to $5.697 \pm 0.007$ at $\tau_{\max} = 2$~ps and from $5.2791 \pm 0.0005$ to $5.0448 \pm 0.0013$ at $100$~ps; at $2$~ps the $16$-bond system is separated from the bond-free liquid by about three times the seed scatter.
