@@ -122,7 +122,7 @@ def _phase_production(ctx, context, bonds_file):
 
 def run_one(cell: dict, config: dict, args: argparse.Namespace) -> None:
     fixed = config["fixed"]
-    N = int(fixed["n_atoms"])
+    N = int(cell.get("n_atoms", fixed["n_atoms"]))  # size scan sweeps n_atoms
     sigma = float(fixed["sigma"])
     epsilon = float(fixed["epsilon"])
     box = _cubic_box_length(N, float(fixed["density_reduced"]), sigma)
@@ -131,8 +131,8 @@ def run_one(cell: dict, config: dict, args: argparse.Namespace) -> None:
     max_distance = float(fixed["bond_max_distance_sigma"]) * sigma
 
     context = {
-        **cell,
         **fixed,
+        **cell,
         "box_length": box,
         # Phase-length variables are renamed so the template's single
         # `run` block can be re-used for both equilibration and production.
