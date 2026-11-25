@@ -43,6 +43,7 @@ def first_minimum(pos_ion, pos_o, box, r_max=6.0, bins=120):
     d = pos_ion[:, :, None, :] - pos_o[:, None, :, :]
     d -= box * np.round(d / box)
     r = np.linalg.norm(d, axis=-1).ravel()
+    r = r[r > 0.5]  # drop self-distances when centres are oxygens themselves
     h, e = np.histogram(r, bins=bins, range=(0.0, r_max))
     c = 0.5 * (e[1:] + e[:-1])
     g = h / (4 * np.pi * c ** 2)
