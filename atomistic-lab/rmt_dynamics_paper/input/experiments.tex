@@ -142,8 +142,33 @@ $\Delta S$ is not a function of the diffusion coefficient alone: it falls by a f
 Water adds rigid molecular structure and a hydrogen-bond network to the questions above.
 We follow TIP4P/2005 water along the $1$~atm isobar from $200$ to $340$~K, from a proton-disordered ice Ih crystal and from a pre-melted liquid, so that melting near the model's melting point of $252$~K is bracketed by superheated ice and supercooled liquid in the same way as for the Lennard-Jones crystal.
 $C$ is built for the oxygen atoms alone and for all atoms, which separates the motion of molecular centres from the intramolecular correlation of each oxygen with its two hydrogens.
+Results are collected in Figure~\ref{fig:water}.
 
-\textcolor{red}{[Results pending: simulations running.]}
+\begin{figure}[tbp]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig_water.pdf}
+    \caption{TIP4P/2005 water along the $1$~atm isobar from ice Ih (blue circles) and from a pre-melted liquid (orange squares), three seeds per point. (a) Density. (b) Mean diagonal element of the oxygen-only matrix $C_{\mathrm{O}}$, proportional to the self-diffusion coefficient. (c) Entropy deficit of $C_{\mathrm{O}}$ relative to the Marchenko--Pastur null. (d) Eigenvalues of the all-atom matrix for the liquid at $300$~K, in units of the mean of the $432$ largest, pooled over seeds; the dashed line separates the $864$ smallest. (e) Fraction of the intramolecular relative-coordinate space (two O--H vectors per molecule) captured by the $864$ lowest eigenvectors of the all-atom matrix, with the value for random modes. (f) Spearman correlation between the amplitude of each oxygen in the five leading eigenvectors of $C_{\mathrm{O}}$ and its time-averaged hydrogen-bond count.}
+    \label{fig:water}
+\end{figure}
+
+The ice remains crystalline up to $310$~K, its density falling slowly from $0.928$ to $0.910$~g\,cm$^{-3}$, and melts between $310$ and $320$~K, where the seeds split and the diffusion coefficient rises fourteenfold (Figure~\ref{fig:water}a,b).
+The liquid branch never freezes on the time scale of the runs.
+It passes through a density maximum of $1.0015$~g\,cm$^{-3}$ between $270$ and $280$~K, close to the maximum of the model near $278$~K, and below $240$~K becomes increasingly sluggish, its diffusion coefficient at $200$~K being thirty times smaller than at $340$~K and comparable to the finite-window residual of the ice.
+As for the Lennard-Jones crystal and the salt, superheating is large, and melting of this model at $252$~K is bracketed only from above.
+
+The all-atom matrix tests the bonding result of Section~\ref{subsec:bond-addition} on molecules whose geometry is held fixed.
+Each rigid molecule has two bounded relative coordinates, the vectors from its oxygen to its two hydrogens, so $C$ should have $2 \times 432 = 864$ eigenvalues far below the remaining $432$, which describe the diffusion of the molecules.
+It does (Figure~\ref{fig:water}d): the spectrum splits into three bands of $432$ eigenvalues, two of them at $0.9$--$1.9\%$ and $4.8$--$6.9\%$ of the mean of the molecular band, and the $864$ lowest eigenvectors capture $97.8$--$99.6\%$ of the intramolecular relative-coordinate space at every temperature and in both phases, against $67\%$ for random modes (Figure~\ref{fig:water}e).
+The lag condition is met here by a wide margin: with O--H vectors of $0.96$~\AA{} and $D \approx 2.6 \times 10^{-4}$~\AA$^{2}$\,fs$^{-1}$ at $300$~K, $r_{0}^{2}/6D \approx 0.6$~ps against $\tau_{\max} = 4$~ps.
+We have not resolved which relative motions make up the two intramolecular bands; their separation by a factor of about four suggests orientational relaxation at different rates about different molecular axes.
+
+The oxygen-only matrix follows the molecular centres.
+Its entropy deficit (Figure~\ref{fig:water}c) is large in the ice, $0.087$--$0.119$, and in the liquid it is small and nearly constant above $260$~K ($0.0028$--$0.0053$), but it grows steeply on supercooling, to $0.011$ at $240$~K, $0.038$ at $220$~K and $0.074$ at $200$~K, approaching the values of the ice as the liquid's diffusion approaches that of the crystal.
+The deficit thus tracks the slowing of the liquid continuously, with no transition at which to compare it against the density; at the lowest temperatures, as in the solids, it reflects motion that has not decorrelated within the window.
+
+Finally, the leading eigenvectors of $C_{\mathrm{O}}$ are related to the hydrogen-bond network, but not in the sense we had expected.
+In the ice, where nearly every molecule has four hydrogen bonds, the amplitude of an oxygen in the five leading eigenvectors is uncorrelated with its bond count.
+In the liquid above $260$~K the two are anticorrelated, with a Spearman coefficient falling from $-0.18$ at $260$~K to $-0.43$ at $340$~K ($p < 10^{-3}$ for every temperature from $270$~K upwards) as the mean bond count falls from $3.73$ to $3.02$: the leading collective modes are carried preferentially by molecules with fewer hydrogen bonds, not by the most strongly bonded ones.
 
 \subsection{Molten Salt Ionic Conductivity}
 \label{subsec:molten-salt-ionic-conductivity}

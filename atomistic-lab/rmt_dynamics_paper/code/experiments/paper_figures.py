@@ -464,6 +464,72 @@ def salt_figure(res: Path, outfile: Path, N: int = 512) -> list[dict]:
             for t, a, b, c, d in zip(T, sig, ne, dm, dt)]
 
 
+# ----------------------------------------------------------------- water ---
+WATER_BRANCHES = [("ice", "ice start"), ("liquid", "liquid start")]
+
+
+def water_figure(res: Path, outfile: Path) -> None:
+    rows = read_csv(res / "04_water_phases" / "water_summary.csv")
+    ov_rows = read_csv(res / "04_water_phases" / "intramolecular_overlap.csv")
+    NO = 432
+    qs = np.geomspace(0.01, 0.8, 16)
+    tab = wishart_entropy_table(NO, qs)
+    null = lambda q: np.interp(np.log(q), np.log(qs), tab)
+    fig, axes = plt.subplots(2, 3, figsize=(FULL_WIDTH, 4.6), constrained_layout=True)
+    fig.get_layout_engine().set(w_pad=0.06, h_pad=0.06, wspace=0.08, hspace=0.1)
+    a_rho, a_D, a_S, a_spec, a_ov, a_hb = axes.flat
+    for (init, lbl), color, mk in zip(WATER_BRANCHES, SERIES, MARKERS):
+        T, y, e = _branch_stats(rows, "density", init)
+        a_rho.errorbar(T, y, yerr=e, color=color, marker=mk, label=lbl)
+        T, y, e = _branch_stats(rows, "diffusion_O", init, lambda r, v: v * 1e4)
+        a_D.errorbar(T, y, yerr=e, color=color, marker=mk, label=lbl)
+        T, y, e = _branch_stats(rows, "S_oxygens_over_logN", init,
+                                lambda r, v: null(NO / fnum(r["T_eff_oxygens"])) - v)
+        a_S.errorbar(T, y, yerr=e, color=color, marker=mk, label=lbl)
+        T, y, e = _branch_stats(ov_rows, "overlap_intramolecular", init)
+        a_ov.errorbar(T, y, yerr=e, color=color, marker=mk, label=lbl)
+        T, y, e = _branch_stats(rows, "hbond_spearman_top5", init)
+        a_hb.errorbar(T, y, yerr=e, color=color, marker=mk, label=lbl)
+    # All-atom spectrum of the liquid at 300 K: two intramolecular modes per
+    # molecule sit far below the molecular bulk.
+    eigs = [np.load(p) for p in sorted((res / "04_water_phases" / "runs").glob(
+        "init=liquid_temperature=300_seed=*/eigvals_all.npy"))]
+    mu = np.concatenate([e / e[2 * NO:].mean() for e in eigs])
+    bins = np.geomspace(1e-3, 5, 70)
+    a_spec.hist(mu, bins=bins, histtype="stepfilled", color=SERIES[1], alpha=0.35, lw=0)
+    a_spec.hist(mu, bins=bins, histtype="step", color=SERIES[1], lw=1.2)
+    cut = np.sort(eigs[0])[2 * NO - 1] / eigs[0][2 * NO:].mean()
+    a_spec.axvline(cut, color=MUTED, ls="--", lw=1.0)
+    top = a_spec.get_ylim()[1] * 1.22
+    a_spec.set_ylim(0, top)
+    a_spec.text(cut * 0.85, top * 0.97, f"{2 * NO} lowest", ha="right", va="top", fontsize=7, color=INK_2)
+    a_spec.text(cut * 1.18, top * 0.97, f"{NO} highest", ha="left", va="top", fontsize=7, color=INK_2)
+    a_spec.set_xscale("log")
+    a_spec.set_xlabel(r"eigenvalue $\mu/\langle\mu\rangle_{\mathrm{mol}}$")
+    a_spec.set_ylabel("count")
+    a_spec.set_title("all atoms, liquid 300 K", color=INK_2, loc="left")
+    a_ov.axhline(2 / 3, color=MUTED, ls=":", lw=1.0)
+    a_ov.text(205, 2 / 3 + 0.01, "random modes", fontsize=7, color=INK_2, va="bottom")
+    a_ov.set_ylim(0.6, 1.02)
+    a_hb.axhline(0, color=MUTED, ls="--", lw=0.8)
+    a_rho.set_ylabel(r"density (g cm$^{-3}$)")
+    a_D.set_ylabel(r"$\mathrm{Tr}\,C_{\mathrm{O}}/|\mathcal{N}_{\mathrm{O}}|$ ($10^{-4}$ Å$^2$ fs$^{-1}$)")
+    a_D.set_yscale("log")
+    a_S.set_ylabel(r"$\Delta S_{\mathrm{O}}/\ln|\mathcal{N}_{\mathrm{O}}|$")
+    a_S.axhline(0, color=MUTED, lw=0.8, ls="--")
+    a_ov.set_ylabel("overlap with intramolecular space")
+    a_hb.set_ylabel("Spearman $\\rho$, top modes vs H-bonds")
+    for ax in (a_rho, a_D, a_S, a_ov, a_hb):
+        ax.set_xlabel("T (K)")
+        ax.set_xlim(192, 348)
+    soft_legend(a_rho, loc="center right", bbox_to_anchor=(1.0, 0.45))
+    soft_legend(a_hb, loc="lower left")
+    for ax, l in zip(axes.flat, "abcdef"):
+        panel_label(ax, l)
+    fig.savefig(outfile)
+    plt.close(fig)
+
+
 def main() -> int:
     res, figs = Path(sys.argv[1]), Path(sys.argv[2])
     figs.mkdir(parents=True, exist_ok=True)
@@ -473,6 +539,8 @@ def main() -> int:
     table = lj_figure(res, figs / "fig_lj_phases.pdf")
     if (res / "05_molten_salt" / "salt_summary.csv").is_file():
         salt_figure(res, figs / "fig_salt.pdf")
+    if (res / "04_water_phases" / "intramolecular_overlap.csv").is_file():
+        water_figure(res, figs / "fig_water.pdf")
     with open(res / "03_lj_phases" / "entropy_excess.csv", "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(table[0]))
         w.writeheader()
