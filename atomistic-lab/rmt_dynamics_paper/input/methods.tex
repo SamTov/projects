@@ -40,7 +40,7 @@ For the entropy, because noise alone lowers $S$ by an amount that grows with $q$
     \label{eqn:entropy-deficit}
 \end{align}
 where $S_{\text{MP}}(q)$ is the mean entropy of a white Wishart matrix of the same size and aspect ratio, averaged over $16$ realisations (standard error below $3 \times 10^{-5}$ in $S/\ln|\N|$ for $q \le 0.3$); $\Delta S$ vanishes for a spectrum indistinguishable from noise and is positive when correlation is concentrated in fewer modes.
-Section~\ref{subsec:convergence-of-the-noise-term} validates the null on synthetic data.
+As a check on both the Gaussian assumption and the sample count, we also build a surrogate null from each trajectory by shifting every particle's time series circularly by an independent random offset, which keeps its autocorrelation and distribution but removes cross-correlations; Section~\ref{subsec:convergence-of-the-noise-term} validates both.
 
 \subsection{Molecular Dynamics Simulations}
 \label{subsec:molecular-dynamics-simulations}

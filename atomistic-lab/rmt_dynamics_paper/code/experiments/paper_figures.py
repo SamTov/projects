@@ -600,8 +600,60 @@ def concept_figure(res: Path, figs: Path, outfile: Path, k: int = 27, seed: int 
     ax_s.set_xlabel("eigenvalue rank")
     ax_s.set_ylabel(r"$\mu/s^{2}_{\mathrm{free}}$")
     ax_s.set_title(r"spectrum, $\tau_{\max} = 100$ ps", color=INK_2, loc="left")
-    soft_legend(ax_s, loc="lower right")
+    soft_legend(ax_s, loc="center right", bbox_to_anchor=(1.0, 0.62))
     for ax, l in zip((ax_r, ax_c, ax_s), "abc"):
+        panel_label(ax, l)
+    fig.savefig(outfile)
+    plt.close(fig)
+
+
+# ------------------------------------------------------------- controls ---
+CONTROL_GROUPS = {
+    "lj_crystal_40": ("LJ crystal", SERIES[0], "o"), "lj_disordered_40": ("LJ polycrystal", SERIES[0], "s"),
+    "lj_liquid_60": ("LJ liquid 60 K", SERIES[1], "o"), "lj_liquid_100": ("LJ liquid 100 K", SERIES[1], "s"),
+    "lj_bondfree_80": ("LJ liquid 80 K", SERIES[1], "^"),
+    "water_ice_260": ("ice 260 K", SERIES[0], "D"), "water_liquid_220": ("water 220 K", SERIES[2], "s"),
+    "water_liquid_300": ("water 300 K", SERIES[2], "o"),
+    "salt_crystal_1100": ("NaCl crystal", SERIES[0], "v"), "salt_liquid_900": ("NaCl 900 K", MUTED, "s"),
+    "salt_liquid_1300": ("NaCl 1300 K", MUTED, "o"),
+}
+
+
+def controls_figure(res: Path, outfile: Path) -> None:
+    import json
+    d = {json.loads(p.read_text())["target"]: json.loads(p.read_text())
+         for p in sorted((res / "06_controls" / "spectral").glob("spectral_*.json"))}
+    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 2.35), constrained_layout=True)
+    fig.get_layout_engine().set(w_pad=0.04, wspace=0.05)
+    ax_n, ax_l, ax_t, ax_s = axes
+    lim = (5e-4, 0.2)
+    ax_n.plot(lim, lim, color=MUTED, ls="--", lw=0.8)
+    for k, r in d.items():
+        lbl, c, m = CONTROL_GROUPS[k]
+        ax_n.plot(max(r["dS_MP"], lim[0]), max(r["dS_sur"], lim[0]), m, color=c, ms=4.5)
+    ax_n.set_xscale("log"); ax_n.set_yscale("log"); ax_n.set_xlim(lim); ax_n.set_ylim(lim)
+    ax_n.set_xlabel(r"$\Delta S$, Marchenko–Pastur null")
+    ax_n.set_ylabel(r"$\Delta S$, surrogate null")
+    for k in ("lj_liquid_60", "water_liquid_300", "salt_liquid_1300", "lj_crystal_40", "water_ice_260"):
+        lbl, c, m = CONTROL_GROUPS[k]
+        sc = d[k]["lag_scan"]
+        ax_l.plot([x["lag_fs"] / 1000 for x in sc], [max(x["dS_MP"], 1e-4) for x in sc], marker=m, color=c, label=lbl, ms=3.5)
+        ax_t.plot([x["lag_fs"] / 1000 for x in sc], [x["trace_over_N"] * x["lag_fs"] / (sc[0]["trace_over_N"] * sc[0]["lag_fs"]) for x in sc],
+                  marker=m, color=c, label=lbl, ms=3.5)
+    ax_l.set_xscale("log"); ax_l.set_yscale("log"); ax_l.set_ylim(1e-4, 0.3)
+    ax_l.set_xlabel(r"lag $\tau_{\max}$ (ps)"); ax_l.set_ylabel(r"$\Delta S/\ln|\mathcal{N}|$")
+    ax_t.set_xscale("log"); ax_t.set_yscale("log")
+    ax_t.set_xlabel(r"lag $\tau_{\max}$ (ps)"); ax_t.set_ylabel(r"$\tau_{\max}\,\mathrm{Tr}\,C$ (scaled)")
+    soft_legend(ax_t, loc="upper left", fontsize=6)
+    for T, m in (("900", "s"), ("1300", "o")):
+        sl = json.loads((res / "06_controls" / "salt_lag" / f"salt_lag_{T}.json").read_text())
+        ax_s.plot([x["lag_ps"] for x in sl], [x["Delta_sigma"] for x in sl], marker=m, color=MUTED if T == "900" else INK_2,
+                  label=f"NaCl {T} K", ms=3.5)
+    ax_s.axhline(0, color=MUTED, lw=0.8, ls="--")
+    ax_s.set_xscale("log")
+    ax_s.set_xlabel(r"lag $\tau_{\max}$ (ps)"); ax_s.set_ylabel(r"$\Delta^{\sigma}$ from block sums")
+    soft_legend(ax_s, loc="center right", bbox_to_anchor=(1.0, 0.62))
+    for ax, l in zip(axes, "abcd"):
         panel_label(ax, l)
     fig.savefig(outfile)
     plt.close(fig)
@@ -618,6 +670,8 @@ def main() -> int:
     table = lj_figure(res, figs / "fig_lj_phases.pdf")
     if (res / "05_molten_salt" / "salt_summary.csv").is_file():
         salt_figure(res, figs / "fig_salt.pdf")
+    if (res / "06_controls" / "spectral").is_dir():
+        controls_figure(res, figs / "fig_controls.pdf")
     if (res / "04_water_phases" / "intramolecular_overlap.csv").is_file():
         water_figure(res, figs / "fig_water.pdf")
     with open(res / "03_lj_phases" / "entropy_excess.csv", "w", newline="") as fh:
