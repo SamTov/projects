@@ -23,7 +23,6 @@
 ckpt*
 *COPYING*
 *.tgz
-*.bib
 *.jar
 # Tex files
 *.aux
