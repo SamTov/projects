@@ -10,8 +10,8 @@
         $a_{i}(t)$ & single-particle primitive of atom $i$ (here its velocity) \\
         $\eta_{\alpha}$ & species-specific scalar multiplying $a_{i}$ (e.g.\ charge) \\
         $f_{\alpha}$ & $\int_{0}^{\infty} dt \sum_{i \in \N_{\alpha}} \langle a_{i}(t) \cdot a_{i}(0) \rangle$, self term of species $\alpha$ \\
-        $f_{\alpha\beta}$ & $\int_{0}^{\infty} dt \sum_{i \in \N_{\alpha}} \sum_{j \in \N_{\beta}} \langle a_{i}(t) \cdot a_{j}(0) \rangle$ \\
-        $g_{\alpha\beta}$ & $f_{\alpha\beta} - \delta_{\alpha\beta} f_{\alpha}$, distinct term \\
+        $g_{\alpha\gamma}$ & $\int_{0}^{\infty} dt \sum_{i \in \N_{\alpha}} \sum_{j \in \N_{\gamma},\, j \neq i} \langle a_{i}(t) \cdot a_{j}(0) \rangle$, distinct term \\
+        $\Delta^{\lambda}$ & Nernst--Einstein deviation of coefficient $\lambda$, Equation~\ref{eqn:full-correction} \\
         $C_{ij}$ & atom-wise integrated correlation matrix, Equation~\ref{eqn:Cij} \\
         $\mu_{k}$, $\phi_{k}$ & eigenvalues and eigenvectors of $C$ \\
         $S(C)$ & von Neumann entropy of $C$, Equation~\ref{eqn:vnentropy} \\

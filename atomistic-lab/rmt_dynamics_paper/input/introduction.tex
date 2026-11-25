@@ -1,28 +1,20 @@
 \section{Introduction}
 \label{sec:introduction}
 
-Time-correlation functions occupy a central position in statistical mechanics.
-Through the Green--Kubo relations~\cite{green54a,kubo57a,kubo66a}, equilibrium fluctuations of a microscopic observable determine macroscopic transport coefficients; through the related Onsager reciprocal relations~\cite{onsager31a,onsager31b}, those coefficients exhibit the symmetries required by microscopic reversibility; and through van Hove correlation functions and their reciprocal-space transforms, they are tied to scattering experiments on dense fluids and soft matter~\cite{hansen90a}.
-For essentially any observable derivable from the dynamics of a many-body system --- diffusion, ionic conductivity, shear viscosity, thermal conductivity, density fluctuations --- a correlation function can be written down, measured in simulation, and compared against experiment.
+Time-correlation functions connect microscopic dynamics to macroscopic observables.
+Through the Green--Kubo relations~\cite{green54a,kubo57a,kubo66a}, equilibrium fluctuations determine transport coefficients, whose symmetries follow from Onsager's reciprocal relations~\cite{onsager31a,onsager31b}, and through van Hove functions they are tied to scattering experiments~\cite{hansen90a}.
+In practice, however, this information is compressed before it is used: a viscosity or an ionic conductivity is reported as a scalar, at most split into a Nernst--Einstein baseline and a distinct-correlation correction written down for that one coefficient~\cite{kashyap11a,fong20a,fong21a}.
+Working back from such a coefficient to its microscopic definition recovers a sum over pairs of atoms of integrated velocity cross-correlations.
+The object behind that sum, an $|\N| \times |\N|$ real symmetric matrix over all atoms, is seldom examined on its own terms.
 
-In practice, however, the information contained in these correlation functions is almost always compressed before it is used.
-A viscosity is reported as a scalar; an ionic conductivity is reported as a scalar, sometimes decomposed into a Nernst--Einstein baseline and a distinct-correlation correction tailored to that specific coefficient~\cite{kashyap11a,fong20a,fong21a}; a dynamic structure factor is reported as a two-point function of wavevector and frequency.
-Each of these reductions discards the particle-wise matrix structure from which it was assembled, and the self-versus-distinct decompositions that do exist are written down property-by-property rather than as a single framework that any transport coefficient of the relevant form can be dropped into.
-Working backwards from such a coefficient to its microscopic definition recovers a sum over pairs of particles of an integrated velocity (or current) cross-correlation, and that object --- an $|\N| \times |\N|$ real symmetric matrix over all atoms in the system --- is seldom examined on its own terms.
+Correlation matrices built from high-dimensional data are studied extensively elsewhere, where random matrix theory (RMT) separates physical structure from finite-sampling noise~\cite{plerou1999,laloux1999,bouchaud2011}.
+In molecular simulation the closest relatives are configurational: Schlitter's entropy~\cite{schlitter1993,andricioaei2001} and essential-dynamics analyses~\cite{amadei1993} diagonalise the positional covariance matrix.
+The matrix of integrated velocity cross-correlations, which is the one that enters the Green--Kubo decomposition of transport coefficients, has to our knowledge not been treated with the same spectral tools.
 
-This omission is not for lack of tools.
-Correlation matrices constructed from high-dimensional data are studied extensively in other settings, where random matrix theory (RMT) provides a natural language for distinguishing physical structure from finite-sampling noise~\cite{plerou1999,laloux1999,bouchaud2011}.
-In the molecular-dynamics literature, the closest relatives are \emph{configurational} in nature: Schlitter's formula~\cite{schlitter1993} and its refinements~\cite{andricioaei2001} compute an entropy from the spectrum of the mass-weighted positional covariance matrix, and essential-dynamics~\cite{amadei1993} / quasi-harmonic analyses diagonalise the same object to extract collective modes.
-The matrix assembled from integrated velocity cross-correlations --- the object that actually appears in the Green--Kubo decomposition of transport coefficients --- has, to our knowledge, not been treated with the same spectral machinery.
+Here we do so in two steps.
+First, we write any transport coefficient of the form $\lambda \propto \int_{0}^{\infty} dt\, \langle A(t) \cdot A(0) \rangle$, with $A = \sum_{i} \eta_{\alpha(i)} a_{i}$ built from a single-particle primitive $a_{i}$ and a species-specific scalar $\eta_{\alpha}$, as a linear functional of one matrix, the atom-wise integrated correlation matrix $C$.
+This puts self-diffusion, ionic conductivity and electrophoretic mobility on a common footing.
+Second, we study $C$ itself, through its eigenvalue spectrum, its eigenvectors and its von Neumann entropy, measured against a Marchenko--Pastur null whose sample count is set by the integration lag.
+Using a Lennard-Jones liquid with controlled bond addition, a Lennard-Jones system across its phases, water and molten NaCl, we show that bonds remove eigenvalues from the noise bulk through its lower edge, one per constraint, with eigenvectors that reproduce the bonding topology once the lag exceeds the time for a pair to diffuse over its bond length; that the entropy of $C$ measured against the null distinguishes crystal, disordered solid and liquid and changes at the same temperatures as the density; and that the species blocks of $C$ reproduce the Nernst--Einstein deviation of the ionic conductivity.
 
-In this work we do so, and in doing so make a contribution in two parts.
-First, we give a species-generic Green--Kubo decomposition that expresses any transport coefficient of the form $\lambda \propto \int_{0}^{\infty} dt \, \langle A(t) \cdot A(0) \rangle$, with $A = \sum_{i} \eta_{\alpha(i)}\, a_{i}$ built from a single-particle primitive $a_{i}$ and a species-specific scalar $\eta_{\alpha}$, as a coarse linear functional of a single underlying object: the atom-wise time-integrated correlation matrix $C$.
-This places self-diffusion, ionic conductivity, electrophoretic mobility, and related dissipative quantities on a common footing, rather than re-deriving a bespoke self / distinct decomposition for each one.
-Second, we study $C$ directly.
-We use its eigenvalue spectrum to identify physical correlation structure; we use its von Neumann entropy as a scalar summary of how correlation is distributed across the system; and we develop a Marchenko--Pastur-type null against which the bulk of the spectrum can be compared, so that physical signal is separable from finite-sample noise.
-Using Lennard-Jones fluids, a controlled bond-addition protocol, water across its condensed phases, and a molten salt, we show that bonding removes eigenvalues of $C$ from the noise bulk through its lower edge, one per constraint, with eigenvectors that reproduce the bonding topology once the integration lag exceeds the time for a pair to diffuse over its bond length, and that the von Neumann entropy of $C$, measured against the random-matrix null, distinguishes crystalline, disordered solid and liquid states and locates first-order transitions at the same temperatures as the density.
-
-The remainder of the paper is organised as follows.
-Section~\ref{sec:theory} reviews the Onsager and Green--Kubo framework in a form suited to species-wise decomposition, introduces the matrix $C$ and the spectral quantities we use to characterise it, and states the RMT null.
-Section~\ref{sec:methods} describes the simulation protocols, the construction of $C$ from a trajectory, and the noise-correction procedure.
-Section~\ref{sec:experiments} validates the noise null and presents the four studies described above, and Section~\ref{sec:conclusion} summarises what the spectrum of $C$ does and does not resolve.
+Section~\ref{sec:theory} develops the decomposition, the matrix $C$ and its spectral observables, Section~\ref{sec:methods} the estimator, the noise null and the simulations, Section~\ref{sec:experiments} the results, and Section~\ref{sec:conclusion} summarises what the spectrum of $C$ does and does not resolve.

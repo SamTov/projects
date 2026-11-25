@@ -3,94 +3,64 @@
 
 \subsection{Construction of the Correlation Matrix}
 \label{subsec:matrix-computation}
-Given a molecular dynamics trajectory of length $T_{\text{traj}}$ from which we sample $M$ velocity snapshots at uniform intervals $\delta t$, we compute the finite-sample estimator of Equation~\ref{eqn:Cij} as
+From $M$ velocity snapshots at intervals $\delta t$ we estimate Equation~\ref{eqn:Cij} as
 \begin{align}
     \hat{C}_{ij} = \frac{\delta t}{2} \sum\limits_{\tau = -L}^{L} \left(1 - \frac{|\tau|}{L}\right) \frac{1}{M} \sum\limits_{m} \mathbf{v}_{i}(t_{m} + \tau\, \delta t) \cdot \mathbf{v}_{j}(t_{m}), \qquad L = \tau_{\max} / \delta t,
     \label{eqn:Chat}
 \end{align}
-where the inner sum averages over all time origins $t_{m}$ for which both snapshots lie inside the trajectory, and the outer sum is the symmetrised (two-sided) form of the time integral, tapered to zero at a lag $\tau_{\max}$ that we choose to be several times the integral relaxation time of the velocity autocorrelation (see below).
-The triangular (Bartlett) taper is not a cosmetic choice: a sharp truncation at $\tau_{\max}$ does not yield a positive semi-definite matrix, whereas the Bartlett-weighted estimator is positive semi-definite by construction, which the entropy of Equation~\ref{eqn:vnentropy} requires.
+averaging over time origins $t_{m}$ and over the three Cartesian components.
+The two-sided sum is tapered to zero at the lag $\tau_{\max}$ by a triangular (Bartlett) window; unlike a sharp truncation, this makes $\hat{C}$ positive semi-definite by construction, as the entropy of Equation~\ref{eqn:vnentropy} requires.
+The cross-correlations are evaluated in frequency space, at a cost of $\mathcal{O}(|\N|^{2} M \log M)$.
+The lag must be long enough to integrate the correlations of interest and short enough not to accumulate noise from the tail; by default we set $\tau_{\max}$ to about ten times the integral relaxation time $\tau_{\text{int}}$ of the velocity autocorrelation, and Section~\ref{subsec:bond-addition} shows how the choice sets which bonds can be resolved.
 
-Evaluating Equation~\ref{eqn:Chat} by direct summation costs $\mathcal{O}(|\N|^{2} M^{2})$ and is intractable at the system sizes we use.
-Instead, for each pair $(i,j)$ we compute the cross-correlation in frequency space via the Wiener--Khinchin theorem, using a single pair of FFTs per Cartesian component and summing the three component contributions, reducing the cost to $\mathcal{O}(|\N|^{2} M \log M)$.
-The implementation is memory-bound at large $|\N|$, so we process blocks of pair indices in sequence and reuse the forward transforms of each atom's velocity time series.
-
-Two practical points deserve attention.
-First, when $a_{i}$ is a vector such as velocity, we compute $\hat{C}_{ij}$ per Cartesian component and average; this reduces variance by a factor of three relative to using a scalar projection and preserves rotational invariance.
-Second, the choice of $\tau_{\max}$ is not innocuous.
-Too short a cutoff under-integrates long-lived correlations and biases $\hat{C}$ downward; too long a cutoff accumulates noise from the flat tail of the autocorrelation function and inflates the variance of every off-diagonal entry.
-We estimate the integral relaxation time
-\begin{align}
-    \tau_{\text{int}} = \int\limits_{0}^{\infty} dt \, \frac{\langle \mathbf{v}_{i}(t) \cdot \mathbf{v}_{i}(0) \rangle}{\langle \mathbf{v}_{i}(0) \cdot \mathbf{v}_{i}(0) \rangle}
-    \label{eqn:tau-int}
-\end{align}
-directly from the trajectory, averaging over atoms, and set $\tau_{\max} = 10\, \tau_{\text{int}}$ by default in diffusive systems; where $\tau_{\text{int}}$ vanishes because the motion is bound, $\tau_{\max}$ is fixed by hand.
-
-\subsection{De-noising via the Marchenko--Pastur Null}
+\subsection{Marchenko--Pastur Null}
 \label{subsec:de-noising-correlation-matrices}
-For a system of $|\N|$ non-interacting particles sampled at $T_{\text{eff}}$ independent times, the bulk of the eigenvalue distribution of the trace-normalised correlation matrix $\hat{C} / \mathrm{Tr}(\hat{C})$ follows the Marchenko--Pastur density~\cite{marchenko1967},
+For $|\N|$ independent particles and $T_{\text{eff}}$ independent samples, the spectrum of $\hat{C}$ follows the Marchenko--Pastur density~\cite{marchenko1967}
 \begin{align}
-    \rho_{\text{MP}}(\mu) = \frac{1}{2 \pi q\, \sigma^{2}\, \mu} \sqrt{(\mu_{+} - \mu)(\mu - \mu_{-})}, \qquad \mu \in [\mu_{-}, \mu_{+}],
+    \rho_{\text{MP}}(\mu) = \frac{1}{2 \pi q\, \sigma^{2}\, \mu} \sqrt{(\mu_{+} - \mu)(\mu - \mu_{-})}, \qquad \mu_{\pm} = \sigma^{2} (1 \pm \sqrt{q})^{2},
     \label{eqn:mp-density}
 \end{align}
-with aspect ratio $q = |\N| / T_{\text{eff}}$, edges $\mu_{\pm} = \sigma^{2}\, (1 \pm \sqrt{q})^{2}$, and noise scale $\sigma^{2}$ fitted from the bulk.
-The sample count $T_{\text{eff}}$ is a property of the estimator and not of the decorrelation time alone.
-Equation~\ref{eqn:Chat} is a quadratic form $\hat{C} = V^{\top} A V$ in the $M \times |\N|$ matrix of velocity samples, with $A$ the banded matrix of lag weights; for independent particles with temporal covariance $R$, matching its first two spectral moments to those of a Wishart matrix gives
+with aspect ratio $q = |\N| / T_{\text{eff}}$ and noise scale $\sigma^{2}$, which we take from the mean diagonal element of a reference state (the bond-free liquid in Section~\ref{subsec:bond-addition}, the run itself elsewhere).
+$T_{\text{eff}}$ is a property of the estimator, not of the decorrelation time alone.
+Equation~\ref{eqn:Chat} is a quadratic form $\hat{C} = V^{\top} A V$ in the $M \times |\N|$ matrix of samples, with $A$ the banded matrix of lag weights; for independent particles with temporal covariance $R$, matching its first two spectral moments to those of a Wishart matrix gives
 \begin{align}
     T_{\text{eff}} = d\, \frac{\mathrm{Tr}(A R)^{2}}{\mathrm{Tr}(A R A R)} \;\longrightarrow\; \frac{3 d}{2} \frac{T_{\text{traj}}}{\tau_{\max}} \qquad (\tau_{\max} \gg \tau_{\text{int}}),
     \label{eqn:teff}
 \end{align}
-where $d = 3$ is the number of Cartesian components averaged over.
-Lengthening $\tau_{\max}$ therefore reduces the number of independent samples in proportion, and the count $T_{\text{traj}} / \tau_{\text{int}}$ overstates it by a factor of order $\tau_{\max} / \tau_{\text{int}}$.
-We evaluate the traces in Equation~\ref{eqn:teff} in the frequency domain from the lag weights and the measured particle-averaged velocity power spectrum, and keep $q$ well below one, where the Marchenko--Pastur form is an accurate description of the weighted estimator.
-We refer to $\rho_{\text{MP}}$ as the noise-only null and use it in two ways.
+with $d = 3$ components.
+Lengthening the lag thus reduces the sample count in proportion, and the naive count $T_{\text{traj}}/\tau_{\text{int}}$ overstates it by a factor of order $\tau_{\max}/\tau_{\text{int}}$.
+We evaluate the traces in the frequency domain from the lag weights and the measured particle-averaged velocity power spectrum, and keep $q$ well below one.
 
-First, we test how close the empirical spectrum $\rho_{\text{emp}}(\mu)$ is to the null using the Kolmogorov--Smirnov distance $D_{\mathrm{KS}}(\rho_{\text{emp}}, \rho_{\text{MP}})$ and a comparison between the empirical largest eigenvalue $\mu_{\max}$ and the MP edge $\mu_{+}$.
-For a system with genuine correlation structure, $D_{\mathrm{KS}}$ remains non-trivial even in the $T_{\text{eff}} \to \infty$ limit and $\mu_{\max}$ sits above $\mu_{+}$; for an uncorrelated reference, both quantities approach zero.
-
-Second, we use the null to separate signal from noise in the entropy observable.
-Eigenvalues above a threshold $\mu_{\text{cut}} = \mu_{+} (1 + \kappa / \sqrt{T_{\text{eff}}})$, with $\kappa$ a small safety factor set to $\kappa = 3$ throughout, are classified as outliers; the remainder of the spectrum is taken to be consistent with the null.
-We report two entropy quantities: the raw $S(\hat{C})$ of Equation~\ref{eqn:vnentropy} and the de-noised version
+The null is used in two ways.
+Eigenvalues below $\mu_{-}$ or above $\mu_{+}$ are counted as leaving the bulk.
+For the entropy, because noise alone lowers $S$ by an amount that grows with $q$, we report the entropy deficit
 \begin{align}
-    S_{\text{signal}}(\hat{C}) = S(\hat{C}) - S_{\text{bulk}}(\hat{C}),
-    \label{eqn:signal-entropy}
+    \Delta S = S_{\text{MP}}(q) - S(\hat{C}),
+    \label{eqn:entropy-deficit}
 \end{align}
-where $S_{\text{bulk}}$ is the von Neumann entropy computed from only those eigenvalues below $\mu_{\text{cut}}$.
-$S_{\text{signal}}$ is the component of the spectrum that cannot be explained by the noise-only null and is the quantity most sensitive to the physical features we want to expose.
-
-We validate this machinery on synthetic trajectories without correlation structure before applying it to molecular dynamics output; the validation is reported in Section~\ref{subsec:convergence-of-the-noise-term}.
+where $S_{\text{MP}}(q)$ is the mean entropy of a white Wishart matrix of the same size and aspect ratio, evaluated numerically; $\Delta S$ vanishes for a spectrum indistinguishable from noise and is positive when correlation is concentrated in fewer modes.
+Section~\ref{subsec:convergence-of-the-noise-term} validates the null on synthetic data.
 
 \subsection{Molecular Dynamics Simulations}
 \label{subsec:molecular-dynamics-simulations}
-Simulations fall into three families, one per experimental system, and use the classical molecular dynamics code LAMMPS~\cite{thompson2022} unless otherwise noted.
-Production runs of interacting systems use a Nos\'e--Hoover thermostat with a coupling time of $0.1$~ps in the constant-$NVT$ ensemble, and a Nos\'e--Hoover barostat with coupling constants of $0.1$~ps (thermostat) and $1.0$~ps (barostat) where $NPT$ is required, so that the dynamics conserve total momentum and the distinct correlations are not damped by a stochastic bath.
-The validation of the noise null in Section~\ref{subsec:convergence-of-the-noise-term} uses synthetic Ornstein--Uhlenbeck velocities instead of a simulation.
-Each run is initialised from a randomly seeded velocity distribution and separately reported in output metadata, and every reported observable is averaged over a minimum of three and up to five independent seeds.
+All simulations use LAMMPS~\cite{thompson2022} with Nos\'e--Hoover thermostats and barostats (coupling times $0.1$~ps and $1$~ps), so that total momentum is conserved and distinct correlations are not damped by a stochastic bath.
+Every state is simulated with three independent seeds, and error bars are the standard deviation over seeds.
+Where positions rather than velocities are recorded, $C$ is built from the mean velocity over each sampling interval, $[\mathbf{r}_{i}(t + \delta t) - \mathbf{r}_{i}(t)]/\delta t$ from unwrapped coordinates, which has the same time integral as the instantaneous velocity without aliasing fast motion, so the sampling interval can be chosen for storage.
 
-\paragraph{Lennard-Jones systems (Sections~\ref{subsec:bond-addition} and~\ref{subsec:lennard-jones-phases}).}
-The Lennard-Jones potential is taken with argon parameters $\sigma = 3.405$~\AA{}, $\varepsilon / k_{B} = 119.8$~K, and particle mass $39.948$~amu, truncated at $r_{c} = 3\,\sigma$.
-System size is $|\N| = 500$ for the phase sweep and $|\N| = 512$ or $216$ for the two bond-addition protocols.
-The integration timestep is $\delta t = 2$~fs.
-For the phase sweep we equilibrate for $1.5 \times 10^{5}$ steps in $NPT$ and run for $5 \times 10^{5}$ steps of production along the $P = 20$~atm isobar, which lies below the critical pressure and, unlike the $1$~atm isobar, has a liquid range of several tens of kelvin.
-Because a periodic system of this size superheats and supercools, every temperature is simulated from three initial conditions --- an fcc crystal, a dense disordered configuration at $\rho = 0.8\,\sigma^{-3}$, and a dilute gas at $\rho = 0.02\,\sigma^{-3}$ --- so that each transition is bracketed from both sides;
-for the bond-addition experiment we equilibrate an $NVT$ liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$, insert bonds into the equilibrated configuration, re-thermalise for $10^{4}$ steps, and run for $5 \times 10^{5}$ production steps, with the bond-free reference restarted from the same configuration; a second set of bond-addition runs uses $|\N| = 216$, bonds within $1.3\,\sigma$ only, and $1.3 \times 10^{7}$ production steps with positions written every $250$ steps.
-Harmonic bonds for the bond-addition experiment are added between random eligible pairs with stiffness $k_{b} = 100\,\varepsilon/\sigma^{2}$ and rest length set at the current pair separation.
-Bonds are inserted by writing a bonded data file from the equilibrated configuration and restarting from it.
+\paragraph{Lennard-Jones systems.}
+Argon parameters are used ($\sigma = 3.405$~\AA{}, $\varepsilon/k_{B} = 119.8$~K, $m = 39.948$~amu, cutoff $3\sigma$, $\delta t = 2$~fs).
+For bond addition, an $NVT$ liquid at $80$~K and $0.8\,\sigma^{-3}$ is equilibrated, harmonic bonds ($k_{b} = 100\,\varepsilon/\sigma^{2}$, rest length equal to the current separation) are added between random eligible pairs, and every bond count, including zero, restarts from the same configuration with $10^{4}$ steps of re-thermalisation.
+The short-lag protocol uses $|\N| = 512$, pairs closer than $2\sigma$ and $1$~ns of production with velocities every $20$~fs; the long-lag protocol uses $|\N| = 216$, pairs closer than $1.3\sigma$ and $26$~ns with positions every $0.5$~ps.
+The phase sweep uses $|\N| = 500$ along the $20$~atm isobar, which lies below the critical pressure but, unlike the $1$~atm isobar, has a liquid range of tens of kelvin; each temperature from $20$ to $160$~K is run from an fcc crystal, a dense disordered state ($0.8\,\sigma^{-3}$) and a dilute gas ($0.02\,\sigma^{-3}$) to expose superheating and supercooling, with $0.3$~ns of $NPT$ equilibration and $1$~ns of production.
 
-\paragraph{Water (Section~\ref{subsec:water-phases}).}
-Water is modelled with the rigid TIP4P/2005 model~\cite{abascal2005}, held rigid by SHAKE, with $432$ molecules ($1296$ atoms), a $10$~\AA{} real-space cutoff for both the Lennard-Jones and Coulomb terms with a long-range dispersion correction, and particle-particle particle-mesh electrostatics.
-The integration timestep is $\delta t = 2$~fs.
-Along the $1$~atm isobar, every temperature in $\{200, 220, 240, 260, 270, 280, 290, 300, 310, 320, 340\}$~K is simulated from two initial states with three seeds each: a proton-disordered ice Ih crystal of $6 \times 3 \times 3$ orthorhombic cells, relaxed with an anisotropic barostat, and a liquid melted at $400$~K for $50$~ps before cooling, relaxed isotropically.
-The ice configuration is generated to satisfy the Bernal--Fowler rules~\cite{bernal1933} by orienting the hydrogen-bond network along a random Euler circuit of the four-coordinated oxygen lattice, which assigns every oxygen exactly two donated and two accepted bonds, and has zero net dipole.
-Each run is equilibrated for $0.5$~ns and followed for $3$~ns, with positions written every $0.1$~ps.
+\paragraph{Water.}
+TIP4P/2005~\cite{abascal2005} with $432$ rigid molecules (SHAKE), a $10$~\AA{} cutoff with long-range dispersion correction, particle-particle particle-mesh electrostatics and $\delta t = 2$~fs is followed along the $1$~atm isobar from $200$ to $340$~K.
+Each temperature is run from a proton-disordered ice Ih crystal ($6 \times 3 \times 3$ orthorhombic cells) and from a liquid melted at $400$~K, with $0.5$~ns of equilibration and $3$~ns of production, positions every $0.1$~ps.
+The ice cell is relaxed anisotropically, except at $320$ and $340$~K, where the crystal melts during equilibration and the anisotropic cell becomes unstable, and the liquid isotropically.
+The ice configuration satisfies the Bernal--Fowler rules~\cite{bernal1933}: the hydrogen-bond network is oriented along a random Euler circuit of the four-coordinated oxygen lattice, which gives every oxygen two donated and two accepted bonds, and the net dipole is zero.
 
-\paragraph{Molten salt (Section~\ref{subsec:molten-salt-ionic-conductivity}).}
-NaCl is modelled with the Tosi--Fumi rigid-ion potential~\cite{fumi1964,tosi1964} with $256$ ion pairs, a $11$~\AA{} real-space cutoff and particle-particle particle-mesh electrostatics, in the constant-$NPT$ ensemble at $1$~atm with $\delta t = 1$~fs.
-Every temperature in $\{900, 1000, 1100, 1200, 1300, 1400, 1600, 1800\}$~K is simulated from a rock-salt crystal and from a liquid melted at $2000$~K for $20$~ps, with three seeds each; runs are equilibrated for $100$~ps and followed for $1.5$~ns, with positions written every $50$~fs.
+\paragraph{Molten salt.}
+NaCl is modelled with the Tosi--Fumi rigid-ion potential~\cite{fumi1964,tosi1964} with $256$ ion pairs, an $11$~\AA{} cutoff, particle-particle particle-mesh electrostatics and $\delta t = 1$~fs, along the $1$~atm isobar from $900$ to $1800$~K.
+Each temperature is run from a rock-salt crystal and from a liquid melted at $2000$~K, with $0.1$~ns of equilibration and $1.5$~ns of production, positions every $50$~fs.
 
-\paragraph{Correlation matrices from positions.}
-Where positions rather than velocities are recorded (the long-lag bond-addition runs, water and the salt), $C$ is built from the mean velocity over each sampling interval, $[\mathbf{r}_{i}(t + \delta t) - \mathbf{r}_{i}(t)]/\delta t$, using unwrapped coordinates.
-This has the same time integral as the instantaneous velocity and does not alias fast motion into the zero-frequency estimate, so the sampling interval can be chosen for storage rather than for the fastest vibration.
-
-\paragraph{Reproducibility.}
-All input decks, analysis scripts, and random seeds used to generate the figures in Section~\ref{sec:experiments} are available in the repository described in Section~\ref{sec:data-and-availability}; each figure is regenerable from a single command and each run records its seed, source commit, and input hash in a provenance file.
+Input templates, drivers, analysis code and the seeds of every run are available as described in Section~\ref{sec:data-and-availability}.

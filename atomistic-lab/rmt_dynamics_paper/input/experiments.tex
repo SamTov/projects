@@ -97,15 +97,8 @@ Bonding is therefore read off the spectrum of $C$ as a count of sub-bulk eigenva
 
 \subsection{Lennard-Jones Phases}
 \label{subsec:lennard-jones-phases}
-We next follow $C$ across the solid, liquid and vapour phases of a single-component Lennard-Jones system with argon parameters, $|\N| = 500$, along the $P = 20$~atm isobar from $20$ to $160$~K.
-The pressure is chosen to be below the critical pressure but high enough that the liquid is stable over several tens of kelvin; at $1$~atm the liquid range is only a few kelvin.
-Each temperature is simulated from an fcc crystal, from a dense disordered configuration and from a dilute gas, with three seeds each, so that the hysteresis of the first-order transitions in a $500$-atom box is visible rather than hidden; the protocol is given in Section~\ref{subsec:molecular-dynamics-simulations}.
-$C$ is built with $\tau_{\max} = 2$~ps.
-
-Because $T_{\text{eff}}$, and hence $q$, changes by an order of magnitude across the isobar, the raw entropy $S(C)$ mixes physical structure with the sampling noise of Section~\ref{subsec:de-noising-correlation-matrices}: in the liquid, for example, $S(C)/\ln|\N|$ falls from $0.9805$ to $0.9758$ between $80$ and $130$~K largely because $q$ rises from $0.21$ to $0.30$.
-We therefore report the entropy deficit $\Delta S = S_{\text{MP}}(q) - S(C)$, where $S_{\text{MP}}(q)$ is the mean entropy of a white Wishart matrix of the same size and aspect ratio, evaluated numerically.
-$\Delta S$ is zero for a spectrum indistinguishable from noise and positive when correlation is concentrated in fewer modes than noise alone would produce.
-In the vapour $q$ exceeds one, where the moment-matched null is not reliable, and $\Delta S$ is not reported.
+We next follow $C$ ($\tau_{\max} = 2$~ps) across the solid, liquid and vapour phases of the Lennard-Jones system along the $20$~atm isobar, from three starting states that expose the hysteresis of the first-order transitions in a $500$-atom box (Section~\ref{subsec:molecular-dynamics-simulations}).
+Because $q$ changes by an order of magnitude along the isobar, the raw entropy mixes structure with sampling noise (in the liquid $S/\ln|\N|$ falls from $0.9805$ to $0.9758$ between $80$ and $130$~K largely because $q$ rises from $0.21$ to $0.30$), so we report the entropy deficit of Equation~\ref{eqn:entropy-deficit}, omitting the vapour, where $q > 1$ and the null is not reliable.
 
 \begin{figure}[tbp]
     \centering
@@ -114,28 +107,21 @@ In the vapour $q$ exceeds one, where the moment-matched null is not reliable, an
     \label{fig:lj-results}
 \end{figure}
 
-Figure~\ref{fig:lj-results} shows the three branches.
-The crystal remains crystalline up to $90$~K and melts between $90$ and $95$~K, where its density drops from $1.542$ to $1.294$~g\,cm$^{-3}$.
-The two disordered starts are liquid from $60$~K upwards and solidify between $50$ and $60$~K into a solid whose density, $1.65$--$1.70$~g\,cm$^{-3}$, is below that of the crystal at the same temperature; we did not determine whether it is amorphous or polycrystalline.
-On heating, the liquid branches remain liquid up to $130$~K and vaporise by $135$~K, while the dilute start condenses only between $110$ and $115$~K, where the three seeds split between liquid and vapour.
-Melting coexistence on this isobar therefore lies between $50$ and $95$~K and liquid--vapour coexistence between $110$ and $135$~K.
+The crystal melts between $90$ and $95$~K (Figure~\ref{fig:lj-results}a); the disordered starts are liquid from $60$~K upwards and solidify between $50$ and $60$~K into a solid less dense than the crystal, whose structure (amorphous or polycrystalline) we did not determine.
+The liquid vaporises between $130$ and $135$~K on heating, while the dilute start condenses only between $110$ and $115$~K, so melting coexistence lies between $50$ and $95$~K and liquid--vapour coexistence between $110$ and $135$~K.
 
 The entropy deficit separates the three condensed states.
 In the crystal $\Delta S/\ln|\N|$ rises from $0.040$ at $20$~K to $0.064$ at $90$~K; in the disordered solid it is larger, $0.062$ to $0.074$; and in the liquid it is an order of magnitude smaller, $0.0097$ at $60$~K, decaying monotonically to $10^{-4}$ at $120$~K and to zero within the seed scatter of a few $10^{-5}$ above.
-The seed-to-seed scatter in the liquid is about $10^{-4}$ or smaller, so this decay is resolved at every temperature.
-The two disordered starts give identical $\Delta S$ wherever they are in the same phase, and differ from the crystal branch by a factor of about $1.5$ at the same temperature and similar density, so $\Delta S$ distinguishes the crystalline from the disordered solid as well as the solid from the liquid.
+With a seed scatter of $10^{-4}$ or less, this decay is resolved at every temperature, and the crystalline and disordered solids differ by a factor of about $1.5$ at the same temperature and similar density.
 
-Every step in $\Delta S$ coincides with a step in density and in diffusion at the same grid point, on every branch, so the spectral and the thermodynamic observables locate the transitions at the same temperatures.
-On the $5$~K grid used here both steps are complete within one interval: the full widths at half maximum of $|d\rho/dT|$ and $|dS/dT|$ at the boiling transition are $10.3$ and $10.3$~K for the dense branch and $10.3$ and $10.4$~K for the crystal branch, and $11.4$ and $10.2$~K at melting on the crystal branch, all set by the grid spacing.
-These data therefore do not show that $S(C)$ resolves a transition more sharply than the density.
+Every step in $\Delta S$ coincides with a step in density and diffusion at the same grid point on every branch.
+On the $5$~K grid both steps complete within one interval (the full widths at half maximum of $|d\rho/dT|$ and $|dS/dT|$ are $10$--$11$~K, set by the spacing), so these data do not show that $S(C)$ resolves a transition more sharply than the density.
+The spectra (Figure~\ref{fig:lj-results}d--f) show the difference between phases directly: the liquid follows the Marchenko--Pastur density closely, whereas both solids pile weight into small eigenvalues below the bulk and spread a tail of large ones beyond it.
 
-The spectra behind these numbers (Figure~\ref{fig:lj-results}d--f) make the difference visible.
-The liquid spectrum follows the Marchenko--Pastur density closely, whereas both solids pile weight into small eigenvalues below the bulk and spread a tail of large ones beyond it, more strongly in the disordered solid than in the crystal.
-
-The physical content of $\Delta S$ differs between the phases.
-In the solids the diagonal of $C$ is two orders of magnitude smaller than in the liquid (Figure~\ref{fig:lj-results}c) and, as noted in Section~\ref{subsec:interpreting-atomic-correlation-matrices}, $C$ vanishes for a non-diffusing solid in the limit of long lags; at $\tau_{\max} = 2$~ps its structure reflects vibrational correlations that have not decayed within the window.
-In the liquid the deficit reflects correlated displacements of neighbouring atoms over $2$~ps, which weaken as temperature rises until the spectrum is indistinguishable from the noise null.
-$\Delta S$ is not a function of the diffusion coefficient alone: it falls by a factor of six at melting while the diffusion coefficient rises, and continues to fall within the liquid while the diffusion coefficient rises further, but the solid branches show the opposite trend, with $\Delta S$ rising alongside diffusion.
+The physical content of $\Delta S$ differs between phases.
+In the solids the diagonal of $C$ is two orders of magnitude smaller than in the liquid (Figure~\ref{fig:lj-results}c), and since $C$ vanishes for a non-diffusing solid at long lags, its structure at $2$~ps reflects vibrational correlations that have not decayed within the window.
+In the liquid it reflects correlated displacements of neighbouring atoms, which weaken with temperature until the spectrum is indistinguishable from noise.
+$\Delta S$ is not a function of diffusion alone: it falls as diffusion rises at melting and within the liquid, but rises with diffusion along the solid branches.
 
 \subsection{Water Phases}
 \label{subsec:water-phases}
