@@ -197,8 +197,8 @@ Above $1300$~K the two branches coincide.
 The conductivity of the liquid is $302 \pm 3$~S\,m$^{-1}$ at $900$~K and $357 \pm 15$~S\,m$^{-1}$ at $1100$~K, rising to about $400$~S\,m$^{-1}$ near $1600$~K, with no resolved change at $1800$~K, while its Nernst--Einstein estimate rises monotonically from $316$ to $645$~S\,m$^{-1}$.
 The deviation between the two is the quantity that Eq.~\eqref{eqn:full-correction} expresses through the species blocks of $C$.
 With $\eta_{\mathrm{Na}} = +1$ and $\eta_{\mathrm{Cl}} = -1$, the block-sum route at $\tau_{\max} = 4$~ps gives $\Delta^{\sigma} = -0.045 \pm 0.012$ at $900$~K, falling to $-0.14$ at $1100$~K and $-0.43$ at $1800$~K.
-These values are not converged in the lag (Fig.~\ref{fig:controls}d): between $1$ and $32$~ps, $\Delta^{\sigma}$ ranges from $-0.13$ to $+0.01$ at $900$~K and from $-0.26$ to $-0.16$ at $1300$~K, because the self and distinct integrals converge at different rates.
-Their sum, the conductivity, is much less sensitive, varying by at most $6\%$ over the same range, and the ordering of the two temperatures holds at every lag; the absolute values of $\Delta^{\sigma}$ quoted here should be read with an uncertainty of about $\pm 0.05$ from the window alone.
+In a single trajectory these values fluctuate with the lag (Fig.~\ref{fig:controls}d: between $1$ and $32$~ps, from $-0.13$ to $+0.01$ at $900$~K and from $-0.26$ to $-0.16$ at $1300$~K), but averaged over seeds they change by at most $0.04$ between $1$ and $16$~ps at every temperature tested, and the ordering of the temperatures holds at every lag.
+The conductivity itself is less robust at the highest temperatures: at $1800$~K it falls from $430$ to $346$~S\,m$^{-1}$ between lags of $1$ and $16$~ps, because the self and distinct integrals both decrease with the lag, so comparisons of $\sigma$ between temperatures are made at a fixed lag.
 Because $\sum_{ij} z_{i} z_{j} C_{ij}$ is the charge-current integral by construction, comparison with the time-domain Green--Kubo integral of the charge current is a consistency check of the estimator rather than a test of the decomposition.
 The two agree within the seed scatter at each temperature (Fig.~\ref{fig:salt}c), but the time-domain route is more negative at seven of eight temperatures, by up to a factor of two at $900$~K, and individual runs differ by up to $15\%$: the sharp truncation of the time-domain integral and the Bartlett taper of $\hat{C}$ weight the tail of the charge-current correlation differently.
 The split into self and distinct terms also depends on the reference frame when total momentum is conserved and the ions differ in mass~\cite{kashyap11a,trullas94a}; we use the barycentric frame of the simulation throughout.
@@ -209,3 +209,40 @@ At $\tau_{\max} = 4$~ps the entropy deficit of the liquid is small, $0.0018$ at 
 Across all $36$ melted runs the deficit and $\Delta^{\sigma}$ are strongly anticorrelated (Spearman $r_{\mathrm{s}} = -0.95$), but both change monotonically with temperature, so this is a common trend rather than an independent test.
 The lag scan limits it further: the deficit of the liquid falls from $0.03$ at $0.5$~ps to zero within the null uncertainty by $8$~ps (Fig.~\ref{fig:controls}b), so it reflects short-lived cation--anion correlation, most plausibly the rattling of ions in their first coordination shell, rather than the long-time distinct correlation that sets $\Delta^{\sigma}$.
 The crystal again carries a large deficit, $0.030$--$0.037$, an order of magnitude above the liquid, and loses it on melting.
+
+\paragraph{Which modes carry the current.}
+The spectrum of $C$ can be used more directly, to ask which collective motions reduce the conductivity.
+Because every ion carries unit charge, $\sum_{i} z_{i}^{2} C_{ii} = \mathrm{Tr}\,C = \sum_{k} \mu_{k}$, and with the charge weights $w_{k} = (\mathbf{z} \cdot \phi_{k})^{2}/|\N|$, which sum to one,
+\begin{align}
+    1 + \Delta^{\sigma} = \frac{\mathbf{z}^{\top} C\, \mathbf{z}}{\mathrm{Tr}\,C} = \frac{\sum_{k} w_{k}\, \mu_{k}}{\langle \mu \rangle}:
+    \label{eqn:spectral-conductivity}
+\end{align}
+the conductivity relative to its Nernst--Einstein estimate is the charge-weighted mean eigenvalue over the plain mean.
+A negative $\Delta^{\sigma}$ therefore means that the charge pattern $\mathbf{z}$ lies preferentially on the low-eigenvalue modes of $C$, and the eigenvectors show what those modes are.
+For a random arrangement of the same charges the ratio is $1.00$ at every temperature, and the identity holds to machine precision for every run.
+
+The charge pattern loads increasingly onto the bottom of the spectrum as the liquid is heated (Fig.~\ref{fig:salt-spectral}a,b): the lowest $10\%$ of modes carry $14\%$ of the charge weight at $900$~K and $41\%$ at $1800$~K, against $10\%$ by chance, while $1 + \Delta^{\sigma}$ falls from $0.96$ to $0.57$ at $\tau_{\max} = 4$~ps.
+A constant $4.4\%$ sits on the zero mode of total momentum, onto which the charge vector projects because the two ions differ in mass: it equals the squared overlap of the charge and mass vectors, $4.35\%$, at every temperature, and is the frame dependence noted above.
+
+The natural reading of a negative $\Delta^{\sigma}$ in a molten salt is ion pairing: a cation and an anion that move together carry no current.
+The bonding result of Section~\ref{subsec:bond-addition} makes this testable, because a long-lived pair would bound its relative coordinate and appear as a localised low mode with its weight on the two ions.
+The data rule it out as the source of the trend.
+The low modes that carry the charge weight are delocalised, with participation ratios of $175$ against $172$ for the average mode in a system of $512$ ions.
+The ion-centred cage matrix of the nearest Cl$^{-}$ to each Na$^{+}$ shows that cation--anion pairs co-move only weakly, and less so as the temperature rises (Fig.~\ref{fig:salt-spectral}c): at $0.5$~ps the pair's relative motion is $0.77$ of that of a random cation--anion pair at $900$~K and $0.85$ at $1800$~K, and at every temperature it approaches the random value by $16$~ps, while the Na--Cl residence time in the first shell falls from $5.7$ to $1.8$~ps.
+The growing reduction of the conductivity is thus carried by collective, system-spanning motions aligned with the long-wavelength charge pattern, consistent with the restoring force that the long-range Coulomb interaction exerts on any net charge current, and not by an increasing population of bound ion pairs.
+
+\begin{figure*}[tbp]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig_salt_spectral.pdf}
+    \caption{Spectral view of the ionic conductivity of NaCl at $\tau_{\max} = 4$~ps. (a) Cumulative charge weight $\sum w_{k}$ over the modes of $C$ ordered from the lowest eigenvalue, for three temperatures on the isobar; the dashed diagonal is the expectation for randomly placed charges. (b) Charge weight carried by the lowest $10\%$ of modes on the $1$~atm isobar and at constant volume (isochore at the $1100$~K density); the dashed line is the random expectation. (c) Relative motion of each Na$^{+}$ and its nearest Cl$^{-}$ from the ion-centred cage matrix, divided by that of a random cation--anion pair, against the lag. (d) Nernst--Einstein deviation on the isobar and the isochore.}
+    \label{fig:salt-spectral}
+\end{figure*}
+
+Along the isobar the liquid expands from $1.55$ to $1.09$~g\,cm$^{-3}$, so temperature and density change together.
+Heating the liquid instead at constant volume, at its $1100$~K density of $1.446$~g\,cm$^{-3}$, separates the two (Fig.~\ref{fig:salt-spectral}b,d).
+At constant density the conductivity rises steadily, from $351 \pm 6$ to $492 \pm 20$~S\,m$^{-1}$ between $1100$ and $1800$~K, with no plateau; $\Delta^{\sigma}$ stays between $-0.14$ and $-0.16$; and the charge weight on the lowest tenth of the modes stays between $16$ and $18\%$.
+Cation--anion co-motion and the Na--Cl residence time weaken with temperature on the isochore just as on the isobar (pair co-motion $0.76$ to $0.83$ of random at $0.5$~ps, residence time $3.8$ to $2.1$~ps).
+The contrast between the two paths holds at every lag from $1$ to $16$~ps: at $1800$~K, $\Delta^{\sigma}$ is $-0.39$ to $-0.44$ on the isobar and $-0.13$ to $-0.16$ on the isochore.
+The levelling-off of the conductivity along the isobar is therefore an effect of expansion, not of temperature: lowering the density loads the charge pattern onto the slow collective modes of $C$, while raising the temperature at fixed density does not, and ion pairing weakens along both paths.
+
+\textcolor{red}{[LONG-RUN RESULT AT 1400--1800 K: pending]}

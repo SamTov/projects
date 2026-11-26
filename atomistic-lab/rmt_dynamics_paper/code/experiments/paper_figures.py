@@ -659,6 +659,59 @@ def controls_figure(res: Path, outfile: Path) -> None:
     plt.close(fig)
 
 
+# ------------------------------------------------- salt: spectral current ---
+def salt_spectral_figure(res: Path, outfile: Path) -> None:
+    import json
+    rows = [json.loads(p.read_text()) for p in sorted((res / "05_molten_salt_spectral").glob("spec_*.json"))]
+    iso = [r for r in rows if r["series"] == "05_molten_salt_isochore"]
+    bar = [r for r in rows if r["series"] == "05_molten_salt"]
+    lag = lambda r, L: [x for x in r["lags"] if x["lag_fs"] == L][0]
+    by_T = lambda rr: {T: [r for r in rr if r["temperature"] == T] for T in sorted({r["temperature"] for r in rr})}
+    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 2.3), constrained_layout=True)
+    fig.get_layout_engine().set(w_pad=0.04, wspace=0.05)
+    a, b, c, d = axes
+    shades = {900.0: BLUE_RAMP[0], 1300.0: BLUE_RAMP[2], 1800.0: BLUE_RAMP[4]}
+    g = by_T(bar)
+    a.plot([0, 1], [0, 1], color=MUTED, ls="--", lw=0.8, label="random charges")
+    for T, col in shades.items():
+        r0 = lag(g[T][0], 4000.0)
+        x = np.array(r0["cum_modes"]); ys = np.mean([lag(r, 4000.0)["cum_charge"] for r in g[T]], axis=0)
+        a.plot(x, ys, color=col, label=f"{T:.0f} K")
+    a.set_xlim(0, 1); a.set_ylim(0, 1)
+    a.set_xlabel("fraction of modes (lowest first)"); a.set_ylabel("cumulative charge weight")
+    soft_legend(a, loc="lower right", fontsize=6, handlelength=1.2, borderaxespad=0.3, labelspacing=0.3)
+    Ts = np.array(sorted(g))
+    w = np.array([[lag(r, 4000.0)["charge_weight_lowest_decile"] for r in g[T]] for T in Ts], dtype=object)
+    b.errorbar(Ts, [np.mean(x) for x in w], yerr=[np.std(x) for x in w], color=SERIES[0], marker="o", label="isobar")
+    if iso:
+        gi = by_T(iso); Ti = np.array(sorted(gi))
+        wi = [[lag(r, 4000.0)["charge_weight_lowest_decile"] for r in gi[T]] for T in Ti]
+        b.errorbar(Ti, [np.mean(x) for x in wi], yerr=[np.std(x) for x in wi], color=SERIES[1], marker="s", label="isochore")
+    b.axhline(0.1, color=MUTED, ls="--", lw=0.8)
+    b.set_xlabel("T (K)"); b.set_ylabel("charge weight, lowest 10%")
+    soft_legend(b, loc="upper left")
+    lags = [x["lag_fs"] / 1000 for x in g[900.0][0]["cage"]["lags"]]
+    for T, col in shades.items():
+        pr = np.mean([[x["pair_min"] / x["pair_null_min"] for x in r["cage"]["lags"]] for r in g[T]], axis=0)
+        c.plot(lags, pr, color=col, marker="o", ms=3.5, label=f"{T:.0f} K")
+    c.axhline(1.0, color=MUTED, ls="--", lw=0.8)
+    c.set_xscale("log"); c.set_ylim(0.7, 1.02)
+    c.set_xlabel(r"lag $\tau_{\max}$ (ps)"); c.set_ylabel("Na–Cl pair co-motion / random")
+    soft_legend(c, loc="lower right")
+    D = np.array([[lag(r, 4000.0)["Delta_sigma"] for r in g[T]] for T in Ts], dtype=object)
+    d.errorbar(Ts, [np.mean(x) for x in D], yerr=[np.std(x) for x in D], color=SERIES[0], marker="o", label="isobar")
+    if iso:
+        Di = [[lag(r, 4000.0)["Delta_sigma"] for r in gi[T]] for T in Ti]
+        d.errorbar(Ti, [np.mean(x) for x in Di], yerr=[np.std(x) for x in Di], color=SERIES[1], marker="s", label="isochore")
+    d.axhline(0, color=MUTED, ls="--", lw=0.8)
+    d.set_xlabel("T (K)"); d.set_ylabel(r"$\Delta^{\sigma}$ ($\tau_{\max} = 4$ ps)")
+    soft_legend(d, loc="lower left")
+    for ax, l in zip(axes, "abcd"):
+        panel_label(ax, l)
+    fig.savefig(outfile)
+    plt.close(fig)
+
+
 def main() -> int:
     res, figs = Path(sys.argv[1]), Path(sys.argv[2])
     figs.mkdir(parents=True, exist_ok=True)
@@ -670,6 +723,8 @@ def main() -> int:
     table = lj_figure(res, figs / "fig_lj_phases.pdf")
     if (res / "05_molten_salt" / "salt_summary.csv").is_file():
         salt_figure(res, figs / "fig_salt.pdf")
+    if (res / "05_molten_salt_spectral").is_dir():
+        salt_spectral_figure(res, figs / "fig_salt_spectral.pdf")
     if (res / "06_controls" / "spectral").is_dir():
         controls_figure(res, figs / "fig_controls.pdf")
     if (res / "04_water_phases" / "intramolecular_overlap.csv").is_file():
