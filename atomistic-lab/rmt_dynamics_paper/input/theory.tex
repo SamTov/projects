@@ -47,18 +47,18 @@ The distinct terms enter as a dimensionless correction to the Nernst--Einstein e
 \end{align}
 so that $\Delta^{\lambda}$ measures the departure of the coefficient from its uncorrelated single-particle baseline.
 For a species-resolved collective property such as the electrophoretic mobility the same steps give $\Delta^{\lambda}_{\alpha} = \sum_{\gamma} \eta_{\gamma}\, g_{\alpha\gamma} / (\eta_{\alpha} f_{\alpha})$.
-Coefficients whose flux contains an explicit pair-interaction term, such as the shear viscosity and thermal conductivity, require an atom-wise partition of that term~\cite{irving1950} before the decomposition applies; we restrict the experiments to coefficients of the form of Equation~\ref{eqn:genericsystem}.
+Coefficients whose flux contains an explicit pair-interaction term, such as the shear viscosity and thermal conductivity, require an atom-wise partition of that term~\cite{irving1950} before the decomposition applies; we restrict the experiments to coefficients of the form of Eq.~\eqref{eqn:genericsystem}.
 
 \subsection{The Atom-Wise Correlation Matrix}
 \label{subsec:atom-wise-correlation-matrix}
-The integrals of Equation~\ref{eqn:fgdefs} are sums over atoms; promoting the atom indices to matrix indices defines the \emph{atom-wise correlation matrix}
+The integrals of Eq.~\eqref{eqn:fgdefs} are sums over atoms; promoting the atom indices to matrix indices defines the \emph{atom-wise correlation matrix}
 \begin{align}
     C_{ij} = \frac{1}{3} \int\limits_{0}^{\infty} dt \, \langle a_{i}(t) \cdot a_{j}(0) \rangle, \qquad i, j \in \N,
     \label{eqn:Cij}
 \end{align}
 so that for velocities $C_{ii}$ is the self-diffusion coefficient of atom $i$.
 By time-reversal symmetry $C$ is real and symmetric.
-Ordering atoms by species partitions it into blocks $C^{(\alpha\gamma)}$, and $f_{\alpha}$ and $g_{\alpha\gamma}$ are the trace and the off-diagonal sum of these blocks, so every coefficient of the form of Equation~\ref{eqn:expansion} is a linear functional of $C$.
+Ordering atoms by species partitions it into blocks $C^{(\alpha\gamma)}$, and $f_{\alpha}$ and $g_{\alpha\gamma}$ are the trace and the off-diagonal sum of these blocks, so every coefficient of the form of Eq.~\eqref{eqn:expansion} is a linear functional of $C$.
 The spectrum of $C$ contains more than these functionals report.
 
 In practice $C$ is estimated from a finite trajectory, and its entries carry sampling noise set by an effective number of independent samples $T_{\text{eff}}$, which depends on the trajectory length relative to the integration lag $\tau_{\max}$ (Section~\ref{subsec:de-noising-correlation-matrices}).
@@ -71,7 +71,7 @@ Because the integrated autocorrelation of any linear combination $\sum_{i} x_{i}
 
 \paragraph{Spectrum.}
 Eigenvalues inside the Marchenko--Pastur bulk are consistent with noise; those outside it carry physical signal, and their eigenvectors identify the atoms involved.
-Which edge they leave through follows from the Einstein form of Equation~\ref{eqn:Cij},
+Which edge they leave through follows from the Einstein form of Eq.~\eqref{eqn:Cij},
 \begin{align}
     C_{ij} = \lim_{t \to \infty} \frac{1}{6t} \langle \Delta \mathbf{r}_{i}(t) \cdot \Delta \mathbf{r}_{j}(t) \rangle,
     \label{eqn:Cij-einstein}
@@ -80,7 +80,7 @@ which identifies $C$ as the matrix of long-time displacement covariances, so tha
 A bond between atoms $i$ and $j$ bounds their relative coordinate, and the antisymmetric combination $(\phi_{i}, \phi_{j}) \propto (1, -1)$ is driven to zero eigenvalue while the symmetric one carries the diffusion of the pair.
 Bonding therefore removes eigenvalues through the \emph{lower} edge of the bulk, one per independent bounded relative coordinate: for a bond graph this is the number of edges of a spanning forest, $|\N|$ minus the number of connected components, and a rigid water molecule contributes two, not its three geometric constraints.
 With a finite lag, a bond must survive for longer than $\tau_{\max}$ to register, and since a bond of length $r_{0}$ fixes the separation but not the orientation of the pair, its relative mode is not zero but of order $r_{0}^{2}/(6\tau_{\max})$, a fraction $r_{0}^{2}/(6 D \tau_{\max})$ of the free value $D$.
-It separates from the noise bulk when this fraction falls below the lower edge, $r_{0}^{2}/(6 D \tau_{\max}) < (1-\sqrt{q})^{2}$; because $q$ itself grows in proportion to $\tau_{\max}$ (Equation~\ref{eqn:teff}), resolving a bond spectrally requires both a long lag and a trajectory long compared with it.
+It separates from the noise bulk when this fraction falls below the lower edge, $r_{0}^{2}/(6 D \tau_{\max}) < (1-\sqrt{q})^{2}$; because $q$ itself grows in proportion to $\tau_{\max}$ (Eq.~\eqref{eqn:teff}), resolving a bond spectrally requires both a long lag and a trajectory long compared with it.
 Eigenvalues above the upper edge would indicate correlated motion exceeding the single-particle baseline; we observe a few such modes but have not established their origin.
 The same argument implies that $C$ vanishes in a non-diffusing crystal.
 At finite lag the estimator is, to a good approximation, the finite-time Einstein form $\langle \Delta \mathbf{r}_{i}(\tau_{\max}) \cdot \Delta \mathbf{r}_{j}(\tau_{\max}) \rangle / 6\tau_{\max}$, so in a solid it measures the vibrational displacement covariance divided by $\tau_{\max}$, the object that quasi-harmonic and essential-dynamics analyses diagonalise~\cite{schlitter1993,amadei1993}.

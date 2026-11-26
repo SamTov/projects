@@ -11,12 +11,12 @@
 \subsection{Validation of the Noise Null}
 \label{subsec:convergence-of-the-noise-term}
 Before turning to interacting systems we check the null of Section~\ref{subsec:de-noising-correlation-matrices} on a system with no correlation structure at all: $|\N| = 256$ independent Ornstein--Uhlenbeck velocity processes with a correlation time of $5$ sampling intervals, $2 \times 10^{4}$ samples long, for which every off-diagonal element of $C$ is sampling noise.
-With the lag-window sample count of Equation~\ref{eqn:teff}, the Marchenko--Pastur density describes the spectrum at every lag from $2$ to $20$ correlation times (Figure~\ref{fig:noise-null}): the Kolmogorov--Smirnov distance stays between $0.011$ and $0.029$, the largest eigenvalue lies within $1\%$ of the upper edge, and exactly one of the $256$ eigenvalues lies above the bulk at every lag, a small systematic offset of the edge.
+With the lag-window sample count of Eq.~\eqref{eqn:teff}, the Marchenko--Pastur density describes the spectrum at every lag from $2$ to $20$ correlation times (Fig.~\ref{fig:noise-null}): the Kolmogorov--Smirnov distance stays between $0.011$ and $0.029$, the largest eigenvalue lies within $1\%$ of the upper edge, and exactly one of the $256$ eigenvalues lies above the bulk at every lag, a small systematic offset of the edge.
 The naive count $T_{\text{traj}}/\tau_{\text{int}}$ ignores the lag and fails increasingly as the lag grows: at $\tau_{\max} = 10\,\tau_{\text{int}}$ it places $30$ eigenvalues above and $40$ below a bulk that is too narrow, with a Kolmogorov--Smirnov distance of $0.18$, and at $20\,\tau_{\text{int}}$ the distance reaches $0.29$.
 Every count of outliers in what follows uses the lag-window sample count.
 
 Real trajectories are neither Gaussian nor uniform in their dynamics, so we also compare the analytic null with a surrogate built from each trajectory itself: every particle's time series is shifted circularly by an independent random offset, which preserves its autocorrelation and its non-Gaussian statistics but destroys correlations between particles.
-For eleven representative states spanning the four systems, the entropy deficits measured against the two nulls agree to within $5.5 \times 10^{-4}$ in $S/\ln|\N|$ (Figure~\ref{fig:controls}a); in liquids the surrogate gives the larger deficit, so the analytic null is, if anything, conservative.
+For eleven representative states spanning the four systems, the entropy deficits measured against the two nulls agree to within $5.5 \times 10^{-4}$ in $S/\ln|\N|$ (Fig.~\ref{fig:controls}a); in liquids the surrogate gives the larger deficit, so the analytic null is, if anything, conservative.
 Deficits above about $10^{-3}$ are therefore insensitive to the choice of null, and we treat smaller ones as unresolved.
 
 \begin{figure*}[tbp]
@@ -48,17 +48,17 @@ Table~\ref{tab:parameters} summarises the estimator settings of the four molecul
         Water, all atoms (liquid, $\geq 240$~K) & $1296$ & $3$~ns & $4$~ps & $3800$--$8900$ & $0.15$--$0.34$ \\
         NaCl (melted states) & $512$ & $1.5$~ns & $4$~ps & $1750$--$1910$ & $0.27$--$0.29$ \\ \bottomrule
     \end{tabular}
-    \caption{Estimator settings: system size, production length, integration lag, effective sample count (Equation~\ref{eqn:teff}) and aspect ratio $q = |\N|/T_{\text{eff}}$. Ranges span temperature; solids have larger $T_{\text{eff}}$ and smaller $q$.}
+    \caption{Estimator settings: system size, production length, integration lag, effective sample count (Eq.~\eqref{eqn:teff}) and aspect ratio $q = |\N|/T_{\text{eff}}$. Ranges span temperature; solids have larger $T_{\text{eff}}$ and smaller $q$.}
     \label{tab:parameters}
 \end{table*}
 
 \subsection{Bond Addition}
 \label{subsec:bond-addition}
-To test how bonding enters the spectrum under controlled conditions, we add $k$ harmonic bonds to an equilibrated Lennard-Jones liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$ and compare against the same liquid restarted without bonds (Figure~\ref{fig:concept}).
+To test how bonding enters the spectrum under controlled conditions, we add $k$ harmonic bonds to an equilibrated Lennard-Jones liquid at $T = 80$~K and $\rho = 0.8\,\sigma^{-3}$ and compare against the same liquid restarted without bonds (Fig.~\ref{fig:concept}).
 Two protocols are used.
 In the first, $|\N| = 512$, bonds join random pairs closer than $2\sigma$, each run is $1$~ns long and $C$ is evaluated with $\tau_{\max} = 2$~ps ($T_{\text{eff}} \approx 2260$, $q \approx 0.23$).
 In the second, chosen to satisfy the lag condition of Section~\ref{subsec:interpreting-atomic-correlation-matrices}, $|\N| = 216$, bonds are restricted to the first coordination shell ($r_{0} < 1.3\,\sigma$), each run is $26$~ns long and $\tau_{\max} = 100$~ps ($T_{\text{eff}} \approx 1170$, $q \approx 0.18$).
-All quantities are averaged over three seeds; Figure~\ref{fig:bonding} collects the results.
+All quantities are averaged over three seeds; Fig.~\ref{fig:bonding} collects the results.
 
 \begin{figure*}[tbp]
     \centering
@@ -67,7 +67,7 @@ All quantities are averaged over three seeds; Figure~\ref{fig:bonding} collects 
     \label{fig:bonding}
 \end{figure*}
 
-At $\tau_{\max} = 2$~ps the bond-free spectrum is bulk-like (Figure~\ref{fig:bonding}a): a single eigenvalue sits at zero, as required by conservation of total momentum, and $11$ to $12$ of the $512$ eigenvalues lie above the upper edge.
+At $\tau_{\max} = 2$~ps the bond-free spectrum is bulk-like (Fig.~\ref{fig:bonding}a): a single eigenvalue sits at zero, as required by conservation of total momentum, and $11$ to $12$ of the $512$ eigenvalues lie above the upper edge.
 These upper modes are present before any bond is added, so they are not a bonding signature.
 They are not an artefact of the null either: nine of them remain above the edge of the surrogate null.
 They are system-spanning, with participation ratios close to $|\N|/3$, and in a system-size scan of the bond-free liquid at fixed trajectory length their number grows sublinearly, from $7$--$8$ at $|\N| = 256$ to $24$ at $2048$, while the participation ratio stays at $|\N|/3$; this is consistent with long-wavelength collective modes, but we have not identified them.
@@ -75,8 +75,8 @@ Adding bonds produces no new localised modes above the bulk; instead, weight mov
 
 The effect of a bond is unambiguous at the level of a single pair.
 The relative-motion mode of a bonded pair is $0.61 \pm 0.01$ of the free value at $k = 64$ and $0.52 \pm 0.01$ at $k = 256$, against $0.99 \pm 0.04$ for unbonded pairs (seed scatter for the bonded values; scatter over pairs in one trajectory for the unbonded one).
-This reduction is not large enough to carry the mode out of the bulk, whose lower edge lies at $0.28$ in the same units, so the number of sub-bulk eigenvalues lags far behind the number of constraints (Figure~\ref{fig:bonding}d and Table~\ref{tab:bond-addition}): it is zero at $k = 16$, reaches $53$ of $254$ at $k = 256$, and approaches the constraint count only at $k = 1024$, where the bond network spans almost the whole system and diffusion is largely arrested.
-The lowest eigenvectors nonetheless carry the bond topology before individual modes separate, capturing $18\%$ and $37\%$ of the constraint space at $k = 16$ and $64$, six and three times the value for random modes (Figure~\ref{fig:bonding}e).
+This reduction is not large enough to carry the mode out of the bulk, whose lower edge lies at $0.28$ in the same units, so the number of sub-bulk eigenvalues lags far behind the number of constraints (Fig.~\ref{fig:bonding}d and Table~\ref{tab:bond-addition}): it is zero at $k = 16$, reaches $53$ of $254$ at $k = 256$, and approaches the constraint count only at $k = 1024$, where the bond network spans almost the whole system and diffusion is largely arrested.
+The lowest eigenvectors nonetheless carry the bond topology before individual modes separate, capturing $18\%$ and $37\%$ of the constraint space at $k = 16$ and $64$, six and three times the value for random modes (Fig.~\ref{fig:bonding}e).
 
 \begin{table*}[tbp]
     \centering
@@ -97,21 +97,21 @@ The lowest eigenvectors nonetheless carry the bond topology before individual mo
 
 The incomplete separation at short lags is a consequence of the lag, not of the estimator.
 A bond fixes the separation of a pair but not its orientation, so its relative coordinate is distinguishable from free diffusion only when $\tau_{\max} \gg r_{0}^{2}/6D$; with $D \approx 2.2 \times 10^{-4}$~\AA$^{2}$\,fs$^{-1}$ and $r_{0}$ up to $2\sigma$, this requires tens of picoseconds.
-Re-evaluating one $16$-bond trajectory with longer lags confirms the trend (Figure~\ref{fig:bonding}c): the bonded mode falls from $0.61$ at $2$~ps to $0.39$ at $40$~ps while unbonded pairs stay at $0.98$--$0.99$, but from $10$~ps on a $1$~ns trajectory has too few independent samples for the bulk edge to be defined ($q > 1$).
+Re-evaluating one $16$-bond trajectory with longer lags confirms the trend (Fig.~\ref{fig:bonding}c): the bonded mode falls from $0.61$ at $2$~ps to $0.39$ at $40$~ps while unbonded pairs stay at $0.98$--$0.99$, but from $10$~ps on a $1$~ns trajectory has too few independent samples for the bulk edge to be defined ($q > 1$).
 
-The second protocol meets the separation criterion of Section~\ref{subsec:interpreting-atomic-correlation-matrices}: with bond lengths of $3.9$~\AA{} on average, $D \approx 2.0 \times 10^{-4}$~\AA$^{2}$\,fs$^{-1}$ and $\tau_{\max} = 100$~ps, the predicted bonded fraction $r_{0}^{2}/(6D\tau_{\max}) \approx 0.13$ lies well below the lower edge at $0.33$, and the bond signature becomes spectral as well as pair-wise (Figure~\ref{fig:bonding}b).
+The second protocol meets the separation criterion of Section~\ref{subsec:interpreting-atomic-correlation-matrices}: with bond lengths of $3.9$~\AA{} on average, $D \approx 2.0 \times 10^{-4}$~\AA$^{2}$\,fs$^{-1}$ and $\tau_{\max} = 100$~ps, the predicted bonded fraction $r_{0}^{2}/(6D\tau_{\max}) \approx 0.13$ lies well below the lower edge at $0.33$, and the bond signature becomes spectral as well as pair-wise (Fig.~\ref{fig:bonding}b).
 The measured bonded relative-motion mode is $0.13$--$0.15$ of the free value, close to that estimate.
-In all three seeds exactly $8$ and $27$ eigenvalues leave the bulk through its lower edge for $8$ and $27$ bonds, and $51$--$52$ do so for $54$ bonds; at $k = 108$, where bonded atoms make up most of the system and the diffusive baseline shifts, the count is $91$--$95$ for $106$--$108$ constraints (Figure~\ref{fig:bonding}d).
-The corresponding eigenvectors reproduce the bond graph, capturing $86$--$94\%$ of the constraint space against $4$--$25\%$ for random modes (Figure~\ref{fig:bonding}e); in the example of Figure~\ref{fig:concept}, $98\%$ of the weight of the $27$ bond modes lies on the $51$ bonded atoms, a quarter of the system.
+In all three seeds exactly $8$ and $27$ eigenvalues leave the bulk through its lower edge for $8$ and $27$ bonds, and $51$--$52$ do so for $54$ bonds; at $k = 108$, where bonded atoms make up most of the system and the diffusive baseline shifts, the count is $91$--$95$ for $106$--$108$ constraints (Fig.~\ref{fig:bonding}d).
+The corresponding eigenvectors reproduce the bond graph, capturing $86$--$94\%$ of the constraint space against $4$--$25\%$ for random modes (Fig.~\ref{fig:bonding}e); in the example of Fig.~\ref{fig:concept}, $98\%$ of the weight of the $27$ bond modes lies on the $51$ bonded atoms, a quarter of the system.
 The bond-free liquid has a single eigenvalue above the upper edge in this regime, compared with $11$ to $12$ at $2$~ps.
 
-In both protocols the spectral entropy decreases monotonically with the number of bonds (Figure~\ref{fig:bonding}f), from $6.1133 \pm 0.0005$ to $5.697 \pm 0.007$ at $\tau_{\max} = 2$~ps and from $5.2791 \pm 0.0005$ to $5.0448 \pm 0.0013$ at $100$~ps; at $2$~ps the $16$-bond system is separated from the bond-free liquid by about three times the seed scatter.
+In both protocols the spectral entropy decreases monotonically with the number of bonds (Fig.~\ref{fig:bonding}f), from $6.1133 \pm 0.0005$ to $5.697 \pm 0.007$ at $\tau_{\max} = 2$~ps and from $5.2791 \pm 0.0005$ to $5.0448 \pm 0.0013$ at $100$~ps; at $2$~ps the $16$-bond system is separated from the bond-free liquid by about three times the seed scatter.
 Bonding is therefore read off the spectrum of $C$ as a count of sub-bulk eigenvalues, one per constraint, and off its eigenvectors as the bonding topology, provided the lag exceeds the time a free pair needs to diffuse over the bond length; at shorter lags the same information is present pair by pair but does not separate from the noise bulk.
 
 \subsection{Lennard-Jones Phases}
 \label{subsec:lennard-jones-phases}
 We next follow $C$ ($\tau_{\max} = 2$~ps) across the solid, liquid and vapour phases of the Lennard-Jones system along the $20$~atm isobar, from three starting states that expose the hysteresis of the first-order transitions in a $500$-atom box (Section~\ref{subsec:molecular-dynamics-simulations}).
-Because $q$ changes by an order of magnitude along the isobar, the raw entropy mixes structure with sampling noise (in the liquid $S/\ln|\N|$ falls from $0.9805$ to $0.9758$ between $80$ and $130$~K largely because $q$ rises from $0.21$ to $0.30$), so we report the entropy deficit of Equation~\ref{eqn:entropy-deficit}, omitting the vapour, where $q > 1$ and the null is not reliable.
+Because $q$ changes by an order of magnitude along the isobar, the raw entropy mixes structure with sampling noise (in the liquid $S/\ln|\N|$ falls from $0.9805$ to $0.9758$ between $80$ and $130$~K largely because $q$ rises from $0.21$ to $0.30$), so we report the entropy deficit of Eq.~\eqref{eqn:entropy-deficit}, omitting the vapour, where $q > 1$ and the null is not reliable.
 
 \begin{figure*}[tbp]
     \centering
@@ -120,7 +120,7 @@ Because $q$ changes by an order of magnitude along the isobar, the raw entropy m
     \label{fig:lj-results}
 \end{figure*}
 
-The crystal melts between $90$ and $95$~K (Figure~\ref{fig:lj-results}a); the disordered starts are liquid from $60$~K upwards and solidify between $50$ and $60$~K into a solid less dense than the crystal.
+The crystal melts between $90$ and $95$~K (Fig.~\ref{fig:lj-results}a); the disordered starts are liquid from $60$~K upwards and solidify between $50$ and $60$~K into a solid less dense than the crystal.
 Re-running these states with the production inputs and recording positions shows that this solid is polycrystalline rather than amorphous: its mean Steinhardt order parameter $q_{6}$ is $0.43$--$0.50$, with $37$--$88\%$ of atoms in crystalline environments ($q_{6} > 0.45$), against $0.55$ and $99.8\%$ for the crystal and $0.41$ for the liquid at $60$~K.
 The liquid vaporises between $130$ and $135$~K on heating, while the dilute start condenses only between $110$ and $115$~K, so melting coexistence lies between $50$ and $95$~K and liquid--vapour coexistence between $110$ and $135$~K.
 
@@ -131,11 +131,11 @@ The crystal and the polycrystalline solid differ by a factor of $1.2$--$1.8$ at 
 
 At melting, every step in $\Delta S$ falls in the same $5$~K interval as the step in density and diffusion, on every branch.
 At a hysteretic first-order transition any observable that differs between the phases does the same, so this establishes only that $\Delta S$ distinguishes the phases, not that it locates the transitions better: the peaks of $|dS/dT|$ and $|d\rho/dT|$ lie within $3$--$5$~K of each other, both widths are set by the grid spacing, and at boiling the comparison uses the raw entropy, since $\Delta S$ is undefined in the vapour.
-The spectra (Figure~\ref{fig:lj-results}d--f) show the difference between phases directly: the liquid follows the Marchenko--Pastur density closely, whereas both solids pile weight into small eigenvalues below the bulk and spread a tail of large ones beyond it.
+The spectra (Fig.~\ref{fig:lj-results}d--f) show the difference between phases directly: the liquid follows the Marchenko--Pastur density closely, whereas both solids pile weight into small eigenvalues below the bulk and spread a tail of large ones beyond it.
 
 The physical content of $\Delta S$ differs between phases.
-In the solids the diagonal of $C$ is $4$ to $60$ times smaller than in the liquid (Figure~\ref{fig:lj-results}c) and rises roughly in proportion to temperature; as noted in Section~\ref{subsec:interpreting-atomic-correlation-matrices}, $\hat{C}$ is then the vibrational displacement covariance divided by $\tau_{\max}$, so the large deficit of the solids is the known non-random spectrum of thermal vibrations seen through a finite window, not a transport property.
-The lag scan confirms this: in every solid $\tau_{\max}\,\mathrm{Tr}\,C$ is independent of the lag (Figure~\ref{fig:controls}c), and the deficit changes little beyond $1$~ps (Figure~\ref{fig:controls}b).
+In the solids the diagonal of $C$ is $4$ to $60$ times smaller than in the liquid (Fig.~\ref{fig:lj-results}c) and rises roughly in proportion to temperature; as noted in Section~\ref{subsec:interpreting-atomic-correlation-matrices}, $\hat{C}$ is then the vibrational displacement covariance divided by $\tau_{\max}$, so the large deficit of the solids is the known non-random spectrum of thermal vibrations seen through a finite window, not a transport property.
+The lag scan confirms this: in every solid $\tau_{\max}\,\mathrm{Tr}\,C$ is independent of the lag (Fig.~\ref{fig:controls}c), and the deficit changes little beyond $1$~ps (Fig.~\ref{fig:controls}b).
 In the liquid it reflects correlated displacements of neighbouring atoms, which weaken with temperature until the spectrum is indistinguishable from noise.
 $\Delta S$ is not a function of diffusion alone: it falls as diffusion rises at melting and within the liquid, but rises with diffusion along the solid branches.
 
@@ -144,7 +144,7 @@ $\Delta S$ is not a function of diffusion alone: it falls as diffusion rises at 
 Water adds rigid molecular structure and a hydrogen-bond network to the questions above.
 We follow TIP4P/2005 water along the $1$~atm isobar from $200$ to $340$~K, from a proton-disordered ice Ih crystal and from a pre-melted liquid, so that melting near the model's melting point of $252$~K is bracketed by superheated ice and supercooled liquid in the same way as for the Lennard-Jones crystal.
 $C$ is built for the oxygen atoms alone and for all atoms, which separates the motion of molecular centres from the intramolecular correlation of each oxygen with its two hydrogens.
-Results are collected in Figure~\ref{fig:water}.
+Results are collected in Fig.~\ref{fig:water}.
 
 \begin{figure*}[tbp]
     \centering
@@ -153,21 +153,21 @@ Results are collected in Figure~\ref{fig:water}.
     \label{fig:water}
 \end{figure*}
 
-The ice remains crystalline up to $310$~K, its density falling slowly from $0.928$ to $0.910$~g\,cm$^{-3}$, and melts between $310$ and $320$~K, where the seeds split and the diffusion coefficient rises fourteenfold (Figure~\ref{fig:water}a,b).
+The ice remains crystalline up to $310$~K, its density falling slowly from $0.928$ to $0.910$~g\,cm$^{-3}$, and melts between $310$ and $320$~K, where the seeds split and the diffusion coefficient rises fourteenfold (Fig.~\ref{fig:water}a,b).
 The liquid branch never freezes on the time scale of the runs.
 It passes through a density maximum of $1.0015$~g\,cm$^{-3}$ between $270$ and $280$~K, close to the maximum of the model near $278$~K, and below $240$~K becomes increasingly sluggish, its diffusion coefficient at $200$~K being thirty times smaller than at $340$~K and comparable to the finite-window residual of the ice.
 As for the Lennard-Jones crystal and the salt, superheating is large, and melting of this model at $252$~K is bracketed only from above.
 
 The all-atom matrix tests the bonding result of Section~\ref{subsec:bond-addition} on molecules whose geometry is held fixed.
 Each rigid molecule has two bounded relative coordinates, the vectors from its oxygen to its two hydrogens, so $C$ should have $2 \times 432 = 864$ eigenvalues far below the remaining $432$, which describe the diffusion of the molecules.
-It does (Figure~\ref{fig:water}d): the spectrum splits into three bands of $432$ eigenvalues, two of them at $0.9$--$1.9\%$ and $4.8$--$6.9\%$ of the mean of the molecular band, and the $864$ lowest eigenvectors capture $97.8$--$99.6\%$ of the intramolecular relative-coordinate space at every temperature and in both phases, against $67\%$ for random modes (Figure~\ref{fig:water}e).
+It does (Fig.~\ref{fig:water}d): the spectrum splits into three bands of $432$ eigenvalues, two of them at $0.9$--$1.9\%$ and $4.8$--$6.9\%$ of the mean of the molecular band, and the $864$ lowest eigenvectors capture $97.8$--$99.6\%$ of the intramolecular relative-coordinate space at every temperature and in both phases, against $67\%$ for random modes (Fig.~\ref{fig:water}e).
 The lag condition is met here by a wide margin: with O--H vectors of $0.96$~\AA{} and $D \approx 2.6 \times 10^{-4}$~\AA$^{2}$\,fs$^{-1}$ at $300$~K, $r_{0}^{2}/6D \approx 0.6$~ps against $\tau_{\max} = 4$~ps.
 The two intramolecular bands are consistent with the geometry of the molecule: for bounded coordinates the eigenvalue scales with the mean-square size of the corresponding normalised combination, which is $|\mathbf{r}_{\mathrm{H}1} - \mathbf{r}_{\mathrm{H}2}|^{2}/2 \approx 1.15$~\AA$^{2}$ for the antisymmetric combination of the two hydrogens and $|2\mathbf{r}_{\mathrm{O}} - \mathbf{r}_{\mathrm{H}1} - \mathbf{r}_{\mathrm{H}2}|^{2}/6 \approx 0.23$~\AA$^{2}$ for the symmetric one, a ratio of about five against the measured $3.6$--$5.5$.
 
 The oxygen-only matrix follows the molecular centres.
-Its entropy deficit (Figure~\ref{fig:water}c) is large in the ice, $0.087$--$0.119$, and in the liquid it is small and nearly constant above $260$~K ($0.0028$--$0.0053$), but it grows steeply on supercooling, to $0.011$ at $240$~K, $0.038$ at $220$~K and $0.074$ at $200$~K, approaching the values of the ice as the liquid's diffusion approaches that of the crystal.
+Its entropy deficit (Fig.~\ref{fig:water}c) is large in the ice, $0.087$--$0.119$, and in the liquid it is small and nearly constant above $260$~K ($0.0028$--$0.0053$), but it grows steeply on supercooling, to $0.011$ at $240$~K, $0.038$ at $220$~K and $0.074$ at $200$~K, approaching the values of the ice as the liquid's diffusion approaches that of the crystal.
 The deficit thus tracks the slowing of the liquid continuously, with no transition at which to compare it against the density; at the lowest temperatures, as in the solids, it reflects motion that has not decorrelated within the window.
-Its value depends on that window: at $300$~K it falls from $0.011$ at $\tau_{\max} = 0.5$~ps to $0.0006$ at $16$~ps (Figure~\ref{fig:controls}b), so it measures correlation that persists for a few picoseconds and decays on the time scale of hydrogen-bond rearrangement, whereas at $220$~K it changes little with the lag.
+Its value depends on that window: at $300$~K it falls from $0.011$ at $\tau_{\max} = 0.5$~ps to $0.0006$ at $16$~ps (Fig.~\ref{fig:controls}b), so it measures correlation that persists for a few picoseconds and decays on the time scale of hydrogen-bond rearrangement, whereas at $220$~K it changes little with the lag.
 
 Finally, the leading eigenvectors of $C_{\mathrm{O}}$ are related to the hydrogen-bond network, but not in the sense we had expected.
 In the ice, where nearly every molecule has four hydrogen bonds, the amplitude of an oxygen in the five leading eigenvectors is uncorrelated with its bond count.
@@ -181,7 +181,7 @@ The leading collective modes are thus carried preferentially by molecules with f
 Molten NaCl tests the transport decomposition of Section~\ref{subsec:microscopic-origins-of-transport-properties} directly.
 With velocities as the single-particle primitive and the ionic charges as $\eta_{\alpha}$, the Nernst--Einstein deviation $\Delta^{\sigma}$ of the ionic conductivity is a ratio of block sums of $C$, and must agree with the deviation obtained from the collective charge current.
 We follow the Tosi--Fumi model along the $1$~atm isobar from $900$ to $1800$~K, from a rock-salt crystal and from a pre-melted liquid, which brackets melting near $1070$~K and gives the conductivity of the liquid over a wide temperature range.
-Results are collected in Figure~\ref{fig:salt}.
+Results are collected in Fig.~\ref{fig:salt}.
 
 \begin{figure}[tbp]
     \centering
@@ -195,17 +195,17 @@ The rock-salt crystal persists to $1200$~K and has melted by $1300$~K, where its
 Above $1300$~K the two branches coincide.
 
 The conductivity of the liquid is $302 \pm 3$~S\,m$^{-1}$ at $900$~K and $357 \pm 15$~S\,m$^{-1}$ at $1100$~K, rising to about $400$~S\,m$^{-1}$ near $1600$~K, with no resolved change at $1800$~K, while its Nernst--Einstein estimate rises monotonically from $316$ to $645$~S\,m$^{-1}$.
-The deviation between the two is the quantity that Equation~\ref{eqn:full-correction} expresses through the species blocks of $C$.
+The deviation between the two is the quantity that Eq.~\eqref{eqn:full-correction} expresses through the species blocks of $C$.
 With $\eta_{\mathrm{Na}} = +1$ and $\eta_{\mathrm{Cl}} = -1$, the block-sum route at $\tau_{\max} = 4$~ps gives $\Delta^{\sigma} = -0.045 \pm 0.012$ at $900$~K, falling to $-0.14$ at $1100$~K and $-0.43$ at $1800$~K.
-These values are not converged in the lag (Figure~\ref{fig:controls}d): between $1$ and $32$~ps, $\Delta^{\sigma}$ ranges from $-0.13$ to $+0.01$ at $900$~K and from $-0.26$ to $-0.16$ at $1300$~K, because the self and distinct integrals converge at different rates.
+These values are not converged in the lag (Fig.~\ref{fig:controls}d): between $1$ and $32$~ps, $\Delta^{\sigma}$ ranges from $-0.13$ to $+0.01$ at $900$~K and from $-0.26$ to $-0.16$ at $1300$~K, because the self and distinct integrals converge at different rates.
 Their sum, the conductivity, is much less sensitive, varying by at most $6\%$ over the same range, and the ordering of the two temperatures holds at every lag; the absolute values of $\Delta^{\sigma}$ quoted here should be read with an uncertainty of about $\pm 0.05$ from the window alone.
 Because $\sum_{ij} z_{i} z_{j} C_{ij}$ is the charge-current integral by construction, comparison with the time-domain Green--Kubo integral of the charge current is a consistency check of the estimator rather than a test of the decomposition.
-The two agree within the seed scatter at each temperature (Figure~\ref{fig:salt}c), but the time-domain route is more negative at seven of eight temperatures, by up to a factor of two at $900$~K, and individual runs differ by up to $15\%$: the sharp truncation of the time-domain integral and the Bartlett taper of $\hat{C}$ weight the tail of the charge-current correlation differently.
+The two agree within the seed scatter at each temperature (Fig.~\ref{fig:salt}c), but the time-domain route is more negative at seven of eight temperatures, by up to a factor of two at $900$~K, and individual runs differ by up to $15\%$: the sharp truncation of the time-domain integral and the Bartlett taper of $\hat{C}$ weight the tail of the charge-current correlation differently.
 The split into self and distinct terms also depends on the reference frame when total momentum is conserved and the ions differ in mass~\cite{kashyap11a,trullas94a}; we use the barycentric frame of the simulation throughout.
 Within that uncertainty, distinct cation--anion correlation reduces the conductivity below the uncorrelated estimate by an amount that grows with temperature along the isobar, as the liquid expands and the Na--Cl coordination number within $3.6$~\AA{} falls from $4.2$ at $900$~K to $2.5$ at $1800$~K; the $1800$~K state lies above the normal boiling point of NaCl and is a metastable expanded liquid.
 In the crystal both routes are dominated by the residual of the finite window and do not measure a conductivity; we do not report them.
 
-At $\tau_{\max} = 4$~ps the entropy deficit of the liquid is small, $0.0018$ at $900$~K, and grows monotonically to $0.0126$ at $1800$~K (Figure~\ref{fig:salt}d), in the opposite direction to the Lennard-Jones liquid, whose deficit decays with temperature.
+At $\tau_{\max} = 4$~ps the entropy deficit of the liquid is small, $0.0018$ at $900$~K, and grows monotonically to $0.0126$ at $1800$~K (Fig.~\ref{fig:salt}d), in the opposite direction to the Lennard-Jones liquid, whose deficit decays with temperature.
 Across all $36$ melted runs the deficit and $\Delta^{\sigma}$ are strongly anticorrelated (Spearman $r_{\mathrm{s}} = -0.95$), but both change monotonically with temperature, so this is a common trend rather than an independent test.
-The lag scan limits it further: the deficit of the liquid falls from $0.03$ at $0.5$~ps to zero within the null uncertainty by $8$~ps (Figure~\ref{fig:controls}b), so it reflects short-lived cation--anion correlation, most plausibly the rattling of ions in their first coordination shell, rather than the long-time distinct correlation that sets $\Delta^{\sigma}$.
+The lag scan limits it further: the deficit of the liquid falls from $0.03$ at $0.5$~ps to zero within the null uncertainty by $8$~ps (Fig.~\ref{fig:controls}b), so it reflects short-lived cation--anion correlation, most plausibly the rattling of ions in their first coordination shell, rather than the long-time distinct correlation that sets $\Delta^{\sigma}$.
 The crystal again carries a large deficit, $0.030$--$0.037$, an order of magnitude above the liquid, and loses it on melting.

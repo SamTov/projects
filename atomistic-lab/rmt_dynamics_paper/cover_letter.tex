@@ -1,0 +1,32 @@
+\documentclass[11pt]{letter}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{xcolor}
+\signature{Christian Holm\\Institute for Computational Physics, University of Stuttgart}
+\address{Institute for Computational Physics\\University of Stuttgart\\70569 Stuttgart, Germany}
+\begin{document}
+\begin{letter}{The Editors\\The Journal of Chemical Physics}
+\opening{Dear Editors,}
+
+We submit the manuscript ``Understanding Particle Correlation: Insights from Random Matrix Theory'' by Samuel Tovey, Marko Zecevic and Christian Holm for consideration as a Regular Article in The Journal of Chemical Physics.
+
+Green--Kubo transport coefficients are sums over a particle-wise matrix of integrated velocity cross-correlations, but that matrix is rarely studied in its own right.
+We treat it as a random matrix and compare its spectrum with a Marchenko--Pastur null whose effective sample count follows from the integration lag of the estimator; using the decorrelation time alone, as is common, overstates the number of independent samples by a factor of order the lag over the decorrelation time and produces spurious outliers.
+With this null, validated on synthetic data and against a surrogate built from the trajectories themselves, we show three things:
+\begin{itemize}
+    \item bonds and rigid molecular geometry place one eigenvalue below the noise bulk for each independent bounded relative coordinate, with eigenvectors that recover $86$--$99\%$ of the corresponding subspace in a Lennard-Jones liquid and in water, and a simple criterion predicts when this separation occurs;
+    \item the spectral entropy of the matrix, measured against the null, separates solid from liquid in Lennard-Jones, water and molten NaCl, and a scan of the integration lag shows what it measures: vibrational displacement covariance in solids and correlation lasting a few picoseconds in liquids;
+    \item in molten NaCl the species blocks of the matrix give the Nernst--Einstein deviation of the ionic conductivity directly, and the lag scan shows that this decomposition converges more slowly than the conductivity itself.
+\end{itemize}
+
+The work combines statistical mechanics of transport, random matrix theory and molecular simulation, and we believe it fits the readership of The Journal of Chemical Physics, in particular those working on transport in liquids, electrolytes and simulation methodology.
+All analysis code, input templates and figure scripts will be made available as described in the Data Availability statement.
+
+This manuscript has not been published and is not under consideration elsewhere.
+\textcolor{red}{[Confirm: all authors have approved the submission.]}
+
+\textcolor{red}{[Optional: suggested and excluded reviewers.]}
+
+\closing{Yours sincerely,}
+\end{letter}
+\end{document}
