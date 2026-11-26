@@ -151,7 +151,8 @@ class DumpData:
     velocities: np.ndarray | None
     positions: np.ndarray | None
     atom_types: np.ndarray
-    box: np.ndarray  # (3,) lengths
+    box: np.ndarray  # (3,) lengths (time average when the box fluctuates)
+    boxes: np.ndarray | None = None  # (n_frames, 3) per-frame lengths
 
 
 def parse_lammps_dump_custom(path: Path) -> DumpData:
@@ -166,6 +167,8 @@ def parse_lammps_dump_custom(path: Path) -> DumpData:
     pos_frames: list[np.ndarray] = []
     types: np.ndarray | None = None
     box_last: np.ndarray | None = None
+    box_frames: list[np.ndarray] = []
+    lo_frames: list[np.ndarray] = []
 
     have_vel: bool | None = None
     have_pos_unwrapped: bool | None = None
@@ -179,10 +182,14 @@ def parse_lammps_dump_custom(path: Path) -> DumpData:
                 n_atoms = int(fh.readline())
             elif line.startswith("ITEM: BOX BOUNDS"):
                 box_lengths = np.empty(3, dtype=np.float64)
+                box_lo = np.empty(3, dtype=np.float64)
                 for d in range(3):
                     parts = fh.readline().split()
+                    box_lo[d] = float(parts[0])
                     box_lengths[d] = float(parts[1]) - float(parts[0])
                 box_last = box_lengths
+                box_frames.append(box_lengths)
+                lo_frames.append(box_lo)
             elif line.startswith("ITEM: ATOMS"):
                 cols = line.split()[2:]
                 if have_vel is None:
@@ -234,8 +241,21 @@ def parse_lammps_dump_custom(path: Path) -> DumpData:
 
     velocities = np.stack(vel_frames, axis=0) if vel_frames else None
     positions = np.stack(pos_frames, axis=0) if pos_frames else None
+    boxes = np.array(box_frames) if box_frames else None
+    box = box_last
+    if positions is not None and boxes is not None and len(boxes) == len(positions) \
+            and np.ptp(boxes, axis=0).max() > 1e-9 * boxes.max():
+        # Fluctuating box (NPT). Unwrapped coordinates are x + n L(t), so every
+        # change of L(t) moves a particle with image count n by n dL: an
+        # apparent motion that grows as particles diffuse away. Measuring
+        # positions in box-scaled coordinates relative to each frame's lower
+        # edge removes the affine dilation; rescaling by the mean box restores
+        # physical units.
+        lo = np.array(lo_frames)
+        box = boxes.mean(axis=0)
+        positions = (positions - lo[:, None, :]) / boxes[:, None, :] * box
     return DumpData(velocities=velocities, positions=positions,
-                    atom_types=types, box=box_last)
+                    atom_types=types, box=box, boxes=boxes)
 
 
 def thermo_mean(log_path: Path, column: str) -> float:
