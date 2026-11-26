@@ -48,6 +48,7 @@ As a check on both the Gaussian assumption and the sample count, we also build a
 All simulations use LAMMPS~\cite{thompson2022} with Nos\'e--Hoover thermostats and barostats (coupling times $0.1$~ps and $1$~ps), so that total momentum is conserved and distinct correlations are not damped by a stochastic bath.
 Every state is simulated with three independent seeds, and error bars are the standard deviation over seeds.
 Where positions rather than velocities are recorded, $C$ is built from the mean velocity over each sampling interval, $[\mathbf{r}_{i}(t + \delta t) - \mathbf{r}_{i}(t)]/\delta t$ from unwrapped coordinates, which has the same time integral as the instantaneous velocity without aliasing fast motion, so the sampling interval can be chosen for storage.
+Under a barostat the unwrapped coordinate $x + n_{i}L(t)$ of an atom that has crossed the boundary $n_{i}$ times moves by $n_{i}\,dL$ whenever the box changes, which adds a spurious displacement that grows with the number of crossings; we therefore rescale each frame to the mean box, $[x_{\text{u}}(t) - x_{\text{lo}}(t)]\,\bar{L}/L(t)$, before differencing.
 
 \paragraph{Lennard-Jones systems.}
 Argon parameters are used ($\sigma = 3.405$~\AA{}, $\varepsilon/k_{B} = 119.8$~K, $m = 39.948$~amu, cutoff $3\sigma$, $\delta t = 2$~fs).
@@ -64,5 +65,7 @@ The ice configuration satisfies the Bernal--Fowler rules~\cite{bernal1933}: the 
 \paragraph{Molten salt.}
 NaCl is modelled with the Tosi--Fumi rigid-ion potential~\cite{fumi1964,tosi1964} with $256$ ion pairs, an $11$~\AA{} cutoff, particle-particle particle-mesh electrostatics and $\delta t = 1$~fs, along the $1$~atm isobar from $900$ to $1800$~K.
 Each temperature is run from a rock-salt crystal and from a liquid melted at $2000$~K, with $0.1$~ns of equilibration and $1.5$~ns of production, positions every $50$~fs.
+The liquid is additionally run for $6$~ns at $1400$, $1600$ and $1800$~K, and at constant volume ($NVT$, Nos\'e--Hoover) at its $1100$~K density of $1.446$~g\,cm$^{-3}$ from $1100$ to $1800$~K, three seeds each.
+For the ion-centred cage matrix of Na--Cl pairs we take, for each Na$^{+}$ and its $k$ nearest Cl$^{-}$, labelled by distance rank at each time origin, the $3(k+1)$-dimensional displacement covariance over the lag is compared with that of randomly chosen Cl$^{-}$; we report its lowest eigenvalue for $k = 1$, the relative motion of the nearest pair.
 
 Input templates, drivers, analysis code and the seeds of every run are available as described in Section~\ref{sec:data-and-availability}.

@@ -16,7 +16,7 @@ The naive count $T_{\text{traj}}/\tau_{\text{int}}$ ignores the lag and fails in
 Every count of outliers in what follows uses the lag-window sample count.
 
 Real trajectories are neither Gaussian nor uniform in their dynamics, so we also compare the analytic null with a surrogate built from each trajectory itself: every particle's time series is shifted circularly by an independent random offset, which preserves its autocorrelation and its non-Gaussian statistics but destroys correlations between particles.
-For eleven representative states spanning the four systems, the entropy deficits measured against the two nulls agree to within $5.5 \times 10^{-4}$ in $S/\ln|\N|$ (Fig.~\ref{fig:controls}a); in liquids the surrogate gives the larger deficit, so the analytic null is, if anything, conservative.
+For eleven representative states spanning the four systems, the entropy deficits measured against the two nulls agree to within $1.2 \times 10^{-3}$ in $S/\ln|\N|$ (Fig.~\ref{fig:controls}a); in every liquid above its melting point the surrogate gives the larger deficit, so the analytic null is, if anything, conservative.
 Deficits above about $10^{-3}$ are therefore insensitive to the choice of null, and we treat smaller ones as unresolved.
 
 \begin{figure*}[tbp]
@@ -160,21 +160,19 @@ As for the Lennard-Jones crystal and the salt, superheating is large, and meltin
 
 The all-atom matrix tests the bonding result of Section~\ref{subsec:bond-addition} on molecules whose geometry is held fixed.
 Each rigid molecule has two bounded relative coordinates, the vectors from its oxygen to its two hydrogens, so $C$ should have $2 \times 432 = 864$ eigenvalues far below the remaining $432$, which describe the diffusion of the molecules.
-It does (Fig.~\ref{fig:water}d): the spectrum splits into three bands of $432$ eigenvalues, two of them at $0.9$--$1.9\%$ and $4.8$--$6.9\%$ of the mean of the molecular band, and the $864$ lowest eigenvectors capture $97.8$--$99.6\%$ of the intramolecular relative-coordinate space at every temperature and in both phases, against $67\%$ for random modes (Fig.~\ref{fig:water}e).
+It does (Fig.~\ref{fig:water}d): the spectrum splits into three bands of $432$ eigenvalues, two of them at $0.9$--$2.2\%$ and $4.9$--$8.8\%$ of the mean of the molecular band, and the $864$ lowest eigenvectors capture $97.9$--$99.6\%$ of the intramolecular relative-coordinate space at every temperature and in both phases, against $67\%$ for random modes (Fig.~\ref{fig:water}e).
 The lag condition is met here by a wide margin: with O--H vectors of $0.96$~\AA{} and $D \approx 2.6 \times 10^{-4}$~\AA$^{2}$\,fs$^{-1}$ at $300$~K, $r_{0}^{2}/6D \approx 0.6$~ps against $\tau_{\max} = 4$~ps.
-The two intramolecular bands are consistent with the geometry of the molecule: for bounded coordinates the eigenvalue scales with the mean-square size of the corresponding normalised combination, which is $|\mathbf{r}_{\mathrm{H}1} - \mathbf{r}_{\mathrm{H}2}|^{2}/2 \approx 1.15$~\AA$^{2}$ for the antisymmetric combination of the two hydrogens and $|2\mathbf{r}_{\mathrm{O}} - \mathbf{r}_{\mathrm{H}1} - \mathbf{r}_{\mathrm{H}2}|^{2}/6 \approx 0.23$~\AA$^{2}$ for the symmetric one, a ratio of about five against the measured $3.6$--$5.5$.
+The two intramolecular bands are consistent with the geometry of the molecule: for bounded coordinates the eigenvalue scales with the mean-square size of the corresponding normalised combination, which is $|\mathbf{r}_{\mathrm{H}1} - \mathbf{r}_{\mathrm{H}2}|^{2}/2 \approx 1.15$~\AA$^{2}$ for the antisymmetric combination of the two hydrogens and $|2\mathbf{r}_{\mathrm{O}} - \mathbf{r}_{\mathrm{H}1} - \mathbf{r}_{\mathrm{H}2}|^{2}/6 \approx 0.23$~\AA$^{2}$ for the symmetric one, a ratio of about five against the measured $3.4$--$5.5$.
 
 The oxygen-only matrix follows the molecular centres.
-Its entropy deficit (Fig.~\ref{fig:water}c) is large in the ice, $0.087$--$0.119$, and in the liquid it is small and nearly constant above $260$~K ($0.0028$--$0.0053$), but it grows steeply on supercooling, to $0.011$ at $240$~K, $0.038$ at $220$~K and $0.074$ at $200$~K, approaching the values of the ice as the liquid's diffusion approaches that of the crystal.
+Its entropy deficit (Fig.~\ref{fig:water}c) is large in the ice, $0.083$--$0.114$, and in the liquid it is small and decreases slowly from $0.0046$ at $260$~K to $0.0009$ at $340$~K, but it grows steeply on supercooling, to $0.011$ at $240$~K, $0.038$ at $220$~K and $0.075$ at $200$~K, approaching the values of the ice as the liquid's diffusion approaches that of the crystal.
 The deficit thus tracks the slowing of the liquid continuously, with no transition at which to compare it against the density; at the lowest temperatures, as in the solids, it reflects motion that has not decorrelated within the window.
-Its value depends on that window: at $300$~K it falls from $0.011$ at $\tau_{\max} = 0.5$~ps to $0.0006$ at $16$~ps (Fig.~\ref{fig:controls}b), so it measures correlation that persists for a few picoseconds and decays on the time scale of hydrogen-bond rearrangement, whereas at $220$~K it changes little with the lag.
+Its value depends on that window: at $300$~K it stays near $0.0018$ between $\tau_{\max} = 1$ and $8$~ps and falls to $0.0002$ at $16$~ps (Fig.~\ref{fig:controls}b), so it measures correlation that persists for several picoseconds, whereas at $220$~K it remains between $0.036$ and $0.059$ over the whole scan.
 
-Finally, the leading eigenvectors of $C_{\mathrm{O}}$ are related to the hydrogen-bond network, but not in the sense we had expected.
-In the ice, where nearly every molecule has four hydrogen bonds, the amplitude of an oxygen in the five leading eigenvectors is uncorrelated with its bond count.
-In the liquid above $260$~K the two are anticorrelated, with a Spearman coefficient of $-0.18$ at $260$~K growing in magnitude, though not monotonically, to $-0.43$ at $340$~K ($p < 0.01$ in every seed from $270$~K upwards) as the mean bond count falls from $3.73$ to $3.02$.
-This is not simply a mobility effect.
-A molecule's own diffusion coefficient, $C_{ii}$, is only weakly correlated with its bond count ($r_{\mathrm{s}} = -0.08$ to $-0.25$), and the anticorrelation survives almost unchanged when $C_{\mathrm{O}}$ is replaced by its correlation-coefficient matrix $C_{ij}/\sqrt{C_{ii}C_{jj}}$ ($-0.19$, $-0.27$ and $-0.42$ at $270$, $300$ and $340$~K) or when $C_{ii}$ is partialled out ($-0.19$, $-0.24$, $-0.39$).
-The leading collective modes are thus carried preferentially by molecules with fewer hydrogen bonds, not by the most strongly bonded ones.
+Finally, the leading eigenvectors of $C_{\mathrm{O}}$ do not single out molecules by their hydrogen-bond environment.
+The Spearman correlation between the amplitude of an oxygen in the five leading eigenvectors and its time-averaged hydrogen-bond count is at most $0.04$ in magnitude when averaged over seeds, and at most $0.12$ in any single run, with no consistent sign, in the ice and at every temperature in the liquid, while the mean bond count of the liquid falls from $3.81$ at $260$~K to $3.47$ at $340$~K (Fig.~\ref{fig:water}f).
+The same holds for a molecule's own diffusion coefficient $C_{ii}$ ($|r_{\mathrm{s}}| \leq 0.08$) and for the leading eigenvectors of the correlation-coefficient matrix $C_{ij}/\sqrt{C_{ii}C_{jj}}$ ($|r_{\mathrm{s}}| \leq 0.04$).
+At this lag the collective modes of the oxygen motion are thus not organised by the local hydrogen-bond topology.
 
 \subsection{Molten Salt Ionic Conductivity}
 \label{subsec:molten-salt-ionic-conductivity}
@@ -191,24 +189,25 @@ Results are collected in Fig.~\ref{fig:salt}.
 \end{figure}
 
 As for the Lennard-Jones crystal, the hysteresis is wide.
-The rock-salt crystal persists to $1200$~K and has melted by $1300$~K, where its density drops from $1.815$ to $1.36$~g\,cm$^{-3}$ and the ionic self-diffusion coefficients rise by a factor of $36$--$37$; the pre-melted liquid remains liquid down to $900$~K.
+The rock-salt crystal persists to $1200$~K and has melted by $1300$~K, where its density drops from $1.815$ to $1.36$~g\,cm$^{-3}$ and the ionic self-diffusion coefficients rise by a factor of $35$--$36$; the pre-melted liquid remains liquid down to $900$~K.
 Above $1300$~K the two branches coincide.
 
-The conductivity of the liquid is $302 \pm 3$~S\,m$^{-1}$ at $900$~K and $357 \pm 15$~S\,m$^{-1}$ at $1100$~K, rising to about $400$~S\,m$^{-1}$ near $1600$~K, with no resolved change at $1800$~K, while its Nernst--Einstein estimate rises monotonically from $316$ to $645$~S\,m$^{-1}$.
+The conductivity of the liquid is $298 \pm 3$~S\,m$^{-1}$ at $900$~K and $352 \pm 17$~S\,m$^{-1}$ at $1100$~K, rising to $392 \pm 4$~S\,m$^{-1}$ at $1600$~K and falling to $349 \pm 17$~S\,m$^{-1}$ at $1800$~K, while its Nernst--Einstein estimate rises monotonically from $312$ to $607$~S\,m$^{-1}$.
 The deviation between the two is the quantity that Eq.~\eqref{eqn:full-correction} expresses through the species blocks of $C$.
-With $\eta_{\mathrm{Na}} = +1$ and $\eta_{\mathrm{Cl}} = -1$, the block-sum route at $\tau_{\max} = 4$~ps gives $\Delta^{\sigma} = -0.045 \pm 0.012$ at $900$~K, falling to $-0.14$ at $1100$~K and $-0.43$ at $1800$~K.
-In a single trajectory these values fluctuate with the lag (Fig.~\ref{fig:controls}d: between $1$ and $32$~ps, from $-0.13$ to $+0.01$ at $900$~K and from $-0.26$ to $-0.16$ at $1300$~K), but averaged over seeds they change by at most $0.04$ between $1$ and $16$~ps at every temperature tested, and the ordering of the temperatures holds at every lag.
-The conductivity itself is less robust at the highest temperatures: at $1800$~K it falls from $430$ to $346$~S\,m$^{-1}$ between lags of $1$ and $16$~ps, because the self and distinct integrals both decrease with the lag, so comparisons of $\sigma$ between temperatures are made at a fixed lag.
+With $\eta_{\mathrm{Na}} = +1$ and $\eta_{\mathrm{Cl}} = -1$, the block-sum route at $\tau_{\max} = 4$~ps gives $\Delta^{\sigma} = -0.046 \pm 0.011$ at $900$~K, falling to $-0.14$ at $1100$~K and $-0.42$ at $1800$~K.
+In a single trajectory these values fluctuate with the lag (Fig.~\ref{fig:controls}d: between $1$ and $32$~ps, from $-0.12$ to $+0.01$ at $900$~K and from $-0.24$ to $-0.16$ at $1300$~K); averaged over seeds they change by up to $0.10$ between $1$ and $16$~ps at $900$ and $1000$~K and by at most $0.07$ above, and the ordering of the temperatures holds at every lag up to $8$~ps.
+The conductivity itself changes by at most $13\%$ over the same range of lags, and by at most $3\%$ in the longer runs described below, but because the self and distinct integrals both drift with the lag, comparisons of $\sigma$ between temperatures are made at a fixed lag.
 Because $\sum_{ij} z_{i} z_{j} C_{ij}$ is the charge-current integral by construction, comparison with the time-domain Green--Kubo integral of the charge current is a consistency check of the estimator rather than a test of the decomposition.
-The two agree within the seed scatter at each temperature (Fig.~\ref{fig:salt}c), but the time-domain route is more negative at seven of eight temperatures, by up to a factor of two at $900$~K, and individual runs differ by up to $15\%$: the sharp truncation of the time-domain integral and the Bartlett taper of $\hat{C}$ weight the tail of the charge-current correlation differently.
+The two agree within the seed scatter at each temperature (Fig.~\ref{fig:salt}c), but the time-domain route is more negative at five of eight temperatures, by up to a factor of $1.8$ at $900$~K, and individual runs differ by up to $9\%$: the sharp truncation of the time-domain integral and the Bartlett taper of $\hat{C}$ weight the tail of the charge-current correlation differently.
 The split into self and distinct terms also depends on the reference frame when total momentum is conserved and the ions differ in mass~\cite{kashyap11a,trullas94a}; we use the barycentric frame of the simulation throughout.
-Within that uncertainty, distinct cation--anion correlation reduces the conductivity below the uncorrelated estimate by an amount that grows with temperature along the isobar, as the liquid expands and the Na--Cl coordination number within $3.6$~\AA{} falls from $4.2$ at $900$~K to $2.5$ at $1800$~K; the $1800$~K state lies above the normal boiling point of NaCl and is a metastable expanded liquid.
+Within that uncertainty, distinct cation--anion correlation reduces the conductivity below the uncorrelated estimate by an amount that grows with temperature along the isobar, as the liquid expands and the Na--Cl coordination number within $3.6$~\AA{} falls from $4.3$ at $900$~K to $3.3$ at $1800$~K; the $1800$~K state lies above the normal boiling point of NaCl and is a metastable expanded liquid.
 In the crystal both routes are dominated by the residual of the finite window and do not measure a conductivity; we do not report them.
 
-At $\tau_{\max} = 4$~ps the entropy deficit of the liquid is small, $0.0018$ at $900$~K, and grows monotonically to $0.0126$ at $1800$~K (Fig.~\ref{fig:salt}d), in the opposite direction to the Lennard-Jones liquid, whose deficit decays with temperature.
-Across all $36$ melted runs the deficit and $\Delta^{\sigma}$ are strongly anticorrelated (Spearman $r_{\mathrm{s}} = -0.95$), but both change monotonically with temperature, so this is a common trend rather than an independent test.
-The lag scan limits it further: the deficit of the liquid falls from $0.03$ at $0.5$~ps to zero within the null uncertainty by $8$~ps (Fig.~\ref{fig:controls}b), so it reflects short-lived cation--anion correlation, most plausibly the rattling of ions in their first coordination shell, rather than the long-time distinct correlation that sets $\Delta^{\sigma}$.
-The crystal again carries a large deficit, $0.030$--$0.037$, an order of magnitude above the liquid, and loses it on melting.
+The entropy deficit does not see this correlation.
+At $\tau_{\max} = 4$~ps the deficit of the liquid is at the level of the null, $6 \times 10^{-4}$ at $900$~K and below $10^{-4}$ from $1300$~K upwards (Fig.~\ref{fig:salt}d), and like that of the Lennard-Jones liquid it decreases with temperature, while $\Delta^{\sigma}$ grows almost tenfold.
+The lag scan agrees: the deficit of the liquid is about $10^{-3}$ between $0.5$ and $2$~ps and within the null uncertainty from $4$~ps (Fig.~\ref{fig:controls}b).
+The crystal carries a large deficit, $0.029$--$0.036$, and loses it on melting.
+Because the entropy is a symmetric function of the eigenvalues, it cannot tell which modes the charges occupy; the distinct correlation that sets $\Delta^{\sigma}$ is instead visible in how the charge pattern is distributed over the eigenvectors, to which we now turn.
 
 \paragraph{Which modes carry the current.}
 The spectrum of $C$ can be used more directly, to ask which collective motions reduce the conductivity.
@@ -221,14 +220,14 @@ the conductivity relative to its Nernst--Einstein estimate is the charge-weighte
 A negative $\Delta^{\sigma}$ therefore means that the charge pattern $\mathbf{z}$ lies preferentially on the low-eigenvalue modes of $C$, and the eigenvectors show what those modes are.
 For a random arrangement of the same charges the ratio is $1.00$ at every temperature, and the identity holds to machine precision for every run.
 
-The charge pattern loads increasingly onto the bottom of the spectrum as the liquid is heated (Fig.~\ref{fig:salt-spectral}a,b): the lowest $10\%$ of modes carry $14\%$ of the charge weight at $900$~K and $41\%$ at $1800$~K, against $10\%$ by chance, while $1 + \Delta^{\sigma}$ falls from $0.96$ to $0.57$ at $\tau_{\max} = 4$~ps.
-A constant $4.4\%$ sits on the zero mode of total momentum, onto which the charge vector projects because the two ions differ in mass: it equals the squared overlap of the charge and mass vectors, $4.35\%$, at every temperature, and is the frame dependence noted above.
+The charge pattern loads increasingly onto the bottom of the spectrum as the liquid is heated (Fig.~\ref{fig:salt-spectral}a,b): the lowest $10\%$ of modes carry $14\%$ of the charge weight at $900$~K and $42\%$ at $1800$~K, against $10\%$ by chance, while $1 + \Delta^{\sigma}$ falls from $0.95$ to $0.58$ at $\tau_{\max} = 4$~ps.
+A constant $4.35\%$ sits on the zero mode of total momentum, onto which the charge vector projects because the two ions differ in mass: it equals the squared overlap of the charge and mass vectors at every temperature, and is the frame dependence noted above.
 
 The natural reading of a negative $\Delta^{\sigma}$ in a molten salt is ion pairing: a cation and an anion that move together carry no current.
 The bonding result of Section~\ref{subsec:bond-addition} makes this testable, because a long-lived pair would bound its relative coordinate and appear as a localised low mode with its weight on the two ions.
 The data rule it out as the source of the trend.
-The low modes that carry the charge weight are delocalised, with participation ratios of $175$ against $172$ for the average mode in a system of $512$ ions.
-The ion-centred cage matrix of the nearest Cl$^{-}$ to each Na$^{+}$ shows that cation--anion pairs co-move only weakly, and less so as the temperature rises (Fig.~\ref{fig:salt-spectral}c): at $0.5$~ps the pair's relative motion is $0.77$ of that of a random cation--anion pair at $900$~K and $0.85$ at $1800$~K, and at every temperature it approaches the random value by $16$~ps, while the Na--Cl residence time in the first shell falls from $5.7$ to $1.8$~ps.
+The low modes that carry the charge weight are delocalised, with participation ratios of $176$ against $172$ for the average mode in a system of $512$ ions.
+The ion-centred cage matrix of the nearest Cl$^{-}$ to each Na$^{+}$ shows that cation--anion pairs co-move only weakly, and no more strongly as the temperature rises (Fig.~\ref{fig:salt-spectral}c): at $0.5$~ps the pair's relative motion is $0.75$--$0.76$ of that of a random cation--anion pair at every temperature, it relaxes towards the random value faster when the liquid is hotter ($0.93$ at $900$~K and $0.97$ at $1800$~K by $16$~ps), and the Na--Cl residence time in the first shell falls from $5.7$ to $1.9$~ps.
 The growing reduction of the conductivity is thus carried by collective, system-spanning motions aligned with the long-wavelength charge pattern, consistent with the restoring force that the long-range Coulomb interaction exerts on any net charge current, and not by an increasing population of bound ion pairs.
 
 \begin{figure*}[tbp]
@@ -241,8 +240,11 @@ The growing reduction of the conductivity is thus carried by collective, system-
 Along the isobar the liquid expands from $1.55$ to $1.09$~g\,cm$^{-3}$, so temperature and density change together.
 Heating the liquid instead at constant volume, at its $1100$~K density of $1.446$~g\,cm$^{-3}$, separates the two (Fig.~\ref{fig:salt-spectral}b,d).
 At constant density the conductivity rises steadily, from $351 \pm 6$ to $492 \pm 20$~S\,m$^{-1}$ between $1100$ and $1800$~K, with no plateau; $\Delta^{\sigma}$ stays between $-0.14$ and $-0.16$; and the charge weight on the lowest tenth of the modes stays between $16$ and $18\%$.
-Cation--anion co-motion and the Na--Cl residence time weaken with temperature on the isochore just as on the isobar (pair co-motion $0.76$ to $0.83$ of random at $0.5$~ps, residence time $3.8$ to $2.1$~ps).
-The contrast between the two paths holds at every lag from $1$ to $16$~ps: at $1800$~K, $\Delta^{\sigma}$ is $-0.39$ to $-0.44$ on the isobar and $-0.13$ to $-0.16$ on the isochore.
+Cation--anion co-motion and the Na--Cl residence time weaken with temperature on the isochore as well (pair co-motion $0.76$ to $0.82$ of random at $0.5$~ps, residence time $3.8$ to $2.1$~ps).
+The contrast between the two paths holds at every lag from $1$ to $16$~ps: at $1800$~K, $\Delta^{\sigma}$ is $-0.37$ to $-0.44$ on the isobar and $-0.13$ to $-0.16$ on the isochore.
 The levelling-off of the conductivity along the isobar is therefore an effect of expansion, not of temperature: lowering the density loads the charge pattern onto the slow collective modes of $C$, while raising the temperature at fixed density does not, and ion pairing weakens along both paths.
 
-\textcolor{red}{[LONG-RUN RESULT AT 1400--1800 K: pending]}
+Runs four times longer ($6$~ns, three seeds) at $1400$, $1600$ and $1800$~K resolve the top of the isobar.
+The conductivity is $373 \pm 5$, $378 \pm 3$ and $358 \pm 5$~S\,m$^{-1}$ at $\tau_{\max} = 4$~ps, within $3\%$ of these values at every lag from $1$ to $16$~ps, so it passes through a shallow maximum near $1600$~K and falls by about $5\%$ at $1800$~K; $\Delta^{\sigma}$ ($-0.28$, $-0.34$, $-0.41$) agrees with the shorter runs.
+The charge weight on the lowest tenth of the modes is larger in these runs, $49$, $63$ and $75\%$ against $25$, $29$ and $42\%$, while the participation ratio of those modes stays at $171$ of $512$: with more samples, noise mixes the slow modes less with the bulk, and the charge pattern concentrates further onto a delocalised slow subspace.
+The decile weight is therefore a sampling-limited lower bound on that concentration, whereas $1 + \Delta^{\sigma}$, an exact identity, is not.
