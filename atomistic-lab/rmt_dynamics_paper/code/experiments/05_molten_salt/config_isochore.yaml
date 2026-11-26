@@ -1,0 +1,33 @@
+# Experiment 5, isochore: NaCl at the 1 atm, 1100 K liquid density (1.446 g/cm^3),
+# heated at constant volume to separate temperature from expansion.
+#
+# A rock-salt crystal (4 x 4 x 4 cubic cells, 256 ion pairs) and a liquid
+# melted at 2000 K bracket the melting transition (Tosi-Fumi NaCl melts
+# near 1070 K); the liquid branch gives the ionic conductivity and its
+# Nernst-Einstein deviation from the block structure of C.
+# Positions every 50 fs; C is built from interval-mean velocities.
+
+template: molten_salt_nacl.in.j2
+
+fixed:
+  n_pairs: 256                 # 512 ions
+  init_density:                # starting density (g/cm^3); NPT relaxes it
+    crystal: 2.00
+    liquid: 1.446               # isobar density at 1100 K
+  pressure: 1.0                # atm (unused under NVT)
+  ensemble: nvt
+  cutoff: 11.0                 # Å; shortest box edge is ~23 Å
+  timestep: 1.0                # fs
+  premelt_T: 2000.0            # K, liquid start only
+  premelt_steps: 20000         # 20 ps
+  n_equil: 100000              # 100 ps
+  n_prod: 1500000              # 1.5 ns
+  sample_every: 50             # 50 fs
+  analysis:
+    t_max_fs: 4000.0
+    remove_mean: true
+
+sweep:
+  init: [liquid]
+  temperature: [1100.0, 1200.0, 1400.0, 1600.0, 1800.0]
+  seed: [1, 2, 3]

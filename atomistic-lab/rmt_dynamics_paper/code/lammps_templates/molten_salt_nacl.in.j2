@@ -4,7 +4,8 @@
 ##   seed            integer RNG seed
 ##   data_file       LAMMPS data file with Na (type 1) / Cl (type 2) atoms
 ##   temperature     target T (Kelvin)
-##   pressure        target P (atm)
+##   pressure        target P (atm), NPT only
+##   ensemble        'npt' (default) or 'nvt' (isochore at the data-file volume)
 ##   timestep        integrator dt (fs)
 ##   n_equil         equilibration steps
 ##   n_prod          production steps
@@ -46,7 +47,12 @@ run             {{ premelt_steps }}
 unfix           melt
 {% endif %}
 
+{% if ensemble is defined and ensemble == 'nvt' %}
+# Isochore: volume fixed by the data file.
+fix             integrate all nvt temp {{ temperature }} {{ temperature }} 100.0
+{% else %}
 fix             integrate all npt temp {{ temperature }} {{ temperature }} 100.0 iso {{ pressure }} {{ pressure }} 1000.0
+{% endif %}
 run             {{ n_equil }}
 
 reset_timestep  0
