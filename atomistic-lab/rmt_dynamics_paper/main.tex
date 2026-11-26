@@ -1,15 +1,9 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% This is a (brief) model paper using the achemso class
-%% The document class accepts keyval options, which should include
-%% the target journal and optionally the manuscript type. 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\documentclass[journal=jacsat,manuscript=article]{achemso}
+%% Manuscript for The Journal of Chemical Physics (AIP REVTeX 4.2).
+%% Switch `reprint` to `preprint` for a single-column, double-spaced copy.
+\documentclass[aip,jcp,reprint,amsmath,amssymb,floatfix]{revtex4-2}
 
 \usepackage[version=3]{mhchem}
 \usepackage{graphicx}
-\usepackage{subcaption}
-\usepackage{amsmath}
-\usepackage{amssymb}
 \usepackage{bm}
 \usepackage{booktabs}
 \usepackage{xcolor}
@@ -18,35 +12,21 @@
 \newcommand{\N}[0]{\mathcal{N}}
 \newcommand{\Se}[0]{\mathcal{S}}
 
+\begin{document}
+
+\title{Understanding Particle Correlation: Insights from Random Matrix Theory}
+
 \author{Samuel Tovey}
 \author{Marko Zecevic}
 \author{Christian Holm}
 \email{holm@icp.uni-stuttgart.de}
-\affiliation[University of Stuttgart]
-{Institute for Computational Physics, University of Stuttgart, Stuttgart, Germany}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% The document title should be given as usual. Some journals require
-%% a running title from the author: this should be supplied as an
-%% optional argument to \title.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\title[Particle Correlation and Random Matrix Theory]
-  {Understanding Particle Correlation: Insights from Random Matrix Theory}
-
-\abbreviations{MD, RMT, MP, GK}
-\keywords{molecular dynamics, random matrix theory, transport coefficients, correlation matrix, spectral entropy}
-
-\begin{document}
-
-\begin{tocentry}
-    \centering
-    \includegraphics[width=0.6\linewidth]{figures/render_bonded_liquid.png}
-\end{tocentry}
+\affiliation{Institute for Computational Physics, University of Stuttgart, 70569 Stuttgart, Germany}
 
 \begin{abstract}
-    \input{input/abstract}
+\input{input/abstract}
 \end{abstract}
+
+\maketitle
 
 \input{input/introduction}
 \input{input/theory}
@@ -54,14 +34,21 @@
 \input{input/experiments}
 \input{input/conclusion}
 
-\section{Data Availability}
+\begin{acknowledgments}
+\textcolor{red}{[Funding and computing-time acknowledgements.]}
+\end{acknowledgments}
+
+\section*{Author Declarations}
+\subsection*{Conflict of Interest}
+\textcolor{red}{[Conflict-of-interest statement, e.g.\ ``The authors have no conflicts to disclose.'']}
+
+\subsection*{Author Contributions}
+\textcolor{red}{[CRediT contribution statement for each author.]}
+
+\section*{Data Availability}
 \label{sec:data-and-availability}
 The \texttt{rmt\_dynamics} analysis package, the simulation drivers and LAMMPS input templates, the ice Ih generator, and the scripts that produce every figure from the per-run summary tables are available at \textcolor{red}{[repository URL]}.
 Per-run summary tables, eigenvalue spectra and correlation matrices will be deposited at \textcolor{red}{[archive DOI]}; trajectories are available from the authors on request.
-
-\begin{acknowledgement}
-\textcolor{red}{[Funding and computing-time acknowledgements.]}
-\end{acknowledgement}
 
 \bibliography{input/bibliography}
 

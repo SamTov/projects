@@ -1,12 +1,12 @@
 \section{Results}
 \label{sec:experiments}
 
-\begin{figure}[tbp]
+\begin{figure*}[tbp]
     \centering
     \includegraphics[width=\linewidth]{figures/fig_concept.pdf}
     \caption{How bonding appears in $C$. (a) Lennard-Jones liquid ($|\N| = 216$) with $27$ harmonic bonds between nearest neighbours (blue, with bonds drawn), rendered with ZnVis~\cite{znvis}; unbonded atoms are grey and drawn smaller. (b) Part of the correlation matrix from a $26$~ns run with $\tau_{\max} = 100$~ps, normalised by the mean diagonal element of unbonded atoms: eight bonded pairs, each a $2 \times 2$ block, and sixteen unbonded atoms. (c) Sorted eigenvalues of the full matrix against those of the same liquid without bonds; the shaded band is the Marchenko--Pastur support. One eigenvalue per bond (blue) leaves the bulk through its lower edge, in addition to the zero mode from momentum conservation.}
     \label{fig:concept}
-\end{figure}
+\end{figure*}
 
 \subsection{Validation of the Noise Null}
 \label{subsec:convergence-of-the-noise-term}
@@ -19,23 +19,23 @@ Real trajectories are neither Gaussian nor uniform in their dynamics, so we also
 For eleven representative states spanning the four systems, the entropy deficits measured against the two nulls agree to within $5.5 \times 10^{-4}$ in $S/\ln|\N|$ (Figure~\ref{fig:controls}a); in liquids the surrogate gives the larger deficit, so the analytic null is, if anything, conservative.
 Deficits above about $10^{-3}$ are therefore insensitive to the choice of null, and we treat smaller ones as unresolved.
 
-\begin{figure}[tbp]
+\begin{figure*}[tbp]
     \centering
     \includegraphics[width=\linewidth]{figures/fig_controls.pdf}
     \caption{Controls. (a) Entropy deficit against the analytic Marchenko--Pastur null and against a surrogate null from circularly time-shifted trajectories, for eleven states (blue: solids; orange: Lennard-Jones liquids; aqua: liquid water; grey: molten NaCl); the dashed line is equality. (b) Entropy deficit as a function of the integration lag for five states, legend as in (c). (c) $\tau_{\max}\,\mathrm{Tr}\,C$, scaled to its value at $0.5$~ps: constant for solids, where $\hat{C}$ is a vibrational displacement covariance divided by $\tau_{\max}$, and growing for liquids, where it converges to the diffusion coefficient. (d) Nernst--Einstein deviation of molten NaCl from the block sums of $C$ as a function of the lag, one seed per temperature.}
     \label{fig:controls}
-\end{figure}
+\end{figure*}
 
 \begin{figure}[tbp]
     \centering
-    \includegraphics[width=0.72\linewidth]{figures/fig_noise_null.pdf}
+    \includegraphics[width=\linewidth]{figures/fig_noise_null.pdf}
     \caption{Marchenko--Pastur null for independent Ornstein--Uhlenbeck velocities ($|\N| = 256$, $2 \times 10^{4}$ samples, correlation time $\tau_{\text{int}} = 5$ samples). (a) Spectrum of $C$ at $\tau_{\max} = 10\,\tau_{\text{int}}$ against the Marchenko--Pastur density with the lag-window sample count (solid) and with $T_{\text{traj}}/\tau_{\text{int}}$ (dashed). (b) Kolmogorov--Smirnov distance between the spectrum and each null as a function of the lag.}
     \label{fig:noise-null}
 \end{figure}
 
 Table~\ref{tab:parameters} summarises the estimator settings of the four molecular-dynamics studies.
 
-\begin{table}[tbp]
+\begin{table*}[tbp]
     \centering
     \small
     \begin{tabular}{@{}lrrrrr@{}}
@@ -50,7 +50,7 @@ Table~\ref{tab:parameters} summarises the estimator settings of the four molecul
     \end{tabular}
     \caption{Estimator settings: system size, production length, integration lag, effective sample count (Equation~\ref{eqn:teff}) and aspect ratio $q = |\N|/T_{\text{eff}}$. Ranges span temperature; solids have larger $T_{\text{eff}}$ and smaller $q$.}
     \label{tab:parameters}
-\end{table}
+\end{table*}
 
 \subsection{Bond Addition}
 \label{subsec:bond-addition}
@@ -60,12 +60,12 @@ In the first, $|\N| = 512$, bonds join random pairs closer than $2\sigma$, each 
 In the second, chosen to satisfy the lag condition of Section~\ref{subsec:interpreting-atomic-correlation-matrices}, $|\N| = 216$, bonds are restricted to the first coordination shell ($r_{0} < 1.3\,\sigma$), each run is $26$~ns long and $\tau_{\max} = 100$~ps ($T_{\text{eff}} \approx 1170$, $q \approx 0.18$).
 All quantities are averaged over three seeds; Figure~\ref{fig:bonding} collects the results.
 
-\begin{figure}[tbp]
+\begin{figure*}[tbp]
     \centering
     \includegraphics[width=\linewidth]{figures/fig_bonding.pdf}
     \caption{Bonding in the spectrum of $C$. Orange: $\tau_{\max} = 2$~ps, $|\N| = 512$; blue: $\tau_{\max} = 100$~ps, $|\N| = 216$; three seeds per point, error bars one standard deviation. (a, b) Eigenvalue density in units of the mean diagonal element of unbonded atoms, for increasing bond counts (light to dark); the dashed curve and shaded band are the Marchenko--Pastur density and support of the bond-free liquid. (c) Relative-motion mode $(C_{ii}+C_{jj}-2C_{ij})/2$ of bonded and unbonded pairs against the integration lag, for one $16$-bond trajectory, with the lower bulk edge where it is defined ($q < 1$); the blue point is the $100$~ps protocol. (d) Eigenvalues below the bulk of the bond-free liquid, excluding the momentum zero mode, against the number of independent bond constraints. (e) Fraction of the bond-constraint space captured by the same number of lowest eigenvectors, with the expectation for random modes. (f) Decrease of the spectral entropy relative to the bond-free liquid.}
     \label{fig:bonding}
-\end{figure}
+\end{figure*}
 
 At $\tau_{\max} = 2$~ps the bond-free spectrum is bulk-like (Figure~\ref{fig:bonding}a): a single eigenvalue sits at zero, as required by conservation of total momentum, and $11$ to $12$ of the $512$ eigenvalues lie above the upper edge.
 These upper modes are present before any bond is added, so they are not a bonding signature.
@@ -78,7 +78,7 @@ The relative-motion mode of a bonded pair is $0.61 \pm 0.01$ of the free value a
 This reduction is not large enough to carry the mode out of the bulk, whose lower edge lies at $0.28$ in the same units, so the number of sub-bulk eigenvalues lags far behind the number of constraints (Figure~\ref{fig:bonding}d and Table~\ref{tab:bond-addition}): it is zero at $k = 16$, reaches $53$ of $254$ at $k = 256$, and approaches the constraint count only at $k = 1024$, where the bond network spans almost the whole system and diffusion is largely arrested.
 The lowest eigenvectors nonetheless carry the bond topology before individual modes separate, capturing $18\%$ and $37\%$ of the constraint space at $k = 16$ and $64$, six and three times the value for random modes (Figure~\ref{fig:bonding}e).
 
-\begin{table}[tbp]
+\begin{table*}[tbp]
     \centering
     \small
     \begin{tabular}{@{}rcccc@{\hspace{1.5em}}rcccc@{}}
@@ -93,7 +93,7 @@ The lowest eigenvectors nonetheless carry the bond topology before individual mo
     \end{tabular}
     \caption{Bond addition. Constraints are the independent relative coordinates fixed by the bond graph; sub-bulk counts are eigenvalues below the lower Marchenko--Pastur edge of the bond-free liquid, excluding the momentum zero mode; overlap is the fraction of the constraint space captured by the same number of lowest eigenvectors, with the value for random modes alongside. Ranges span the three seeds.}
     \label{tab:bond-addition}
-\end{table}
+\end{table*}
 
 The incomplete separation at short lags is a consequence of the lag, not of the estimator.
 A bond fixes the separation of a pair but not its orientation, so its relative coordinate is distinguishable from free diffusion only when $\tau_{\max} \gg r_{0}^{2}/6D$; with $D \approx 2.2 \times 10^{-4}$~\AA$^{2}$\,fs$^{-1}$ and $r_{0}$ up to $2\sigma$, this requires tens of picoseconds.
@@ -113,12 +113,12 @@ Bonding is therefore read off the spectrum of $C$ as a count of sub-bulk eigenva
 We next follow $C$ ($\tau_{\max} = 2$~ps) across the solid, liquid and vapour phases of the Lennard-Jones system along the $20$~atm isobar, from three starting states that expose the hysteresis of the first-order transitions in a $500$-atom box (Section~\ref{subsec:molecular-dynamics-simulations}).
 Because $q$ changes by an order of magnitude along the isobar, the raw entropy mixes structure with sampling noise (in the liquid $S/\ln|\N|$ falls from $0.9805$ to $0.9758$ between $80$ and $130$~K largely because $q$ rises from $0.21$ to $0.30$), so we report the entropy deficit of Equation~\ref{eqn:entropy-deficit}, omitting the vapour, where $q > 1$ and the null is not reliable.
 
-\begin{figure}[tbp]
+\begin{figure*}[tbp]
     \centering
     \includegraphics[width=\linewidth]{figures/fig_lj_phases.pdf}
     \caption{Lennard-Jones system along the $20$~atm isobar from a crystal (blue circles), a dense disordered state (orange squares) and a dilute gas (aqua triangles), three seeds per point. (a) Mass density. (b) Entropy deficit of $C$ relative to the Marchenko--Pastur null at the same aspect ratio, shown where $q < 0.6$. (c) Mean diagonal element of $C$, proportional to the self-diffusion coefficient. (d--f) Pooled eigenvalue densities in units of the mean eigenvalue for the crystal and the disordered solid at $40$~K and the liquid at $100$~K, against the Marchenko--Pastur density at each run's $q$ (dashed; shaded band is its support).}
     \label{fig:lj-results}
-\end{figure}
+\end{figure*}
 
 The crystal melts between $90$ and $95$~K (Figure~\ref{fig:lj-results}a); the disordered starts are liquid from $60$~K upwards and solidify between $50$ and $60$~K into a solid less dense than the crystal.
 Re-running these states with the production inputs and recording positions shows that this solid is polycrystalline rather than amorphous: its mean Steinhardt order parameter $q_{6}$ is $0.43$--$0.50$, with $37$--$88\%$ of atoms in crystalline environments ($q_{6} > 0.45$), against $0.55$ and $99.8\%$ for the crystal and $0.41$ for the liquid at $60$~K.
@@ -146,12 +146,12 @@ We follow TIP4P/2005 water along the $1$~atm isobar from $200$ to $340$~K, from 
 $C$ is built for the oxygen atoms alone and for all atoms, which separates the motion of molecular centres from the intramolecular correlation of each oxygen with its two hydrogens.
 Results are collected in Figure~\ref{fig:water}.
 
-\begin{figure}[tbp]
+\begin{figure*}[tbp]
     \centering
     \includegraphics[width=\linewidth]{figures/fig_water.pdf}
     \caption{TIP4P/2005 water along the $1$~atm isobar from ice Ih (blue circles) and from a pre-melted liquid (orange squares), three seeds per point. (a) Density. (b) Mean diagonal element of the oxygen-only matrix $C_{\mathrm{O}}$, proportional to the self-diffusion coefficient. (c) Entropy deficit of $C_{\mathrm{O}}$ relative to the Marchenko--Pastur null. (d) Eigenvalues of the all-atom matrix for the liquid at $300$~K, in units of the mean of the $432$ largest, pooled over seeds; the dashed line separates the $864$ smallest. (e) Fraction of the intramolecular relative-coordinate space (two O--H vectors per molecule) captured by the $864$ lowest eigenvectors of the all-atom matrix, with the value for random modes. (f) Spearman correlation between the amplitude of each oxygen in the five leading eigenvectors of $C_{\mathrm{O}}$ and its time-averaged hydrogen-bond count.}
     \label{fig:water}
-\end{figure}
+\end{figure*}
 
 The ice remains crystalline up to $310$~K, its density falling slowly from $0.928$ to $0.910$~g\,cm$^{-3}$, and melts between $310$ and $320$~K, where the seeds split and the diffusion coefficient rises fourteenfold (Figure~\ref{fig:water}a,b).
 The liquid branch never freezes on the time scale of the runs.
@@ -185,7 +185,7 @@ Results are collected in Figure~\ref{fig:salt}.
 
 \begin{figure}[tbp]
     \centering
-    \includegraphics[width=0.8\linewidth]{figures/fig_salt.pdf}
+    \includegraphics[width=\linewidth]{figures/fig_salt.pdf}
     \caption{Tosi--Fumi NaCl along the $1$~atm isobar, three seeds per point. (a) Density from the crystal (blue circles) and liquid (orange squares) starts. (b) Ionic conductivity from the charge current and its Nernst--Einstein estimate, for every melted state. (c) Nernst--Einstein deviation $\Delta^{\sigma}$ from the species-block sums of $C$ and from the time-domain Green--Kubo integral of the charge current (offset by $12$~K for clarity). (d) Entropy deficit of $C$ relative to the Marchenko--Pastur null.}
     \label{fig:salt}
 \end{figure}
