@@ -121,16 +121,23 @@ def analyse(run: Path, out: Path) -> None:
     loc = ion_cage.local_matrices(P, centres, cl, box, k, lag_frames, 20, rng)
     nul = ion_cage.local_matrices(P, centres, cl, box, k, lag_frames, 80, rng, n_random=True)
     D_cl = {L: float(np.mean(np.sum((P[L:, cl] - P[:-L, cl]) ** 2, axis=-1)) / (6.0 * L)) for L in lag_frames}
+    # Nearest partner only (k = 1): a single tightly bound Na-Cl pair would show
+    # here even if the rest of the shell exchanges.
+    pair = ion_cage.local_matrices(P, centres, cl, box, 1, lag_frames, 20, rng)
+    pair0 = ion_cage.local_matrices(P, centres, cl, box, 1, lag_frames, 80, rng, n_random=True)
     res["cage"] = {"r_cut": r_cut, "r_peak": r_peak, "coordination": coord, "k": k, "tau_res_fs": tau_res,
                    "lags": [{"lag_fs": lf,
                              "cage_mean": float(np.sort(np.linalg.eigvalsh(loc[L]))[:k].mean() / D_cl[L]),
-                             "null_mean": float(np.sort(np.linalg.eigvalsh(nul[L]))[:k].mean() / D_cl[L])}
+                             "null_mean": float(np.sort(np.linalg.eigvalsh(nul[L]))[:k].mean() / D_cl[L]),
+                             "pair_min": float(np.linalg.eigvalsh(pair[L])[0] / D_cl[L]),
+                             "pair_null_min": float(np.linalg.eigvalsh(pair0[L])[0] / D_cl[L])}
                             for L, lf in zip(lag_frames, CAGE_LAGS_FS)]}
     (out / f"spec_{res['series']}_{run.name}.json").write_text(json.dumps(res, indent=1))
     l4 = [x for x in res["lags"] if x["lag_fs"] == 4000.0][0]
     print(run.name, "1+D", round(l4["ratio_spectral"], 4), "direct", round(l4["ratio_direct"], 4),
           "null", round(l4["null_ratio_mean"], 4), "low-decile charge weight", round(l4["charge_weight_lowest_decile"], 3),
-          "cage", [round(c["cage_mean"] / c["null_mean"], 3) for c in res["cage"]["lags"]], "tau_res", round(tau_res), flush=True)
+          "cage", [round(c["cage_mean"] / c["null_mean"], 3) for c in res["cage"]["lags"]],
+          "pair", [round(c["pair_min"] / c["pair_null_min"], 3) for c in res["cage"]["lags"]], "tau_res", round(tau_res), flush=True)
 
 
 def main() -> int:
